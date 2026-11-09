@@ -64,4 +64,16 @@
 
 ## 6. คำถามที่ต้องส่งกลับถาม BA
 
-ดูไฟล์ `docs/questions-for-ba.md` — ลิสต์พร้อมก๊อปส่ง
+ดูไฟล์ `docs/questions-for-ba.md` — ลิสต์พร้อมก๊อปส่ง (เฉพาะคำถามที่ BA ตอบได้เท่านั้น)
+
+## 7. ทางเลือกที่ dev ตัดสินใจเองได้ (ไม่ต้องรอ BA)
+
+> อัปเดต 2026-11-09: หัวหน้าแจ้งว่า **ของจริงเป็น Mobile app** (ต้นแบบเว็บเป็นเพียง design reference) และ REQ เต็มกำลังจะตามมา
+
+| เรื่อง | แนวทางที่เสนอ | เหตุ |
+|---|---|---|
+| เฟรมเวิร์ก mobile app | **React Native (Expo)** | ใช้ React/TS เหมือนเดิม, ย้าย logic จาก prototype ได้บางส่วน, รองรับ Maps/Camera/Push/GPS ครบ |
+| โค้ด prototype `maew-live/` | ใช้เป็น **design reference + port logic** ไม่ copy ทั้งก้อน | RN ไม่มี DOM — UI ต้องเขียนใหม่อยู่แล้ว แต่ data model/i18n/logic ย้ายได้ |
+| Backend | API + DB ใหม่ (เสนอ stack เมื่อ REQ เต็มมา) | ของเดิมไม่มี backend เลย |
+| Cat AI ใช้โมเดลอะไร | dev เลือกเองได้ แต่ขอ budget อนุมัติจากหัวหน้า | คำถามค่าใช้จ่ายมากกว่า requirement |
+| แผนที่ในแอป | react-native-maps + Google Maps | ต้องมี API key จริง (ขอจากหัวหน้า/ทีม) |
