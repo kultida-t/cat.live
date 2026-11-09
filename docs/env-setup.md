@@ -75,6 +75,23 @@ npx expo-doctor
 
 ---
 
+## 1.5 เครื่องมือที่ทีมแนะนำเพิ่ม (backend/infra — ไม่ใช่ mobile dev โดยตรง)
+
+> มาจากลิสต์ที่เพื่อนในทีม dev แนะนำ 2026-11-09 — เป็นชั้น infra/เครื่องมือเสริม ไม่ทับกับกลุ่ม 1-5 ข้างบน ลงคู่กันได้เลย
+
+| เครื่องมือ | ไว้ทำอะไร | วิธีลง | คำสั่งเช็ก |
+|---|---|---|---|
+| **Docker Desktop** | รัน backend/ฐานข้อมูลใน container ตอนพัฒนา | `brew install --cask docker` แล้วเปิดแอปครั้งแรกให้มันเตรียม VM | `docker --version` |
+| **OpenVPN Connect** | ต่อ VPN เข้าวงในบริษัท (ถ้า backend/ระบบภายในอยู่หลัง VPN — ต้องขอไฟล์ profile `.ovpn` จากทีม) | `brew install --cask openvpn-connect` หรือ App Store | เปิดแอปแล้ว import profile ได้ |
+| **Sourcetree** | Git GUI ดู branch/commit/diff เป็นภาพ (เสริม ไม่บังคับ — CLI+Devin ใช้ได้อยู่แล้ว) | `brew install --cask sourcetree` | เปิดแอปล็อกอิน git |
+| **PostgreSQL** | ฐานข้อมูลสำหรับ backend (นัยจากทีมว่า backend ใช้ Postgres — ยังไม่ล็อก รอ req ข้อ 27) | `brew install postgresql@18` หรือตัวติดตั้งจาก postgresql.org | `psql --version` |
+| **pgAdmin 4** | GUI จัดการฐานข้อมูล Postgres | `brew install --cask pgadmin4` | เปิดแอปเชื่อม DB ได้ |
+
+> หมายเหตุ: ถ้าเครื่องมี `PostgreSQL 18` อยู่แล้ว (โฟลเดอร์ใน Applications) ข้ามขั้นลง Postgres ได้ เหลือแค่ pgAdmin 4
+> หมายเหตุ 2: ถ้าเครื่องมีทั้ง `Xcode.app` และ `Xcode-beta.app` ให้ใช้ **Xcode.app ตัว stable** สำหรับงานจริง
+
+---
+
 ## 2. สิ่งที่ต้องใช้มือเจ้าของเครื่องทำเอง (AI ทำให้ไม่ได้)
 
 1. **ล็อกอิน Apple ID** — โหลด Xcode จาก App Store, ใช้งาน iOS Simulator/signing
