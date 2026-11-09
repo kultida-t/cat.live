@@ -1,0 +1,447 @@
+# work-summary — Rules & Data Detail (references/rules-detail.md)
+
+> ไฟล์อ้างอิงของ skill `work-summary` — เปิดอ่าน on-demand ตอนดึงข้อมูลจาก kanban / ตรวจเวลา / เลือกหมวดงาน / เก็บหลักฐาน ตาม pointer ใน SKILL.md
+> Output templates: `references/templates.md` · ตัวอย่างผลลัพธ์: `references/examples.md`
+
+## MCP Call Signatures (canonical — ใช้ตัวเดียวกันทุก scenario)
+
+**เริ่มจับเวลา (ย้าย task เข้า in_progress):**
+```
+mcp_call_tool(
+  server_name="kanban-tukdaeng",
+  tool_name="move_task",
+  arguments={ "task_id": "<task_id>", "status": "in_progress" }
+)
+```
+
+**หยุดจับเวลา (ย้าย task ออกจาก in_progress):**
+```
+mcp_call_tool(
+  server_name="kanban-tukdaeng",
+  tool_name="move_task",
+  arguments={ "task_id": "<task_id>", "status": "done" }  // หรือ "todo", "backlog"
+)
+```
+
+**`save_session_note` (progress/handoff + final):** signature + พารามิเตอร์ + เนื้อหาที่ควรบันทึก อยู่ในข้อ 10 "บันทึก Session Note ตามประเภท" ด้านล่าง (canonical)
+
+---
+
+## ขั้นตอนสรุปงาน (ดึงข้อมูลจาก kanban)
+
+ใช้ในสถานการณ์ที่ต้องสรุปงาน โดยต้องแยกโหมดให้ชัด:
+- `progress/handoff` — task ยัง `in_progress`; เวลาที่แสดงเป็น running/snapshot time
+- `final` — task เป็น `done` แล้ว; เวลาที่แสดงเป็น Final Actual Time หลังปิด
+- `report-only` — สรุปข้อมูลโดยไม่เปลี่ยนสถานะหรือบันทึก note
+
+สำหรับโหมด `final` ให้เข้าหัวข้อนี้หลัง `move_task → done` สำเร็จแล้วเท่านั้น ห้ามใช้ขั้นตอนสรุปงานนี้สร้าง Final Work Summary ขณะ task ยัง `in_progress`
+
+### 1. เรียกข้อมูลจาก kanban-tukdaeng MCP
+
+เรียก `get_session_context` ก่อนเริ่มรวบรวมข้อมูลสรุป (สำหรับโหมด `final` ต้องเรียกหลังปิด task แล้ว):
+
+```
+mcp_call_tool(server_name="kanban-tukdaeng", tool_name="get_session_context")
+```
+
+ข้อมูลที่ได้: board ปัจจุบัน + recent session summaries — ใช้เป็นแหล่งข้อมูล "วันนี้" และ "session ก่อน ๆ"
+
+### 2. ดึงชั่วโมงทำงานรวมจาก kanban (บังคับ)
+
+หลังจาก `get_session_context` แล้ว **ต้องเรียก `get_time_summary`** เพื่อดึงสรุปชั่วโมงทำงานของ task ที่เสร็จแล้ว (DONE):
+
+```
+mcp_call_tool(
+  server_name="kanban-tukdaeng",
+  tool_name="get_time_summary",
+  arguments={
+    "date": "<YYYY-MM-DD>",   # วันที่ต้องการสรุป (default: วันนี้ใน tz)
+    "tz": "Asia/Bangkok",     # timezone สำหรับคำนวณ work day + morning/afternoon
+    "status": "done"          # default: done (เฉพาะ task ที่เสร็จแล้ว)
+  }
+)
+```
+
+**พารามิเตอร์ที่ใช้บ่อย:**
+- `date` — สรุปเฉพาะวันเดียว (เช่น `"2026-08-14"`) — **ใช้ตัวนี้เป็นหลักเวลาสรุปรายวัน**
+- `from_date` + `to_date` — สรุปเป็นช่วงวัน (เช่น สัปดาห์นี้)
+- `period` — `"morning"` / `"afternoon"` / `"all"` (default: `all`)
+- `status` — `"done"` (default) / `"all"` รวม in_progress และ todo
+- `tz` — timezone (default: `Asia/Bangkok`)
+
+> **ข้อจำกัดที่รู้:** `hours_spent` เป็น cumulative per-task total — tool นี้ attribute ชั่วโมงทั้งหมดของ task ไปยังวันที่ task ถูกย้ายไป done ถ้า task ทำข้ามหลายวัน ชั่วโมงทั้งหมดจะนับรวมเข้าวันที่เสร็จทั้งหมด (known limitation)
+
+**ผลลัพธ์ที่ได้จาก `get_time_summary`:**
+- รายการ task ที่เข้าเงื่อนไข พร้อม `hours_spent` ของแต่ละ task
+- `total_hours` — รวมชั่วโมงทั้งหมด
+- สรุปรายวัน (per-date breakdown) — กรณีสรุปหลายวัน
+- ส่วน `analysis` — flag task DONE ที่ `hours_spent` ดูต่ำผิดปกติ — **ถ้ามี flag ให้แจ้งผู้ใช้** แต่ห้ามเรียก `log_time` หรือแก้เวลาเองใน workflow นี้
+
+### 3. เสริมด้วย `get_board` (task ที่ยังไม่ done)
+
+`get_time_summary` ดึงเฉพาะ task DONE โดย default ถ้าใน session นี้มี task ที่ยัง `in_progress` และต้องการรวมชั่วโมงด้วย ให้เรียก `get_board` เสริม:
+
+```
+mcp_call_tool(server_name="kanban-tukdaeng", tool_name="get_board")
+```
+
+- ดู task ใน `in_progress` ที่เกี่ยวข้องกับ session นี้
+- รวม `hours_spent` ของ task เหล่านั้น บวกเข้ากับ `total_hours` จาก `get_time_summary`
+- แสดงให้ผู้ใช้เห็นชัดว่าส่วนไหนมาจาก DONE และส่วนไหนมาจาก in_progress
+
+### 3.1 ดึงเวลาเริ่ม-จบจริงของแต่ละ task (บังคับ)
+
+เพื่อแสดงเวลาเริ่มและเวลาจบจริงของ task ในTask Block ต้องเรียก `get_task` เพื่อดึง Activity timeline ของ task นั้น:
+
+```
+mcp_call_tool(
+  server_name="kanban-tukdaeng",
+  tool_name="get_task",
+  arguments={"task_id": "<task_id>"}
+)
+```
+
+**จาก Activity timeline ให้ดึง:**
+- **เวลาเริ่ม (start_time):** timestamp ของ time event แรกที่เกิดหลัง task ถูกย้ายเข้า `in_progress` (หรือ status event ที่เปลี่ยนเป็น `in_progress`)
+- **เวลาจบ (end_time):**
+  - task `done` → timestamp ของ time event สุดท้าย (หรือ status event ที่เปลี่ยนเป็น `done`)
+  - task `in_progress` → **ใช้เวลาปัจจุบัน** (now) เพื่อคำนวณเวลาที่ผ่านไป
+
+**กฎการแสดงเวลา:**
+- แสดงเวลาในรูปแบบ `<DD/MM/YYYY HH:MM>` (เช่น `29/08/2026 10:15`)
+- สำหรับ task `in_progress` ให้แสดง:
+  - `เริ่ม: <start_time>`
+  - `ปัจจุบัน: <now>` (ระบุว่า "ยังจับเวลาอยู่")
+  - `เวลาที่ผ่านไป: <D.D> ชม.` (คำนวณจาก start_time ถึง now)
+- สำหรับ task `done` ให้แสดง:
+  - `เริ่ม: <start_time>`
+  - `จบ: <end_time>`
+  - `เวลาทำงาน: <D.D> ชม.` (ใช้ค่า `hours_spent` จากระบบ ไม่คำนวณเอง)
+- ถ้าทราบว่า task ถูกสร้าง/เริ่มย้อนหลังหลังทำงานไปแล้ว, `hours_spent` ถูกกรอกเป็นค่าเริ่มต้นด้วยมือ หรือเวลาในระบบไม่ครอบคลุมช่วงทำงานจริง ให้แสดงเป็น **เวลาที่บันทึกในระบบ** พร้อมบอกข้อจำกัด; ห้ามเรียกว่าเวลาทำงานจริงหรือใช้เป็นหลักฐานว่าเกินแผน
+
+**รูปแบบเวลา (Time Format):**
+- แสดงเวลาทำงานในรูปแบบ `D.D ชม.` — ชั่วโมงทศนิยม 1 ตำแหน่งเท่านั้น (เช่น `1.6 ชม.`, `0.7 ชม.`, `0.3 ชม.`, `4.0 ชม.`)
+- ปัดเป็นทศนิยม 1 ตำแหน่งจาก `hours_spent` ดิบ (เช่น 0.62 → 0.6 ชม., 0.15 → 0.2 ชม., 1.65 → 1.7 ชม.)
+- **ยกเว้น:** ใน `hours_spent` ที่ส่งกลับจาก kanban ยังคงเป็นทศนิยมดิบ (เช่น `1.62`) — ปัดเป็น `D.D ชม.` เฉพาะตอนแสดงผลให้ผู้ใช้
+
+**ถ้าไม่พบ start_time จาก Activity timeline:**
+- `final`: หยุดสร้าง Final Work Summary และดึง Final Task + Activity Timeline ใหม่ ห้ามใช้ `hours_spent` แทน Actual Start
+- `progress/handoff` หรือ `report-only`: แสดง `hours_spent` ประกอบได้ แต่ต้องแจ้งว่าไม่พบเวลาเริ่มและห้ามเรียกข้อมูลนั้นว่า Final Actual Time
+
+### 4. กรณีดึงเวลาจาก Kanban ไม่ได้
+
+สำหรับ `progress/handoff` หรือ `report-only` ถ้าดึงจาก Kanban ไม่ได้ อาจประเมินเวลาจากงานที่ทำใน session นี้เพื่อให้ข้อมูลประกอบ โดย:
+
+1. ดูรายการงานที่ทำใน session นี้ แล้วประเมินเวลาตามความซับซ้อน/ขนาด:
+   - งานเล็ก (เช่น แก้บั๊กเดียว, เพิ่ม field) → ประมาณ 0.5-1 ชม.
+   - งานกลาง (เช่น เพิ่ม endpoint + ทดสอบ) → ประมาณ 1-3 ชม.
+   - งานใหญ่ (เช่น ฟีเจอร์ใหม่หลายส่วน + migration + ทดสอบ) → ประมาณ 3-6 ชม.
+2. รวมเวลาของทุกงานย่อยเป็น `totalHours`
+3. **แจ้งผู้ใช้ชัดเจน** ว่าค่านี้ประเมินจากงานที่ทำ ไม่ได้มาจาก kanban
+
+> **Final hard stop:** สำหรับ `final` ห้ามใช้ค่าประมาณทุกกรณี ถ้าอ่าน Final `hours_spent`, Actual Start หรือ Actual End หลังปิดไม่ได้ ให้แจ้งปัญหาและดึง Final Task + Activity Timeline ใหม่ก่อนสร้าง Final Work Summary
+
+### 5. Validation สำหรับ totalHours
+
+หลังจากดึง `totalHours` จาก kanban แล้ว **ต้องตรวจสอบความสอดคล้อง** กับงานที่ทำจริงใน session นี้:
+
+1. เปรียบเทียบ `totalHours` จาก kanban กับงานที่ทำใน session นี้
+2. ถ้า `totalHours` ดูต่ำ/สูงเกินไปเมื่อเทียบกับความซับซ้อนของงาน → แจ้งผู้ใช้ แต่ยังคงใช้ค่าจริงจากระบบใน summary
+
+**ตรวจเทียบกับตารางเวลามาตรฐานตามหมวดหมู่งาน (บังคับ):**
+
+เป้าหมายในตารางเป็น **เพดานอ้างอิงสำหรับประเมินขนาดและวางแผนแต่ละ task ไม่ใช่เวลาที่ task ต้องใช้ให้ครบ** — ประเมิน Planned ตาม scope และเวลาทำงานจริงของ AI/คน; ถ้างานเล็กกว่าเพดานให้ใช้เวลาประเมินจริงที่ต่ำกว่า ไม่เติมให้เท่าค่าเป้าหมาย หลังปิด task ให้สรุป `hours_spent` ตาม Kanban ตรง ๆ — **ใช้ตารางเดียวกับ mission-planning (ตาราง canonical)**:
+
+| หมวดหมู่งาน | เป้าหมาย / เกณฑ์ Review (เวลาจริงถึงค่านี้ให้ Review) |
+|---|---|
+| Requirement | 2 ชม. |
+| Design | 1.5 ชม. |
+| Feature | 2 ชม. |
+| Bug Fix | 2 ชม. |
+| Testing | 1 ชม. |
+| Refactor | 1.5 ชม. |
+| Documentation | 2 ชม. |
+| Deploy / DevOps | 1 ชม. |
+| Meeting | 2 ชม. |
+
+**กฎการตรวจ (อัปเดต — เข้มกว่าเดิม):**
+- เป้าหมายของหมวดในตารางเป็นเกณฑ์ Review โดยตรง: เมื่อ Final `hours_spent` **ถึงหรือเกิน** เป้าหมายของหมวด ให้ถือว่าติด Review; ห้ามคูณเป้าหมายด้วย 1.5 เพื่อสร้างเพดานใหม่
+- ค่า Time Ratio `> 1.5` เป็นเงื่อนไขสถานะของระบบตามที่ระบบรายงาน; อย่าคำนวณ `Category Max` เป็น 1.5 เท่าของเป้าหมายหมวด และอย่าใช้ ratio ไปเลื่อนเกณฑ์ชั่วโมงในตาราง
+- ถ้า `hours_spent` ต่ำกว่าเป้าหมาย ให้รายงานชั่วโมงจริงตาม Kanban ไม่ปัดขึ้นหรือเติมเวลาให้เท่าค่าเป้าหมาย; Planned ที่ต่ำกว่าเพดานเป็นเรื่องปกติเมื่อ scope ใช้เวลาน้อยกว่า
+- ถ้าประเมินล่วงหน้าว่า task จะถึงหรือเกินเพดาน ให้แบ่ง scope เป็น task ย่อยที่มีผลงานแยกจริงก่อนเริ่มจับเวลา; ถ้า task ที่ปิดแล้วเกินเพดาน ห้ามตัด/ย้ายชั่วโมงออกจากสรุปเพื่อหลบ Review
+- การเกิน Planned ของ task เป็นการเทียบแผนแยกต่างหาก และไม่ใช้แทนเกณฑ์ Review ของหมวด
+- เมื่อถึงเกณฑ์ Review ให้แจ้งผู้ใช้; ห้ามแก้สถานะหรือชั่วโมงเอง และห้ามแบ่งชั่วโมงย่อยโดยไม่มีบันทึกรองรับ
+- ถ้า `hours_spent` ต่ำกว่าเป้าหมายมาก → ตรวจดูว่างานสมบูรณ์จริงหรือไม่
+- การ flag เป็นการแจ้งเพื่อให้ผู้ใช้ทราบและปรับปรุงการวางแผนครั้งถัดไป — ไม่ได้หมายความว่า task ผิด
+
+**ถ้าค่าเวลาดูผิดปกติ:**
+- แจ้งค่าที่ระบบคืนและเหตุผลที่สงสัยให้ผู้ใช้ทราบ
+- ห้ามเรียก `log_time` ในทุกกรณี เพราะ auto-timer เป็นผู้ bank เวลาจริงเมื่อย้าย task ออกจาก `in_progress`
+- ห้ามแก้ `hours_spent` ระหว่าง completion workflow; การแก้ข้อมูลเวลา (ถ้าจำเป็น) ต้องเป็น correction workflow แยกต่างหากที่ผู้ใช้สั่งชัดเจน
+- Final Work Summary ต้องใช้ค่าจริงหลังปิดที่ Kanban แสดงอยู่ในขณะนั้น
+
+### 5.1 การชี้แจงเวลาที่สูงกว่าแผน (Over-budget)
+
+ใช้ส่วนนี้เพื่ออธิบายความต่างระหว่างแผนกับเวลาที่บันทึก โดยไม่ทำให้สรุปหัวหน้ายาวหรือสร้างตัวเลขที่ไม่มีหลักฐาน:
+
+- เปรียบเทียบกับแผนที่ตกลงไว้จริงเท่านั้น; ค่าเป้าหมายของหมวดงานใช้เป็นสัญญาณเตือนหรือข้อมูลประกอบ ไม่ใช่หลักฐานว่า task เกินแผน
+- ถ้าไม่มีแผนเวลา ให้ไม่ระบุว่าเกินแผน; ถ้าเวลาถูกตั้งย้อนหลัง/ด้วยมือ หรือทราบว่า timer ไม่ได้จับเวลางานจริง ให้เรียกว่า "เวลาที่บันทึกในระบบ" และไม่ใช้วิเคราะห์ over-budget เสมือนเวลาจริง
+- ถ้าเวลาที่เชื่อถือได้สูงกว่าแผน ให้ระบุค่าแผน เวลาที่บันทึก ส่วนต่าง และสาเหตุเฉพาะที่ยืนยันได้อย่างกระชับใน canonical summary; ใน Task Block ใส่เฉพาะเมื่อช่วยให้ผู้อ่านเข้าใจผลของงาน
+- หากแจกแจงงานเป็นส่วน A/B/C ให้ระบุสิ่งที่ทำและเวลาของแต่ละส่วนจาก Activity Timeline หรือบันทึกร่วมสมัยเท่านั้น; เวลาย่อยต้องรวมตรงกับ Final `hours_spent` และสะท้อนเวลาทำงานจริงตามหลักเวลาจริง (ดู `SKILL.md` สถานการณ์ที่ 2 ขั้น 3 หลังย้ายแล้ว) (เวลาที่ AI ใช้ทำงานจริง + เวลาที่คนใช้ตรวจ/ตัดสินใจจริงเมื่ออยู่ใน scope) ห้ามเติม buffer, ปัดเพิ่ม, หรือแบ่งสัดส่วนย้อนหลังเพื่อให้แต่ละส่วนต่ำกว่าเกณฑ์ Review
+- ถ้าไม่มีหลักฐานเวลาแยก A/B/C ให้แจกแจงเฉพาะเนื้องานโดยไม่ใส่ชั่วโมงรายส่วน และคง Final `hours_spent` ตาม Kanban; breakdown มีไว้ชี้แจงงาน ไม่ได้ลบหรือหลบสถานะ Review
+- หากพบ scope เพิ่มที่มีนัยสำคัญ ให้บอกว่างานส่วนใดเพิ่มและเพราะอะไร; เสนอแยก task ในอนาคตได้เมื่อช่วยวางแผน แต่ห้ามเปลี่ยนเวลาในระบบหรือสร้าง task โดยไม่ได้รับคำสั่ง
+- ห้ามเรียก log_time หรือปรับ hours_spent ใน workflow สรุปงาน; การแก้เวลาเป็น correction workflow แยกที่ต้องได้รับการยืนยันจากผู้ใช้
+
+### 6. รวมข้อมูลจาก session context ปัจจุบัน
+
+นำสิ่งที่ทำใน session นี้ (จากประวัติการทำงานใน conversation ปัจจุบัน) มารวมกับข้อมูลจาก `get_session_context`:
+- งานที่ทำเสร็จใน session นี้
+- งานที่กำลังทำ / ยังไม่เสร็จ
+- การแก้ไข / ปรับปรุงที่เกิดขึ้น
+
+### 7. วิเคราะห์และสรุปเป็นภาพรวม
+
+- **ใช้ภาษาทั่วไปเข้าใจง่าย** — พยายามไม่ใช้คำศัพท์เทคนิคถ้าไม่จำเป็น แปลงคำเทคนิค (เช่น EF Core, DTO, Mapper, Repository) เป็นภาษาที่อธิบายผลลัพธ์ ไม่ใช่วิธีทำ
+- **เน้นสิ่งที่ทำและผลลัพธ์** — ไม่ต้องอธิบายวิธีทำละเอียด
+- **ถ้าต้องใช้คำเทคนิค ให้มีคำอธิบายความหมายง่าย ๆ ต่อท้าย**
+
+### 8. แสดงผลหรือบันทึกตามโหมด
+
+สำหรับ `progress/handoff` และ `report-only` สามารถแสดง 2 ส่วนในผลลัพธ์เดียวกัน (ดู `references/templates.md` § รูปแบบผลลัพธ์):
+1. **สรุปรวม** — ภาพรวมของ session/วัน พร้อม totalHours
+2. **Task Block** — 1 task = 1 บล็อก แสดงชื่อ task, ชั่วโมง, และสิ่งที่ทำ
+
+สำหรับ `final` ให้ทำตามสถานการณ์ที่ 2 เท่านั้น: ปิด task และอ่านข้อมูลสุดท้ายก่อน จากนั้นจึงสร้าง canonical Final Summary เพื่อบันทึกและแสดง Task Block
+
+### 9. การยืนยันตามประเภท Summary
+
+- `progress/handoff`: แสดงร่างและถามผู้ใช้ก่อนบันทึก Session Note; เมื่อยืนยันแล้วบันทึก note และคง task เป็น `in_progress`
+- `final`: การยืนยันผลลัพธ์/อนุญาตปิดต้องเกิดก่อน `move_task → done`; หลังปิดให้สร้างและบันทึก Final Summary แล้วแสดง Task Block โดยไม่ย้อนกลับไปใช้ลำดับสรุปก่อนปิด
+- `report-only`: แสดงสรุปโดยไม่บันทึก Session Note และไม่เปลี่ยนสถานะ
+
+**ตัวอย่างคำถามที่ควรถาม:**
+> "นี่คือสรุปงานวันนี้ ครับ พอใจกับข้อมูลแล้วหรือต้องการแก้ไขอะไรเพิ่มเติม? ถ้าพอใจ สั่ง 'บันทึก' เพื่อบันทึก session note ลง kanban ได้เลย"
+
+### 10. บันทึก Session Note ตามประเภท
+
+- `progress/handoff`: หลังผู้ใช้ยืนยัน ให้เรียก `save_session_note` ด้วย Progress/Handoff Summary แล้วคง `in_progress`
+- `final`: หลังปิด task, อ่าน Final Task + Activity และสร้าง canonical Final Summary แล้ว ให้เรียก `save_session_note` ด้วย Final Summary ฉบับเดียวกัน
+
+```
+mcp_call_tool(
+  server_name="kanban-tukdaeng",
+  tool_name="save_session_note",
+  arguments={
+    "task_id": "<task_id>",
+    "summary": "<Progress Result หรือ Final Result แบบกระชับ>",
+    "note": "<Progress/Handoff Summary หรือ canonical Final Summary ฉบับเต็ม>"
+  }
+)
+```
+
+**พารามิเตอร์:**
+- `task_id` (required) — id ของ task ที่เกี่ยวข้อง
+- `summary` (required) — สรุปสั้น ๆ 1 บรรทัด
+- `note` (required) — รายละเอียดเต็มของ session
+
+**เนื้อหาที่ควรบันทึก:**
+- Progress/Handoff Note: สิ่งที่เสร็จแล้ว, Current State, Decisions, สิ่งที่ตรวจสอบแล้ว, Open Items, Blockers, สิ่งที่ยังไม่ได้ทำ และ Next Step
+- Final Session Note: Final Result, Work Completed, Decisions, Verification/Test Result, Actual Start/End, Final Actual Time, Issues/Fixes, Scope Changes (ถ้ามี), Open Items และ Next Step
+- สำหรับ gap/ปัญหาที่พบ ให้ระบุเนื้อหาปัญหา + ผลตัดสินใจ/วิธีแก้ ห้ามเขียนแค่จำนวน gap
+
+### กฎสำคัญ
+
+- ⚠️ **ห้ามส่ง log ไปยังระบบภายนอกใด ๆ** (core-portal, API, curl) — skill นี้เป็นการสรุปเท่านั้น
+- ⚠️ Progress/Handoff Note และ Final Session Note เป็นคนละประเภท ห้ามใช้แทนกัน
+- ⚠️ Final Session Note ไม่ใช่การเพิ่มเวลา และห้ามเรียก `log_time`
+- Final Session Note และ Task Block ต้องมาจาก canonical Final Summary ชุดเดียวกัน
+
+---
+
+## หมวดหมู่งาน (Work Category)
+
+เพื่อให้สรุปงานบอกได้ว่า task นั้นเกี่ยวข้องกับลักษณะงานประเภทใด ให้ระบุ **หมวดหมู่งาน** เพียง **1 หมวด** ในผลลัพธ์ราย task โดยเลือกจากรายการคงที่ต่อไปนี้:
+
+| Category | คำอธิบาย |
+| --- | --- |
+| Requirement | คุยความต้องการ/ศึกษาขอบเขตงาน |
+| Design | ออกแบบ UI/UX/สถาปัตยกรรมระบบ/ฐานข้อมูล |
+| Feature | พัฒนาโปรแกรมฟีเจอร์ใหม่ |
+| Bug Fix | แก้ไขข้อผิดพลาด/ปรับแก้ปัญหา |
+| Testing | ทดสอบระบบ/เขียน Unit Test |
+| Refactor | ปรับปรุงโครงสร้างโค้ดเดิม |
+| Deploy / DevOps | การติดตั้งระบบ/จัดการ Infrastructure/CI-CD |
+| Documentation | เขียนคู่มือการใช้งาน/คู่มือระบบ/API Docs |
+| Meeting | การประชุมหรือหารือ/Scrum |
+
+### วิธีเลือกหมวดหมู่
+
+- เลือกเพียง **1 หมวด** ต่อ 1 task — ห้ามระบุหลายหมวดคั่นด้วย `,`
+- ดูจาก **งานหลัก** ที่ทำจริงใน task (จาก bullet list งานย่อย) ไม่ใช่แค่ชื่อ task
+- ถ้า task มีหลายลักษณะผสมกัน (เช่น เขียนเอกสาร + แก้โค้ด) ให้เลือกหมวดที่ **ครอบคลุมงานหลัก** ของ task นั้นเป็นอันดับแรก และถือว่าเป็นหมวดเดียวของ task
+- ถ้าไม่แน่ใจ ให้เลือกหมวดที่ **ครอบคลุมงานหลัก** ของ task นั้น
+- ห้ามใช้หมวดนอกจากรายการ 9 หมวดข้างต้น
+
+
+---
+
+## Manual Review Checklist + Continuous Evidence Capture (รายละเอียดจากสถานการณ์ที่ 2)
+
+#### 2.1 Manual Review Checklist (บังคับเมื่อ task เปลี่ยนสิ่งที่เห็นบนหน้าจอ)
+
+ถ้า task มีการแก้ prototype/หน้าจอ หรือแก้ logic, data, mock data, flow ที่ผลลัพธ์สะท้อนบนหน้าจอ **ต้องส่งรายการทดสอบ manual ให้ผู้ใช้ตรวจก่อน** ขออนุญาตปิด/commit — ห้ามถามแค่ "รีวิวหน้าจอหน่อย" โดยไม่มีลิสต์ เพราะผู้ใช้ไม่รู้ว่าต้องกดอะไร
+
+รูปแบบ checklist ที่ต้องส่ง (เรียงเป็นเคสละขั้น):
+
+- **เลขเคส + ชื่อเคส** — เช่น "เคส 1: Failed-login lock ที่ seed ไว้ (ADM-007)" แยกเคสตามพฤติกรรมที่เปลี่ยน/เพิ่ม ครบทุกพฤติกรรมใน scope
+- **ข้อมูลทดสอบที่ต้องกรอก/เลือก** — email, account id, scenario option, ค่าที่ต้องพิมพ์ ระบุค่าจริงที่ใช้ได้เลย (เช่น `wichai@tukdaeng.example`, เลือก `Invalid credentials`) ไม่ใช่บอกแค่ "กรอกข้อมูล"
+- **ขั้นตอนกด** — กดปุ่ม/ลิงก์อะไรตามลำดับ (เช่น เปิด Prototype scenario → เลือก X → กด เข้าสู่ระบบ กี่ครั้ง)
+- **ผลที่คาด (✅)** — ระบุสิ่งที่ต้องเห็นต่อเคส: ข้อความที่แสดง, element ที่ต้องมี/ไม่มี (เช่น "ไม่มี countdown"), state ที่ต้องเปลี่ยน (เช่น "เข้าระบบได้")
+- **เคสครบทุกพฤติกรรมใน scope** — รวมทั้ง happy path, blocked/error path, edge cases, fixture ที่เกี่ยวข้อง และเคส regression ที่ควรเช็คว่าของเดิมไม่พัง (เช่น login ปกติ, forgot flow เดิม)
+- แนบ screenshot ของจุดสำคัญได้ถ้าช่วยให้ตรวจเร็ว แต่ checklist ต้องอ่านรู้เรื่องโดยไม่ต้องเปิดภาพ
+
+เมื่อผู้ใช้ตรวจครบและยืนยันผล จึงค่อยขึ้นขั้น 3 (ปิด task) — ถ้าผู้ใช้พบจุดผิดให้แก้แล้วส่ง checklist ชุดเดิม (หรือเคสที่แก้) ให้ตรวจซ้ำ — และเมื่อตรวจผ่านแล้ว **บันทึก checklist ที่ตรวจจริงพร้อมผลรายเคส (ผ่าน / ไม่ผ่าน / พบอะไร + ผลการแก้ไข) และภาพผลลัพธ์ประกอบ** ลง `deliverables/mission-<N>-objective-<M>/` หรือ `screenshots/mission-<N>-objective-<M>/` เป็นหลักฐานของ task ทันที ห้ามปล่อยให้ checklist มีแค่ข้อความในแชทโดยไม่มีไฟล์หลักฐาน
+
+#### 2.2 Continuous Evidence Capture (เก็บบันทึกหลักฐานระหว่างทำ Task ทันที 6 รูปแบบงาน)
+
+เพื่อไม่ให้เสียเวลารวบรวมหรือรันเทสต์ใหม่ย้อนหลังตอนจบ Mission และเพื่อให้ได้หลักฐานตัวจริงที่สมบูรณ์ที่สุด ให้เก็บหลักฐานแบบ Real-time ระหว่างทำแต่ละ Task ตาม 6 รูปแบบงานดังนี้:
+
+1. **งานแก้ UI / Prototype (Bug Fix / Refactor — รวม logic/data ที่สะท้อนบนจอ):**
+   - **Before Action (ก่อนเริ่มแตะโค้ด):** แคปภาพหน้าจอเดิมเก็บไว้ใน `screenshots/mission-<N>-objective-<M>/before/` ทั้งสองขนาด Viewport: Desktop (1440px) และ Mobile (390px)
+   - **After Action (Auto-Trigger เมื่อผู้ใช้บอกโอเค/สั่งปิด task):** เมื่อผู้ใช้ตรวจผลงานแล้วพูดว่า *"โอเค"*, *"ผ่าน"*, *"ปิด task ได้เลย"*, *"เสร็จแล้ว"* ให้ระบบถือเป็นคำอนุมัติ (Approval) และรันแคปภาพผลลัพธ์ปัจจุบันใน `screenshots/mission-<N>-objective-<M>/after/` (1440px + 390px) อัตโนมัติทันทีก่อนย้าย task เข้า `done` โดยไม่ต้องถามซ้ำซ้อน; หากมีการแก้หลายรอบ ให้แคปเฉพาะสภาพสุดท้ายที่ผู้ใช้คอนเฟิร์มผ่าน
+2. **งานสร้าง UI ใหม่ (New Feature / New Screen):**
+   - แคปภาพหน้าจอทุก State สำคัญ (Empty, Default, Filled, Modal, Result) ทั้ง Desktop (1440px) และ Mobile (390px) เก็บไว้ใน `screenshots/mission-<N>-objective-<M>/` เมื่อสร้างเสร็จและผู้ใช้ตรวจผ่าน
+3. **งานทดสอบ / QA / Regression (Automated Test Verification):**
+   - ในขั้นตอน Verification ให้รันคำสั่งเทสต์จริงและ redirect stdout/stderr ดิบเข้าไฟล์ทันที เช่น:
+     `npx playwright test tests/<target-spec>.spec.js > deliverables/mission-<N>-objective-<M>/test-results.txt 2>&1`
+   - คัดลอกไฟล์ `.spec.js` หรือ bundle spec files เข้าโฟลเดอร์ `deliverables/mission-<N>-objective-<M>/`
+   - **เก็บหลักฐานภาพตอนรันจบทันที (ห้ามปล่อยให้ต้องรันใหม่ตอนส่งตรวจ):** เก็บ `playwright-report/` ไว้ และแคปภาพ HTML report dashboard (`npx playwright show-report` แล้ว capture) ลง `screenshots/mission-<N>-objective-<M>/`; ถ้า test ตรวจพฤติกรรม dynamic (countdown lockout, error live, focus trap, toast) ให้แคปภาพหน้าจอ flow นั้นหรืออัด screencast สั้น ๆ เก็บไว้ในรอบเดียวกัน — auditor เคยหักคะแนนเพราะส่งแค่ text log โดยไม่มีภาพ UI
+   - **เขียน triage note ของเคส skipped/blocked ตอนรันจบทันที** ระบุเหตุผลต่อเคสหรือต่อกลุ่ม (project gating / environment / out of scope) ลง `deliverables/mission-<N>-objective-<M>/<task-code>-triage.txt` — context เหตุผลอยู่ในหัวเฉพาะตอนรัน ทำย้อนหลังตอนส่งตรวจมักไม่ตรงกับผลจริง
+   - **ถ้า scope งานครอบ accessibility** (numerical contrast, focus trap, dialog role/aria-modal) ต้องรัน direct assertion จริงในรอบเดียวกัน (เช่น axe-core/playwright) หรือบันทึกเป็น evidence limitation ใน task note ทันทีพร้อมเหตุผล — ห้ามปล่อยว่างให้ auditor เจอเองตอนตรวจ
+4. **งาน Manual QA / Inspection (งานตรวจที่ไม่มีโค้ดแก้):**
+   - บันทึกรายการเคสและ Viewports ที่ตรวจรับผ่านเป็น checklist text file ใน `deliverables/mission-<N>-objective-<M>/checklist-objective-<M>.txt`
+   - เรนเดอร์เป็นภาพ Checklist Card PNG เก็บไว้ใน `screenshots/mission-<N>-objective-<M>/` ด้วย `scripts/render-checklist-card.js`
+5. **งานเอกสาร / Spec Sync / Baseline Lock:**
+   - บันทึก Git Commit Hash และรายการไฟล์ Markdown ที่แก้จริงลงใน `deliverables/mission-<N>-objective-<M>/` และ Task Session Note ทันทีหลัง commit
+   - เรนเดอร์ Checklist Card PNG สรุปรายการไฟล์และเกณฑ์ที่ sync
+6. **งาน Final Acceptance / Mission Closure:**
+   - บันทึกรายงานสรุปผลการตรวจรับ `deliverables/mission-<N>-objective-<M>/final-acceptance-review.txt`
+   - เรนเดอร์ภาพ Checklist Card PNG สรุป Traceability, Verification Gates และ Verdict PASS
+
+
+---
+
+## ตัวจับเวลาอัตโนมัติ (Auto Timer) — กฎเพิ่มเติม
+
+> flow พื้นฐานของ auto timer (เข้า `in_progress` = เริ่มจับ / ย้ายออก = bank เวลา / `done` = Final Actual Time / ห้าม `log_time`) เล่าไว้แล้วใน scenario ของ SKILL.md — หัวข้อนี้เก็บเฉพาะกฎที่ไม่ซ้ำ:
+
+6. **ทำงานนอก task ที่กำลังจับเวลา = ชั่วโมงไม่ถูกนับ** — ถ้าต้องทำงานที่ยังไม่มี task รองรับ (เช่น งานด่วนนอกแผน งาน ad-hoc ที่ผู้ใช้สั่งกลาง session) ให้สร้าง task ด้วย `create_task` ก่อนเริ่ม แล้วย้ายเข้า `in_progress` — ชั่วโมงที่ไม่ได้จับจะไม่ถูก bank และไม่ปรากฏในชั่วโมงสะสมที่ใช้ประเมินผลงาน
+7. **Mid-task checkpoint ที่ ~1.2× Planned (บังคับ)** — ระหว่างทำงานให้เทียบเวลาที่ผ่านไปกับ `Planned` ใน task Description; ถ้าเวลาใกล้หรือเกิน ~1.2× Planned แต่งานยังไม่จบ ให้แจ้งผู้ใช้และทบทวน scope, dependency หรือแผนการทำงานร่วมกัน — ห้ามแต่งเวลาแบ่งย่อยหรือสร้าง/แยก task โดยไม่ได้รับอนุญาต
+
+> **หมายเหตุ:** ระบบตัวจับเวลาอัตโนมัตินี้ทำงานร่วมกับ `get_time_summary` ที่ใช้ดึงชั่วโมงรวมเพื่อสรุปงาน — ทำให้ได้เวลาที่แม่นยำและสอดคล้องกับงานที่ทำจริง
+
+
+## Checklist
+
+> Checklist ละเอียดสำหรับ self-check ก่อนส่ง output ทุกประเภท — template ทั้งหมดที่อ้างในรายการอยู่ที่ `references/templates.md`
+
+
+### สถานการณ์ที่ 1: เริ่มทำ task
+- [ ] ตรวจสอบ task ที่จะเริ่ม (ระบุ task_id หรือค้นหาจากชื่อ)
+- [ ] ตรวจว่า task มีบรรทัด `Category | Planned | Category Max` ใน Description — `Category Max` ต้องเท่ากับเป้าหมายหมวดโดยตรง; ห้ามคูณ 1.5; ถ้าสร้าง task ใหม่ต้องใส่เสมอทุกหมวด
+- [ ] เมื่อตรวจเวลาจริง ให้ถือว่า Final `hours_spent` ถึงหรือเกินเป้าหมายหมวดเป็นเกณฑ์ Review; แยกการเทียบ Planned ออกจากเกณฑ์ Review
+- [ ] ตรวจว่า task map กับ Mission/Objective ใน approved plan แล้ว (รู้หมายเลข `mission-<N>-objective-<M>` สำหรับโฟลเดอร์หลักฐาน) — ถ้ายังไม่ map ให้ยืนยัน mapping กับผู้ใช้ก่อนเริ่มจับเวลา; task ที่ไม่มี mission (standalone) ใช้ `task-<TASK-CODE>` เป็นโฟลเดอร์หลักฐานแทน และยังต้อง capture/bundle หลักฐานตามปกติ
+- [ ] ถ้า task มีผลลัพธ์ที่เห็นบนหน้าจอ (UI/prototype/logic/data ที่สะท้อนบนจอ) → capture ภาพ Before (Desktop 1440 + Mobile 390) ลง `screenshots/mission-<N>-objective-<M>/before/` ก่อนแก้โค้ด
+- [ ] เรียก `get_board` เพื่อตรวจสอบ task อื่นที่อยู่ใน `in_progress`
+- [ ] ถ้ามี task อื่นใน `in_progress` → ถามผู้ใช้ว่าจะ pause task เดิมหรือทำต่อ
+- [ ] ถ้าผู้ใช้เลือก pause → ย้าย task เดิมออกจาก `in_progress` ก่อน
+- [ ] ย้าย task ใหม่เข้า `in_progress` ผ่าน `move_task`
+- [ ] แจ้งผู้ใช้ว่า "เริ่มจับเวลา task <ชื่อ> แล้ว"
+
+### สถานการณ์ที่ 2: ทำ task เสร็จ
+- [ ] เรียก `get_board` เพื่อตรวจสอบ task ที่อยู่ใน `in_progress`
+- [ ] Verify งานตาม Acceptance Criteria / test / QA ที่เกี่ยวข้อง
+- [ ] ถ้า task เปลี่ยนสิ่งที่เห็นบนหน้าจอ (UI/prototype/logic/data ที่สะท้อนบนจอ) → capture ภาพ Before (1440 + 390) ก่อนแก้โค้ด และส่ง Manual Review Checklist ให้ผู้ใช้ก่อน (เคสครบทุกพฤติกรรมใน scope + ข้อมูลทดสอบที่กรอก/เลือกจริง + ขั้นกด + ผลที่คาดต่อเคส รวม happy/blocked/edge/regression)
+- [ ] สำหรับ task ที่แก้ไฟล์ ได้รับคำยืนยันว่าผู้ใช้ยอมรับผลลัพธ์และอนุญาตให้ปิดแล้ว
+- [ ] ย้าย task เข้า `done` ผ่าน `move_task` ก่อนสร้าง Final Work Summary (ระบบ auto-stop timer และ bank เวลาจริง)
+- [ ] เรียก `get_task` หลังปิด เพื่ออ่าน Final Status + Activity Timeline + Actual Start + Actual End + Final `hours_spent`
+- [ ] **ไม่มี floor correction** — ใช้ Final `hours_spent` จากระบบตามจริง แม้จะต่ำกว่า 0.3 ชม. ก็ใช้ค่านั้น ห้ามปรับขึ้นเอง
+- [ ] สร้าง canonical Final Summary จากข้อมูลหลังปิด โดยมี Final Result, Work Completed, Decisions, Verification/Test Result, Actual Start/End, Final Actual Time, Issues/Fixes, Scope Changes, Open Items และ Next Step
+- [ ] รวม Task Evidence Bundle: checklist ผลตรวจรายเคส (ถ้ามี) + ภาพ Before/After / test list + raw output + ภาพ HTML report หรือภาพ/screencast UI + triage note เคส skipped / ไฟล์+commit ที่แก้ — ตั้งชื่อไฟล์ trace ถึง task code และระบุ path ใน Final Session Note (หลักฐานขาด → บันทึก evidence gap ห้ามสร้างย้อนหลัง)
+- [ ] เรียก `save_session_note` ด้วย Final Summary ชุดเดียวกันเพื่อเก็บ Persistent Task History
+- [ ] ก่อนสร้าง Task Block ตรวจ Mission Mapping ที่บันทึกไว้จริง: ถ้ามีให้แสดง Objective → Feature → Task; ถ้าไม่มีให้เริ่มจาก Task และห้ามสร้าง Objective/Feature ขึ้นมาเอง
+- [ ] ตรวจว่า Objective/Feature labels ใน Task Block เป็น verbatim จาก approved mission baseline (`get_mission` → Objectives) ไม่ใช่ paraphrase หรือ label จาก task description ล้วน ๆ; ถ้า task description เขียนไม่ตรงให้ใช้ชื่อจาก mission แล้วแจ้งผู้ใช้เสนอแก้ description
+- [ ] แสดง **Task Block** จาก canonical Final Summary ชุดเดียวกันทุกครั้ง เป็น Human-readable `text` block เดียวตาม unified template: Objective/Feature เมื่อมี mapping จริง → Task + สถานะ + สถานะความสมบูรณ์ → Category → เวลาเริ่ม/เวลาจบ/Final Actual Time → เป้าหมาย/ผลลัพธ์ที่คาดหวัง → ภาพรวม → ไฟล์ที่แก้ไข (เฉพาะไฟล์งานจริง แสดงเมื่อมี) → รายละเอียดงานที่ทำ → ส่งต่อ/ค้างติดตาม (ตามเงื่อนไขสถานะ)
+- [ ] ตรวจว่า Task Block ใช้ business-facing Task Code และไม่มี Kanban UUID/internal ID
+- [ ] ตรวจว่า Task Block ไม่มี Decisions, Problems, Scope Changes, Next Step หรือ workflow metadata เป็น section แยก — field ที่แสดงมีเฉพาะตาม unified template (สถานะ/สถานะความสมบูรณ์/ส่งต่อ-ค้างติดตาม เป็น field มาตรฐาน; section ไฟล์ที่แก้ไขแสดงเมื่อมีไฟล์ส่งมอบจริง)
+- [ ] ตรวจว่ารายการใน Task Block ใช้ literal `- ` และไม่มี `*` หรือ rendered bullet `•`
+- [ ] ตรวจว่า Task Block ทั้งหมดอยู่ใน `text` code block เดียว ใช้รายการ `รายละเอียดงานที่ทำ` กระชับและอ่านเข้าใจได้ และไม่ได้แยก Verification/workstream เป็น section โดยไม่จำเป็น
+- [ ] ตรวจว่าเวลาหลังปิด task อ้างอิง Final `hours_spent`; แสดง Planned Time เฉพาะกรณี Case C ที่มีแผนตกลงไว้และเวลาจับจริงเชื่อถือได้; ถ้าเวลาถูกบันทึกย้อนหลังให้ระบุข้อจำกัดแทนการเรียกว่าเวลาจริง
+- [ ] ตรวจว่า canonical Final Summary / Final Session Note ยังคง Actual Start/End และรายละเอียดเต็มทั้งหมด แม้ Task Block จะย่อ presentation
+- [ ] เช็ค dead time ใน banked `hours_spent` — เฉพาะงานประเภท run (run tests/regression) ที่ผลลัพธ์เสร็จแล้วแต่ timer เดินต่อตอนผู้ใช้ไม่ได้อยู่หน้าจอ → แจ้งผู้ใช้พร้อมเสนอเวลางานจริง ถ้ายืนยันให้ correct ด้วย `update_task` (SET `hours_spent`) เป็น correction workflow แยกหลังปิด; เวลารอผู้ใช้รีวิวหน้าจอ/prototype = เวลาทำงานจริง นับต่อเนื่อง ห้ามตัด
+- [ ] แจ้งผู้ใช้ว่า "ปิด task <ชื่อ> แล้ว ใช้เวลา <D.D ชม.>"
+- [ ] หลัง Task Block: ถ้ามีงานรอทำต่อ → บันทึก session note (สถานะรวม + state + decisions/gotchas + Next Step) และสร้าง prompt งานถัดไปเป็น copy block ให้ผู้ใช้; ถ้าไม่มีงานต่อ → เสนอแนวทางงานต่อไปให้ผู้ใช้ตัดสินใจ (เช่น mission ใหม่, outstanding work, mission closure) โดยไม่สร้าง mission/task เอง
+- [ ] ⚠️ **ห้ามบวก/ลด/ปรับชั่วโมงเอง** — ใช้ค่า hours_spent จากระบบเป็นค่าจริง
+- [ ] ⚠️ **ห้ามเรียก `log_time`** ก่อนหรือหลังปิด task
+- [ ] ⚠️ ห้ามใช้ elapsed/snapshot time ขณะ `in_progress` เป็น Final Actual Time
+- [ ] ⚠️ ห้ามส่ง log ไปยังระบบภายนอกใด ๆ
+
+### สถานการณ์ที่ 3: บันทึก session ก่อนขึ้น session ใหม่ (task ยังไม่จบ)
+- [ ] เรียก `get_board` เพื่อตรวจสอบ task ที่อยู่ใน `in_progress`
+- [ ] สร้าง Progress/Handoff Summary: สิ่งที่เสร็จแล้ว, Current State, Decisions, สิ่งที่ตรวจสอบแล้ว, **หลักฐานที่เก็บไว้แล้วระหว่างทำ (path)**, Open Items, Blockers, สิ่งที่ยังไม่ได้ทำ และ Next Step
+- [ ] แสดงเวลาเริ่ม + ปัจจุบัน + เวลาที่ผ่านไป โดยระบุว่าเป็น running/snapshot time และ "ยังจับเวลาอยู่"
+- [ ] แสดง **Task Block ราย task** สำหรับก๊อปไปลงระบบอื่น
+- [ ] ถามผู้ใช้ยืนยัน: พอใจหรือต้องการแก้ไข?
+- [ ] ได้รับคำยืนยันจากผู้ใช้แล้ว (เช่น "บันทึก", "ยืนยัน", "OK")
+- [ ] เรียก `save_session_note` ด้วย Progress/Handoff Summary + ระบุว่า "task ยังไม่จบ จะทำต่อใน session ใหม่"
+- [ ] ⚠️ **ห้ามย้าย task เป็น `done`** — task ต้องอยู่ใน `in_progress`
+- [ ] แจ้งผู้ใช้ว่า "บันทึก session note แล้ว task ยังอยู่ใน in_progress ใน session ใหม่สั่ง 'ทำต่อ' ได้เลย"
+- [ ] ⚠️ ห้ามส่ง log ไปยังระบบภายนอกใด ๆ
+
+### สถานการณ์ที่ 4: สรุป task เดี่ยว (per-task summary)
+- [ ] ระบุ task ที่ต้องการสรุป (จาก task_id หรือค้นหาจากชื่อ)
+- [ ] เรียก `get_task` เพื่อดึง Activity timeline + ข้อมูล task
+- [ ] ดึง `hours_spent` จาก `get_task` หรือ `get_board`
+- [ ] ดึงเวลาเริ่ม-จบ จาก Activity timeline (ถ้าเป็น in_progress ใช้เวลาปัจจุบันเป็น "ปัจจุบัน")
+- [ ] **Hard stop:** ก่อนตอบ ต้องมีบรรทัด `เวลาเริ่ม`, `เวลาจบ/ปัจจุบัน`, และ `เวลาทำงานจริง/เวลาที่ผ่านไป` ครบแล้ว ถ้ายังไม่ครบให้ดึง `get_task` เพิ่มก่อน ห้ามตอบจาก `get_time_summary` อย่างเดียว
+- [ ] แสดงTask Block (เวลาเริ่ม + เวลาจบ/ปัจจุบัน + เวลาทำงาน/เวลาที่ผ่านไป + หมวดหมู่งาน + สถานะความสมบูรณ์ + เป้าหมาย + ภาพรวม + ไฟล์ที่แก้ไข + รายละเอียดงาน + ค้าง/ส่งต่อ)
+- [ ] แสดง **Task Block ราย task** สำหรับก๊อปไปลงระบบอื่น
+- [ ] ถามผู้ใช้ยืนยัน: พอใจหรือต้องการแก้ไข?
+- [ ] ⚠️ ห้ามบวก/ลด/ปรับชั่วโมงเอง — ใช้ค่าจากระบบ
+- [ ] ⚠️ ห้ามส่ง log ไปยังระบบภายนอกใด ๆ
+
+### ขั้นตอนสรุปงาน (ใช้ในสถานการณ์ที่ 2, 3 และ 4)
+- [ ] สำหรับสถานการณ์ที่ 2 เริ่ม checklist ชุดนี้หลัง `move_task → done` แล้วเท่านั้น; ห้ามสร้าง Final Summary ก่อนปิด
+- [ ] เรียก `get_session_context` จาก `kanban-tukdaeng` MCP
+- [ ] เรียก `get_time_summary` จาก `kanban-tukdaeng` MCP (สรุปชั่วโมง task DONE ตามวัน/ช่วงเวลา + tz `Asia/Bangkok`)
+- [ ] ถ้ามีส่วน `analysis` flag task ที่ชั่วโมงต่ำเกินไป → แสดงให้ผู้ใช้เห็น แต่ห้ามปรับเวลาใน workflow นี้
+- [ ] ถ้ามี task `in_progress` ที่เกี่ยวข้องกับ session นี้ → เรียก `get_board` เสริม แล้วบวก `hours_spent` ของ task เหล่านั้นเข้ากับ `total_hours` (แสดงแยกส่วนให้ผู้ใช้เห็นชัด)
+- [ ] **เรียก `get_task` เพื่อดึง Activity timeline ของแต่ละ task** — ดึงเวลาเริ่ม (start_time) และเวลาจบ (end_time) จาก time event แรก/สุดท้าย ถ้าเป็น in_progress ใช้เวลาปัจจุบันเป็น "ปัจจุบัน"
+- [ ] แสดงรายการ task ที่นำมารวมให้ผู้ใช้เห็นด้วย
+- [ ] ถ้าดึงจาก kanban ไม่ได้: สำหรับ progress/report-only อาจประเมินและติดป้ายว่าเป็นค่าประเมิน; สำหรับ Final Summary ต้องหยุดและดึง Final Task + Activity ใหม่ ห้ามประมาณ Final Actual Time
+- [ ] **Validation สำหรับ totalHours** — เปรียบเทียบค่าจาก kanban กับงานที่ทำจริง ถ้าดูไม่สอดคล้อง ให้แจ้งผู้ใช้แต่คงค่าจริงจากระบบ
+- [ ] **Validation ตามตารางเวลามาตรฐานตามหมวดหมู่** — ใช้เป้าหมายหมวดเป็นสัญญาณให้ทบทวน ไม่ใช่หลักฐานว่าเกินแผน; เปรียบเทียบกับแผนที่ตกลงไว้และเวลาที่เชื่อถือได้ก่อนแจ้งผู้ใช้ ห้ามแบ่งเวลาย่อยโดยไม่มีบันทึกรองรับ
+- [ ] **จัดการเวลาที่สูงกว่าแผน** — เปรียบเทียบกับแผนที่ตกลงไว้และเวลาที่เชื่อถือได้เท่านั้น; ชี้แจงสาเหตุที่มีข้อมูลรองรับอย่างกระชับ; ห้ามแบ่งเวลาเป็นส่วนย่อยโดยไม่มี Activity Timeline/บันทึกรองรับ และห้ามแก้ `hours_spent` ใน workflow สรุป
+- [ ] รวมข้อมูลวันนี้ + session context ปัจจุบัน
+- [ ] สรุปเป็นภาษาง่าย ๆ (ห้ามใช้ชื่อฟังก์ชัน ชื่อ class CSS ชื่อตัวแปร ชื่อ event หรือโค้ด — ใช้คำทั่วไปที่อธิบายผลลัพธ์แทน)
+- [ ] **แสดงสรุปรวม** — ภาพรวม + totalHours (รูปแบบ `D.D ชม.` ทศนิยม 1 ตำแหน่ง) + รายการ task ที่นำมารวม (markdown ปกติ)
+- [ ] **แสดง Progress/Report-only Task Block** — หุ้มด้วย code block (` ``` `) และมีสถานะ + เวลาเริ่ม/จบหรือปัจจุบัน + เวลาทำงาน/เวลาที่ผ่านไป + หมวดหมู่ + สถานะความสมบูรณ์ + เป้าหมาย + ภาพรวม + ไฟล์ที่แก้ไข + รายละเอียดงาน + ค้าง/ส่งต่อ ตามความเกี่ยวข้อง
+- [ ] **แสดง Task Block ตาม unified template** — เลือก Case A/B ตาม Mission Mapping จริง หรือ Case C เมื่อมีแผนและเวลาที่เชื่อถือได้สูงกว่าแผน; field ต่างตามสถานะ task (done = เวลาจบ + เวลาทำงาน, in_progress = ปัจจุบัน + เวลาที่ผ่านไป); ไม่แบ่งเวลาย่อยหากไม่มีข้อมูลรองรับ และแสดงเฉพาะฟิลด์ที่กำหนด
+- [ ] **ทุก task block ต้องมีเวลาเริ่ม + เวลาจบ/ปัจจุบัน + เวลาทำงาน/เวลาที่ผ่านไป** — รวมถึง Task Block ที่แสดง เวลาเริ่ม + เวลาจบ + Final Actual Time จากค่าหลังปิด task
+- [ ] **รูปแบบเวลา: `D.D ชม.` (ทศนิยม 1 ตำแหน่งเท่านั้น)** — ปัด `hours_spent` ดิบเป็นทศนิยม 1 ตำแหน่งทุกที่ที่แสดงเวลา (ราย task, รวม) ห้ามใช้รูปแบบ `X ชม. Y นาที` หรือทศนิยม 2 ตำแหน่ง
+- [ ] **ห้ามบวก/ลด/ปรับชั่วโมงเอง** — ใช้ค่า `hours_spent` จากระบบ ห้ามเรียก `log_time`; ถ้าผิดปกติให้รายงานและแยก correction workflow
+- [ ] **ทุก task block ต้องมีบรรทัด "หมวดหมู่งาน"** — เลือกจากรายการ 9 หมวด เพียง **1 หมวด** ต่อ 1 task ห้ามระบุหลายหมวดคั่นด้วย `,`
+- [ ] **ทุก Task Block ต้องมีบรรทัด "สถานะความสมบูรณ์"** — task `done` เลือก `ครบตามแผน` / `ครบแต่มี open items`; task `in_progress` ใช้ `ทำบางส่วน (จะทำต่อ session ใหม่)`
+- [ ] **ทุก Task Block ต้องมี section "เป้าหมาย/ผลลัพธ์ที่คาดหวัง"** — 1 บรรทัด บอกว่า task นี้ตอบโจทย์อะไร หรือผลลัพธ์สุดท้ายที่ได้คืออะไร
+- [ ] **ถ้า task สร้างหรือแก้ไฟล์เพื่อส่งมอบงานจริง** → แสดง subsection "ไฟล์ที่แก้ไข" ทั้งใน Progress/Report-only และ Task Block รวมเอกสาร, Test Case, checklist หรือรายงานที่เป็น deliverable; ไม่นับไฟล์ชั่วคราวหรือไฟล์แพ็กหลักฐานที่ไม่ใช่ deliverable
+- [ ] **ถ้ามีงานเพิ่มนอกแผน** → รวมเป็น bullet ใน subsection "รายละเอียดงานที่ทำ" ไม่ต้องแยก subsection แต่ละ bullet รวมเหตุและทางแก้ในบรรทัดเดียว ใช้ `→` คั่น ถ้าไม่มี ข้ามได้
+- [ ] **ถ้ามี open items** → task `in_progress` ใช้ subsection "ค้าง/ติดตาม"; task `done` ใช้ "ส่งต่อ" สำหรับงานใหม่ที่ไม่ทำให้ Acceptance Criteria ของ task เดิมไม่ครบ; ถ้าไม่มีให้ข้าม subsection นี้
+- [ ] **bullet ใน "รายละเอียดงานที่ทำ" อนุญาตให้ใส่ตัวเลขปริมาณได้** (เช่น "แก้ 3 หน้าจอ", "เพิ่ม 4 API") แต่ห้ามใส่รายชื่อไฟล์ทีละตัว — รายชื่อไฟล์ให้แสดงใน subsection "ไฟล์ที่แก้ไข" แทน
+- [ ] **bullet ที่เล่าปัญหา/decision/gap ต้องระบุเนื้อหา** — บอก "ปัญหาอะไร + แก้/ตัดสินใจอะไร" ในตัว bullet (ห้ามเขียนแค่กระบวนการ เช่น "พบ gap 3 จุด → รายงานผู้ใช้" โดยไม่บอกว่า gap คืออะไร)
+- [ ] **เลือกข้อมูลสำคัญตามประเภทงาน** — ใส่จำนวน/ขอบเขต, สาเหตุปัญหา, ผลทดสอบ หรือมาตรการความปลอดภัยเฉพาะเมื่อเกี่ยวข้องและช่วยให้เข้าใจผลของ task; ไม่บังคับใส่ทุกข้อในทุกสรุป
+- [ ] **อ้าง requirement/spec/entity ด้วยชื่อ ไม่ใช่ ID ล้วน** — ห้าม `bf08de1f`/`18598f33` ลอย ๆ; ใช้ชื่อที่อ่านรู้เรื่อง (internal ID เก็บไว้ใน session note; Task Code แบบ AIL-xxx ใช้ได้)
+- [ ] **"รายละเอียดงานที่ทำ" ต้องเป็นงานของ task เท่านั้น** — ห้ามใส่ workflow/evidence mechanics (timer quirk, ค่า default ตอนสร้าง, การย้าย column, commit/push, การจัดเตรียมหลักฐาน/report/checklist card/screenshot, re-run verify script) — path หลักฐานอยู่ในส่วน Evidence ของ session note, ผล verify อยู่ในส่วน Verification; ถ้าสำคัญให้แจ้งแยกนอก Task Block
+- [ ] **bullet เขียนแบบสรุปผล ไม่เล่ากระบวนการ** — ห้ามเล่าเหตุการณ์/ลำดับตัดสินใจ ("เสนอผู้ใช้เลือก → ผู้ใช้เลือก X"), ห้ามใส่ตัวเลขเวลาแผน/น้ำหนัก, ห้ามเอ่ยชื่อเครื่องมือภายใน (Kanban); แต่งานที่พบบั๊ก/เทสล้มต้องเล่ารายละเอียดเต็มตามเดิม (เจออะไร/สาเหตุ/แก้อย่างไร/กระทบอะไร)
+- [ ] **ใช้ชื่อ label จริงบนหน้าจอ** — ส่วนของจอ/ปุ่ม/เมนูที่มีชื่อแสดงจริงให้ใช้ชื่อนั้นตรง ๆ (เช่น "Test flow", "Change History", "Preview as FO") ห้ามบรรยายเองเป็นคำไทยลอย ๆ ที่ไม่มีบนจอ
+- [ ] **task ที่ยัง `in_progress`** ต้องระบุ "ปัจจุบัน: <now>" แทน "เวลาจบ" และใช้ "เวลาที่ผ่านไป" แทน "เวลาทำงาน" พร้อมระบุ "(ยังจับเวลาอยู่)"
+
