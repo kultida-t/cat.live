@@ -21,3 +21,6 @@ playwright-report/
 .env.*
 !.env.example
 
+# Local MCP config (contains API keys — never commit)
+.devin/mcp_config.local.json
+
