@@ -88,6 +88,8 @@ npx expo-doctor
 | **pgAdmin 4** | GUI จัดการฐานข้อมูล Postgres | `brew install --cask pgadmin4` | เปิดแอปเชื่อม DB ได้ |
 
 > หมายเหตุ: ถ้าเครื่องมี `PostgreSQL 18` อยู่แล้ว (โฟลเดอร์ใน Applications) ข้ามขั้นลง Postgres ได้ เหลือแค่ pgAdmin 4
+> ✅ ลงแล้ว 2026-11-10: PostgreSQL 18.6 (service รันอัตโนมัติผ่าน `brew services`, PATH เพิ่มใน `~/.zshrc` แล้ว) + pgAdmin 4 (v9.19)
+> ✅ เช็กแล้ว 2026-11-10: Xcode 27.2 เปิดใช้ได้ปกติ + iOS Simulator พร้อม (iPhone 17/18, iPad) — license ผ่านแล้วจากการเปิดแอปครั้งแรก
 > หมายเหตุ 2: ถ้าเครื่องมีทั้ง `Xcode.app` และ `Xcode-beta.app` ให้ใช้ **Xcode.app ตัว stable** สำหรับงานจริง
 
 ---
