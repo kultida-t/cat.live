@@ -2,7 +2,7 @@
   "schema_version": "2.0",
   "date": "2026-11-10",
   "timezone": "Asia/Bangkok",
-  "auto_worklog": false,
+  "auto_worklog": true,
   "sessions": [
     {
       "session_id": "8a08fc7d3e0b94c25e910d69c08938d578f3f8d1",
@@ -14,7 +14,7 @@
       "feature": null,
       "objective_id": null,
       "feature_id": null,
-      "auto_worklog": false,
+      "auto_worklog": true,
       "messages": [
         {
           "role": "user",
@@ -798,7 +798,7 @@
       "tool": "Devin",
       "project": "แมว.live",
       "task_id": null,
-      "auto_worklog": false,
+      "auto_worklog": true,
       "messages": [
         {
           "role": "user",
@@ -1412,7 +1412,7 @@
       "tool": "Devin",
       "project": "Tukdaeng app IOS",
       "task_id": null,
-      "auto_worklog": false,
+      "auto_worklog": true,
       "messages": [
         {
           "role": "user",
@@ -1456,7 +1456,7 @@
       "tool": "Devin",
       "project": "แมว.live",
       "task_id": null,
-      "auto_worklog": false,
+      "auto_worklog": true,
       "messages": [
         {
           "role": "user",
@@ -1540,7 +1540,7 @@
       "tool": "Devin",
       "project": "แมว.live",
       "task_id": null,
-      "auto_worklog": false,
+      "auto_worklog": true,
       "messages": [
         {
           "role": "user",
