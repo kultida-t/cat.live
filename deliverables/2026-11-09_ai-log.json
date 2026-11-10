@@ -2,7 +2,7 @@
  "schema_version": "2.0",
  "date": "2026-11-09",
  "timezone": "Asia/Bangkok",
- "auto_worklog": false,
+ "auto_worklog": true,
  "sessions": [
   {
    "session_id": "4bbed90b-6ec5-4a2d-b06e-3799a9c51bf4",
