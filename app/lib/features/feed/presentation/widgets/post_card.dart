@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
+import '../../../../core/format/compact_count.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/app_avatar.dart';
 import '../../../../core/widgets/app_image.dart';
+import '../../../../core/widgets/app_video.dart';
 import '../../../../core/widgets/fill_icon.dart';
 import '../../domain/entities/post.dart';
 
@@ -16,6 +18,8 @@ class PostCard extends StatefulWidget {
     required this.onToggleSave,
     required this.onToggleFollow,
     required this.onOpenMenu,
+    required this.onOpenComments,
+    required this.onShare,
     required this.onComingSoon,
   });
 
@@ -24,6 +28,8 @@ class PostCard extends StatefulWidget {
   final ValueChanged<Post> onToggleSave;
   final ValueChanged<Post> onToggleFollow;
   final ValueChanged<Post> onOpenMenu;
+  final ValueChanged<Post> onOpenComments;
+  final ValueChanged<Post> onShare;
   final ValueChanged<String> onComingSoon;
 
   @override
@@ -64,7 +70,6 @@ class _PostCardState extends State<PostCard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (post.type == PostType.lostCat) const _LostCatBar(),
           _Header(
             post: post,
             onToggleFollow: () => widget.onToggleFollow(post),
@@ -76,49 +81,66 @@ class _PostCardState extends State<PostCard> {
             index: _mediaIndex,
             onChanged: (i) => setState(() => _mediaIndex = i),
           ),
+          if (post.type == PostType.lostCat)
+            _LostCatBar(onTap: () => widget.onComingSoon('แจ้งเบาะแส')),
           _Actions(
             post: post,
             onToggleLike: () => widget.onToggleLike(post),
             onToggleSave: () => widget.onToggleSave(post),
+            onOpenComments: () => widget.onOpenComments(post),
+            onShare: () => widget.onShare(post),
             onComingSoon: widget.onComingSoon,
           ),
-          _Body(post: post, onComingSoon: widget.onComingSoon),
+          _Body(post: post, onOpenComments: () => widget.onOpenComments(post)),
         ],
       ),
     );
   }
 }
 
+/// แถบประกาศแมวหายใต้รูปโพสต์ — สี/ข้อความตามเว็บ (เห็นน้องไหม? → แจ้งเบาะแส)
 class _LostCatBar extends StatelessWidget {
-  const _LostCatBar();
+  const _LostCatBar({required this.onTap});
+
+  final VoidCallback onTap;
+
+  static const _ink = Color(0xFF963721);
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      color: AppColors.danger,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      child: const Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            '🚨 ประกาศแมวหาย',
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w700,
-              color: Colors.white,
-            ),
+    return Material(
+      color: const Color(0xFFFDE6DF),
+      child: InkWell(
+        onTap: onTap,
+        child: Container(
+          constraints: const BoxConstraints(minHeight: 48),
+          padding: const EdgeInsets.symmetric(horizontal: 14),
+          child: const Row(
+            children: [
+              Icon(LucideIcons.siren, size: 18, color: _ink),
+              SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'ประกาศแมวหาย · เห็นน้องไหม?',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: _ink,
+                  ),
+                ),
+              ),
+              Text(
+                'แจ้งเบาะแส ',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: _ink,
+                ),
+              ),
+              Icon(LucideIcons.chevronRight, size: 16, color: _ink),
+            ],
           ),
-          Text(
-            'แจ้งเบาะแส',
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: Colors.white,
-              decoration: TextDecoration.underline,
-              decorationColor: Colors.white,
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -285,10 +307,15 @@ class _Media extends StatelessWidget {
               controller: controller,
               itemCount: count,
               onPageChanged: onChanged,
-              itemBuilder: (_, i) => AppImage(
-                source: post.media[i].url,
-                semanticLabel: post.media[i].alt,
-              ),
+              itemBuilder: (_, i) => post.media[i].isVideo
+                  ? AppVideo(
+                      source: post.media[i].url,
+                      semanticLabel: 'วิดีโอที่ ${i + 1} จาก $count',
+                    )
+                  : AppImage(
+                      source: post.media[i].url,
+                      semanticLabel: post.media[i].alt,
+                    ),
             ),
           ),
           if (count > 1) ...[
@@ -352,12 +379,16 @@ class _Actions extends StatelessWidget {
     required this.post,
     required this.onToggleLike,
     required this.onToggleSave,
+    required this.onOpenComments,
+    required this.onShare,
     required this.onComingSoon,
   });
 
   final Post post;
   final VoidCallback onToggleLike;
   final VoidCallback onToggleSave;
+  final VoidCallback onOpenComments;
+  final VoidCallback onShare;
   final ValueChanged<String> onComingSoon;
 
   @override
@@ -380,7 +411,7 @@ class _Actions extends StatelessWidget {
           _ActionButton(
             label: 'ความคิดเห็น ${post.commentCount} รายการ',
             count: post.commentCount,
-            onTap: () => onComingSoon('ความคิดเห็น'),
+            onTap: onOpenComments,
             icon: const Icon(
               LucideIcons.messageCircle,
               size: 24,
@@ -389,8 +420,8 @@ class _Actions extends StatelessWidget {
           ),
           _ActionButton(
             label: 'แชร์',
-            count: post.shareCount,
-            onTap: () => onComingSoon('แชร์โพสต์'),
+            count: (post.likeCount * 0.02).round(),
+            onTap: onShare,
             icon: const Icon(LucideIcons.send, size: 24, color: AppColors.text),
           ),
           _ActionButton(
@@ -403,11 +434,16 @@ class _Actions extends StatelessWidget {
             ),
           ),
           const Spacer(),
-          _ActionButton(
-            label: 'เลี้ยงขนม ${post.author.handle}',
-            onTap: () => onComingSoon('เลี้ยงขนม'),
-            icon: const Icon(LucideIcons.gift, size: 24, color: AppColors.text),
-          ),
+          if (!post.isOwn)
+            _ActionButton(
+              label: 'เลี้ยงขนม ${post.author.displayName}',
+              onTap: () => onComingSoon('เลี้ยงขนม'),
+              icon: const Icon(
+                LucideIcons.gift,
+                size: 24,
+                color: AppColors.text,
+              ),
+            ),
         ],
       ),
     );
@@ -448,7 +484,7 @@ class _ActionButton extends StatelessWidget {
                 if (count > 0) ...[
                   const SizedBox(width: 4),
                   Text(
-                    '$count',
+                    compactCount(count),
                     style: const TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
@@ -465,10 +501,10 @@ class _ActionButton extends StatelessWidget {
 }
 
 class _Body extends StatelessWidget {
-  const _Body({required this.post, required this.onComingSoon});
+  const _Body({required this.post, required this.onOpenComments});
 
   final Post post;
-  final ValueChanged<String> onComingSoon;
+  final VoidCallback onOpenComments;
 
   static const _body = TextStyle(
     fontSize: 14,
@@ -483,49 +519,51 @@ class _Body extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              SizedBox(
-                width: 22.0 + (post.likedBy.avatars.length - 1) * 14,
-                height: 22,
-                child: Stack(
-                  children: [
-                    for (var i = 0; i < post.likedBy.avatars.length; i++)
-                      Positioned(
-                        left: i * 14.0,
-                        child: Container(
-                          decoration: const BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: Colors.white,
-                          ),
-                          child: AppAvatar(
-                            source: post.likedBy.avatars[i].url,
-                            bg: post.likedBy.avatars[i].bg,
-                            size: 22,
+          if (post.likeCount > 0 && post.likedBy.avatars.isNotEmpty)
+            Row(
+              children: [
+                SizedBox(
+                  width: 22.0 + (post.likedBy.avatars.length - 1) * 14,
+                  height: 22,
+                  child: Stack(
+                    children: [
+                      for (var i = 0; i < post.likedBy.avatars.length; i++)
+                        Positioned(
+                          left: i * 14.0,
+                          child: Container(
+                            decoration: const BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Colors.white,
+                            ),
+                            child: AppAvatar(
+                              source: post.likedBy.avatars[i].url,
+                              bg: post.likedBy.avatars[i].bg,
+                              size: 22,
+                            ),
                           ),
                         ),
-                      ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text.rich(
-                  TextSpan(
-                    children: [
-                      TextSpan(
-                        text: post.likedBy.handle,
-                        style: const TextStyle(fontWeight: FontWeight.w600),
-                      ),
-                      const TextSpan(text: ' และคนอื่น ๆ ถูกใจ'),
                     ],
                   ),
-                  style: _body,
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 4),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text.rich(
+                    TextSpan(
+                      children: [
+                        TextSpan(
+                          text: post.likedBy.handle,
+                          style: const TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                        const TextSpan(text: ' และคนอื่น ๆ ถูกใจ'),
+                      ],
+                    ),
+                    style: _body,
+                  ),
+                ),
+              ],
+            ),
+          if (post.likeCount > 0 && post.likedBy.avatars.isNotEmpty)
+            const SizedBox(height: 4),
           _handleAndText(post.author.handle, post.caption),
           for (final c in post.previewComments) ...[
             const SizedBox(height: 4),
@@ -534,7 +572,7 @@ class _Body extends StatelessWidget {
           if (post.commentCount > 0) ...[
             const SizedBox(height: 4),
             GestureDetector(
-              onTap: () => onComingSoon('ความคิดเห็น'),
+              onTap: onOpenComments,
               child: Text(
                 'ดูความคิดเห็นทั้ง ${post.commentCount} รายการ',
                 style: const TextStyle(

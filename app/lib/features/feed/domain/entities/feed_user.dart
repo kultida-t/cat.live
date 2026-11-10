@@ -8,6 +8,7 @@ class FeedUser extends Equatable {
     required this.avatar,
     required this.avatarBg,
     required this.hasUnseenStory,
+    this.name,
     this.isFollowing = false,
   });
 
@@ -20,12 +21,18 @@ class FeedUser extends Equatable {
   final bool hasUnseenStory;
   final bool isFollowing;
 
+  /// ชื่อที่แสดงเต็ม (เช่น "นุ่น & โมจิ") — ไม่มีให้ใช้ [handle]
+  final String? name;
+
+  String get displayName => name ?? handle;
+
   FeedUser copyWith({bool? isFollowing}) => FeedUser(
     id: id,
     handle: handle,
     avatar: avatar,
     avatarBg: avatarBg,
     hasUnseenStory: hasUnseenStory,
+    name: name,
     isFollowing: isFollowing ?? this.isFollowing,
   );
 
@@ -36,6 +43,7 @@ class FeedUser extends Equatable {
     avatar,
     avatarBg,
     hasUnseenStory,
+    name,
     isFollowing,
   ];
 }

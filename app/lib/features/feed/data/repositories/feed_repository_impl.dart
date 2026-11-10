@@ -1,8 +1,10 @@
 import 'package:dio/dio.dart';
 
 import '../../../../core/network/dio_failure_mapper.dart';
+import '../../domain/entities/comment.dart';
 import '../../domain/entities/feed_tab.dart';
 import '../../domain/entities/feed_user.dart';
+import '../../domain/entities/new_post.dart';
 import '../../domain/entities/post.dart';
 import '../../domain/repositories/feed_repository.dart';
 import '../datasources/feed_remote_data_source.dart';
@@ -73,4 +75,36 @@ class FeedRepositoryImpl implements FeedRepository {
   @override
   Future<void> deletePost(String postId) =>
       _guard(() => _remote.deletePost(postId));
+
+  @override
+  Future<Post> getPost(String postId) =>
+      _guard(() async => (await _remote.fetchPost(postId)).toEntity());
+
+  @override
+  Future<Post> createPost(NewPost draft) =>
+      _guard(() async => (await _remote.createPost(draft)).toEntity());
+
+  @override
+  Future<List<Comment>> getComments(String postId) => _guard(
+    () async =>
+        (await _remote.fetchComments(postId)).map((c) => c.toEntity()).toList(),
+  );
+
+  @override
+  Future<Comment> addComment(
+    String postId,
+    String text, {
+    String? replyToHandle,
+  }) => _guard(
+    () async => (await _remote.addComment(
+      postId,
+      text,
+      replyToHandle: replyToHandle,
+    )).toEntity(),
+  );
+
+  @override
+  Future<Comment> toggleCommentLike(String postId, String commentId) => _guard(
+    () async => (await _remote.toggleCommentLike(postId, commentId)).toEntity(),
+  );
 }

@@ -27,6 +27,7 @@ Future<PostMenuResult?> showPostMenuSheet(BuildContext context, Post post) {
     backgroundColor: Colors.white,
     barrierColor: const Color(0x594A3428),
     isScrollControlled: true,
+    useRootNavigator: true,
     showDragHandle: false,
     constraints: BoxConstraints(
       maxHeight: MediaQuery.sizeOf(context).height * 0.85,

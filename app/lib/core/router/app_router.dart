@@ -1,6 +1,7 @@
 import 'package:go_router/go_router.dart';
 
 import '../../features/feed/presentation/pages/community_page.dart';
+import '../../features/feed/presentation/pages/post_link_page.dart';
 import '../../features/shell/presentation/main_shell.dart';
 import '../../features/shell/presentation/placeholder_page.dart';
 
@@ -9,6 +10,11 @@ GoRouter createAppRouter() {
   return GoRouter(
     initialLocation: '/',
     routes: [
+      GoRoute(
+        path: '/p/:id',
+        builder: (_, state) =>
+            PostLinkPage(postId: state.pathParameters['id']!),
+      ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, shell) => MainShell(navigationShell: shell),
         branches: [

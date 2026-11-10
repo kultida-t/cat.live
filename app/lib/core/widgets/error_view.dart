@@ -10,11 +10,13 @@ class ErrorView extends StatelessWidget {
     required this.onRetry,
     this.title = 'โหลดข้อมูลไม่สำเร็จ',
     this.emoji = '📡',
+    this.actionLabel = 'ลองใหม่',
   });
 
   final String title;
   final String message;
   final String emoji;
+  final String actionLabel;
   final VoidCallback onRetry;
 
   @override
@@ -53,9 +55,12 @@ class ErrorView extends StatelessWidget {
                   ),
                 ),
               ),
-              child: const Text(
-                'ลองใหม่',
-                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+              child: Text(
+                actionLabel,
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
           ],

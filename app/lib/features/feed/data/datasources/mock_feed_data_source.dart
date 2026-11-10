@@ -1,23 +1,12 @@
+import '../../../../core/error/failure.dart';
 import '../../domain/entities/feed_tab.dart';
+import '../../domain/entities/new_post.dart';
 import '../models/feed_models.dart';
 import 'feed_remote_data_source.dart';
+import 'mock_accounts.dart';
 
 const _avatarDir = 'asset:assets/images/avatars';
 const _postDir = 'asset:assets/images/posts';
-
-Map<String, dynamic> _user(
-  String id,
-  String handle,
-  String photo,
-  int bg, {
-  bool unseen = true,
-}) => {
-  'id': id,
-  'handle': handle,
-  'avatar_url': '$_avatarDir/$photo.jpg',
-  'avatar_bg': bg,
-  'has_unseen_story': unseen,
-};
 
 Map<String, dynamic> _media(String photo, String alt) => {
   'url': '$_postDir/$photo.jpg',
@@ -30,34 +19,11 @@ Map<String, dynamic> _likeAvatar(String photo, int bg) => {
   'bg': bg,
 };
 
-final _noon = _user(
-  'u1',
-  'noon.mochi',
-  '1592194996308-7b43878e84a6',
-  0xFFFCE7D6,
-);
-final _vet = _user('u2', 'maew.vetnote', '1543852786-1cf6624b9987', 0xFFEDE4FB);
-final _muk = _user('u3', 'muk.ari', '1787404200329-78b2aaee13c1', 0xFFD5F0EB);
-final _rescue = _user(
-  'u4',
-  'rescue.bkk',
-  '1503777119540-ce54b422baff',
-  0xFFFDE2EC,
-);
-final _somjeed = _user(
-  'u5',
-  'somjeed.daily',
-  '1596854407944-bf87f6fdd49e',
-  0xFFFFF1C9,
-  unseen: false,
-);
-final _guy = _user(
-  'u6',
-  'guy.oldcat',
-  '1574158622682-e40e69881006',
-  0xFFDCEBFF,
-  unseen: false,
-);
+final _noon = mockAccountJson('noon');
+final _vet = mockAccountJson('vet');
+final _muk = mockAccountJson('muk');
+final _rescue = mockAccountJson('rescue');
+final _guy = mockAccountJson('guy');
 
 final _likedFirst = [
   _likeAvatar('1533738363-b7f9aef128ce', 0xFFEAF3FF),
@@ -75,6 +41,7 @@ List<Map<String, dynamic>> _seedPosts() => [
   {
     'id': 'p1',
     'type': 'normal',
+    'category_label': 'ชีวิตแมว',
     'author': _noon,
     'subtitle': 'กับน้องโมจิ',
     'subtitle_has_pin': true,
@@ -101,6 +68,7 @@ List<Map<String, dynamic>> _seedPosts() => [
   {
     'id': 'p2',
     'type': 'normal',
+    'category_label': 'ความรู้',
     'author': _vet,
     'subtitle': 'ความรู้',
     'subtitle_has_pin': false,
@@ -124,6 +92,7 @@ List<Map<String, dynamic>> _seedPosts() => [
   {
     'id': 'p3',
     'type': 'normal',
+    'category_label': 'คำถาม · สุขภาพ',
     'author': _guy,
     'subtitle': 'คำถาม · สุขภาพ',
     'subtitle_has_pin': false,
@@ -150,6 +119,7 @@ List<Map<String, dynamic>> _seedPosts() => [
   {
     'id': 'p4',
     'type': 'normal',
+    'category_label': 'ใกล้ฉัน',
     'author': _muk,
     'subtitle': 'อารีย์ · ห่างจากคุณ 900 ม.',
     'subtitle_has_pin': true,
@@ -173,6 +143,7 @@ List<Map<String, dynamic>> _seedPosts() => [
   {
     'id': 'p5',
     'type': 'normal',
+    'category_label': 'ช่วยแมว',
     'author': _rescue,
     'subtitle': 'ลาดพร้าว 71',
     'subtitle_has_pin': true,
@@ -195,14 +166,26 @@ List<Map<String, dynamic>> _seedPosts() => [
   },
 ];
 
-/// ทะเบียนบัญชีทั้งหมด + สถานะติดตามเริ่มต้น — ตรงกับ seed โพสต์ด้านบน
+/// ทะเบียนบัญชีทั้งหมด + สถานะติดตามเริ่มต้น — ตรงกับเว็บ prototype
 List<Map<String, dynamic>> _seedAccounts() => [
-  {..._noon, 'is_following': true},
-  {..._vet, 'is_following': true},
-  {..._muk, 'is_following': false},
-  {..._rescue, 'is_following': true},
-  {..._somjeed, 'is_following': false},
-  {..._guy, 'is_following': false},
+  for (final key in mockAccountKeys)
+    {
+      ...mockAccountJson(key),
+      'is_following': mockInitialFollowing.contains(key),
+    },
+];
+
+const _commentTemplates = [
+  ('noon', 'น่ารักมากกก 🥹', '2 ชม.', 12),
+  (
+    'vet',
+    'ถ้ามีอาการซึมหรือไม่กินข้าวเกิน 24 ชม. แนะนำให้พาไปหาหมอนะคะ',
+    '1 ชม.',
+    34,
+  ),
+  ('pim', 'บ้านเราก็เป็นแบบนี้เลยค่ะ 555', '45 นาที', 3),
+  ('tonkla', 'ขอบคุณที่แชร์ครับ มีประโยชน์มาก', '30 นาที', 5),
+  ('nat', 'แวะมาที่ร้านได้นะคะ มีมุมให้น้องแมวพักด้วย', '12 นาที', 1),
 ];
 
 /// ข้อมูล mock ในหน่วยความจำ — ใช้ช่วงยังไม่มี backend (ตามแนวทาง "ทำหน้าจอให้เห็นก่อน")
@@ -216,6 +199,8 @@ class MockFeedDataSource implements FeedRemoteDataSource {
   final List<Map<String, dynamic>> _accounts;
   final _hiddenIds = <String>{};
   final _hiddenAccountIds = <String>{};
+  final _comments = <String, List<Map<String, dynamic>>>{};
+  var _sequence = 0;
 
   Future<void> _delay() => Future<void>.delayed(latency);
 
@@ -249,12 +234,12 @@ class MockFeedDataSource implements FeedRemoteDataSource {
   Future<List<FeedUserModel>> fetchStoryUsers() async {
     await _delay();
     return [
-      _noon,
-      _vet,
-      _muk,
-      _rescue,
-      _somjeed,
-      _guy,
+      mockAccountJson('noon'),
+      mockAccountJson('vet'),
+      mockAccountJson('muk'),
+      mockAccountJson('rescue'),
+      mockAccountJson('som', unseen: false),
+      mockAccountJson('guy', unseen: false),
     ].map(FeedUserModel.fromJson).toList();
   }
 
@@ -316,6 +301,136 @@ class MockFeedDataSource implements FeedRemoteDataSource {
   Future<void> deletePost(String postId) async {
     await _delay();
     _posts = _posts.where((p) => p['id'] != postId).toList();
+  }
+
+  @override
+  Future<PostModel> fetchPost(String postId) async {
+    await _delay();
+    final post = _posts.where((p) => p['id'] == postId).firstOrNull;
+    if (post == null) throw const NotFoundFailure('ไม่พบโพสต์นี้');
+    return PostModel.fromJson(post);
+  }
+
+  @override
+  Future<PostModel> createPost(NewPost draft) async {
+    await _delay();
+    final post = <String, dynamic>{
+      'id': 'new-${++_sequence}-${DateTime.now().millisecondsSinceEpoch}',
+      'type': 'normal',
+      'category_label': 'ชีวิตแมว',
+      'author': mockAccountJson(mockMe),
+      'subtitle': 'ชีวิตแมว',
+      'subtitle_has_pin': false,
+      'caption': draft.caption,
+      'media': [
+        for (final m in draft.media)
+          {
+            'url': m.source,
+            'alt': m.name,
+            'kind': m.isVideo ? 'video' : 'image',
+            'seconds': m.seconds,
+          },
+      ],
+      'like_count': 0,
+      'comment_count': 0,
+      'share_count': 0,
+      'liked_by': {'handle': '', 'avatars': <Map<String, dynamic>>[]},
+      'preview_comments': <Map<String, dynamic>>[],
+      'posted_ago_text': 'เมื่อสักครู่',
+      'is_following_author': true,
+      'is_liked': false,
+      'is_saved': false,
+      'is_own': true,
+    };
+    _posts = [post, ..._posts];
+    return PostModel.fromJson(post);
+  }
+
+  /// คอมเมนต์ตัวอย่างสร้างตามสูตรเดียวกับเว็บ: คอมเมนต์เด่นของโพสต์ก่อน
+  /// แล้วตามด้วยคอมเมนต์สำเร็จรูปของบัญชีอื่น 2–5 อัน
+  List<Map<String, dynamic>> _seedComments(Map<String, dynamic> post) {
+    final id = post['id'] as String;
+    final authorKey = (post['author'] as Map<String, dynamic>)['id'] as String;
+    final preview = (post['preview_comments'] as List<dynamic>)
+        .cast<Map<String, dynamic>>();
+    final count = (post['comment_count'] as int) > 20 ? 5 : 3;
+    Map<String, dynamic> comment(
+      String idSuffix,
+      String account,
+      String text,
+      String time,
+      int likes,
+    ) => {
+      'id': '$id-$idSuffix',
+      'author': mockAccountJson(account),
+      'text': text,
+      'time_text': time,
+      'like_count': likes,
+      'is_liked': false,
+    };
+    return [
+      if (preview.isNotEmpty)
+        comment(
+          'top',
+          mockKeyOfHandle(preview.first['author_handle'] as String),
+          preview.first['body'] as String,
+          '3 ชม.',
+          18,
+        ),
+      for (final (i, t)
+          in _commentTemplates
+              .where((t) => t.$1 != authorKey)
+              .take(count)
+              .indexed)
+        comment('$i', t.$1, t.$2, t.$3, t.$4),
+    ];
+  }
+
+  List<Map<String, dynamic>> _commentsOf(String postId) =>
+      _comments.putIfAbsent(postId, () => _seedComments(_find(postId)));
+
+  @override
+  Future<List<CommentModel>> fetchComments(String postId) async {
+    await _delay();
+    return _commentsOf(postId).map(CommentModel.fromJson).toList();
+  }
+
+  @override
+  Future<CommentModel> addComment(
+    String postId,
+    String text, {
+    String? replyToHandle,
+  }) async {
+    await _delay();
+    final post = _find(postId);
+    final comment = <String, dynamic>{
+      'id': 'c-${++_sequence}',
+      'author': mockAccountJson(mockMe),
+      'text': text,
+      'time_text': 'เมื่อสักครู่',
+      'like_count': 0,
+      'is_liked': false,
+      'reply_to_handle': replyToHandle,
+    };
+    _commentsOf(postId).add(comment);
+    post['comment_count'] = (post['comment_count'] as int) + 1;
+    return CommentModel.fromJson(comment);
+  }
+
+  @override
+  Future<CommentModel> toggleCommentLike(
+    String postId,
+    String commentId,
+  ) async {
+    await _delay();
+    final comment = _commentsOf(postId).firstWhere(
+      (c) => c['id'] == commentId,
+      orElse: () => throw const NotFoundFailure('ไม่พบความคิดเห็นนี้'),
+    );
+    final liked = !(comment['is_liked'] as bool);
+    comment['is_liked'] = liked;
+    comment['like_count'] = (comment['like_count'] as int) + (liked ? 1 : -1);
+    return CommentModel.fromJson(comment);
   }
 
   Map<String, dynamic> _find(String postId) => _posts.firstWhere(

@@ -7,6 +7,7 @@ import '../../data/datasources/feed_remote_data_source.dart';
 import '../../data/datasources/mock_feed_data_source.dart';
 import '../../data/repositories/feed_repository_impl.dart';
 import '../../domain/entities/feed_user.dart';
+import '../../domain/entities/post.dart';
 import '../../domain/repositories/feed_repository.dart';
 import '../../domain/usecases/feed_usecases.dart';
 
@@ -49,6 +50,21 @@ final hidePostProvider = Provider(
 final hideAccountPostsProvider = Provider(
   (ref) => HideAccountPosts(ref.watch(feedRepositoryProvider)),
 );
+final getPostProvider = Provider(
+  (ref) => GetPost(ref.watch(feedRepositoryProvider)),
+);
+final createPostProvider = Provider(
+  (ref) => CreatePost(ref.watch(feedRepositoryProvider)),
+);
+final getCommentsProvider = Provider(
+  (ref) => GetComments(ref.watch(feedRepositoryProvider)),
+);
+final addCommentProvider = Provider(
+  (ref) => AddComment(ref.watch(feedRepositoryProvider)),
+);
+final toggleCommentLikeProvider = Provider(
+  (ref) => ToggleCommentLike(ref.watch(feedRepositoryProvider)),
+);
 final reportPostProvider = Provider(
   (ref) => ReportPost(ref.watch(feedRepositoryProvider)),
 );
@@ -59,3 +75,29 @@ final deletePostProvider = Provider(
 final storyUsersProvider = FutureProvider<List<FeedUser>>(
   (ref) => ref.watch(getStoryUsersProvider)(),
 );
+
+/// ทะเบียนบัญชีทั้งหมด (ใช้ในหน้าแชร์เลือกคนที่จะส่งให้)
+final accountsProvider = FutureProvider.autoDispose<List<FeedUser>>(
+  (ref) => ref.watch(getAccountsProvider)(),
+);
+
+/// โพสต์เดี่ยวตาม id — ใช้หน้าลิงก์โพสต์ `/p/:id`
+final postProvider = FutureProvider.autoDispose.family<Post, String>(
+  (ref, postId) => ref.watch(getPostProvider)(postId),
+);
+
+/// ผู้ใช้ปัจจุบัน — ตอนนี้เป็นค่าคงที่เพราะยังไม่มีระบบล็อกอิน
+/// เมื่อมี auth ให้เปลี่ยนมาอ่านจาก session จริง (ที่เดียวนี้ที่เดียว)
+final currentUserProvider = Provider<FeedUser>(
+  (ref) => const FeedUser(
+    id: 'me',
+    handle: 'jutamas.lk',
+    avatar: 'asset:assets/images/avatars/1494790108377-be9c29b29330.jpg',
+    avatarBg: 0xFFFFE89A,
+    hasUnseenStory: false,
+    name: 'จุฑามาศ ลูกแก้ว',
+  ),
+);
+
+/// อีเมลของผู้ใช้ปัจจุบัน (ใช้ขึ้นช่อง "จาก" ตอนแชร์ทางอีเมล) — ค่าคงที่ชั่วคราวเช่นกัน
+const placeholderCurrentUserEmail = 'jutamas.lk@example.com';

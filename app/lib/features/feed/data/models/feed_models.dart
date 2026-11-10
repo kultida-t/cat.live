@@ -1,3 +1,4 @@
+import '../../domain/entities/comment.dart';
 import '../../domain/entities/feed_user.dart';
 import '../../domain/entities/post.dart';
 
@@ -11,6 +12,7 @@ class FeedUserModel {
     required this.avatarUrl,
     required this.avatarBg,
     required this.hasUnseenStory,
+    this.name,
     this.isFollowing = false,
   });
 
@@ -20,6 +22,7 @@ class FeedUserModel {
     avatarUrl: json['avatar_url'] as String,
     avatarBg: json['avatar_bg'] as int,
     hasUnseenStory: json['has_unseen_story'] as bool? ?? false,
+    name: json['name'] as String?,
     isFollowing: json['is_following'] as bool? ?? false,
   );
 
@@ -28,6 +31,7 @@ class FeedUserModel {
   final String avatarUrl;
   final int avatarBg;
   final bool hasUnseenStory;
+  final String? name;
   final bool isFollowing;
 
   FeedUser toEntity() => FeedUser(
@@ -36,6 +40,7 @@ class FeedUserModel {
     avatar: avatarUrl,
     avatarBg: avatarBg,
     hasUnseenStory: hasUnseenStory,
+    name: name,
     isFollowing: isFollowing,
   );
 }
@@ -55,6 +60,7 @@ class PostModel {
       type: json['type'] == 'lost_cat' ? PostType.lostCat : PostType.normal,
       author: FeedUserModel.fromJson(json['author'] as Map<String, dynamic>)
           .toEntity(),
+      categoryLabel: json['category_label'] as String? ?? '',
       subtitle: json['subtitle'] as String?,
       subtitleHasPin: json['subtitle_has_pin'] as bool? ?? false,
       caption: json['caption'] as String,
@@ -65,6 +71,7 @@ class PostModel {
               url: m['url'] as String,
               alt: m['alt'] as String? ?? '',
               isVideo: m['kind'] == 'video',
+              seconds: (m['seconds'] as num?)?.toDouble(),
             ),
           )
           .toList(),
@@ -113,5 +120,25 @@ class FeedPageModel {
   FeedPage toEntity() => FeedPage(
     posts: posts.map((p) => p.toEntity()).toList(),
     nextCursor: nextCursor,
+  );
+}
+
+class CommentModel {
+  const CommentModel({required this.json});
+
+  factory CommentModel.fromJson(Map<String, dynamic> json) =>
+      CommentModel(json: json);
+
+  final Map<String, dynamic> json;
+
+  Comment toEntity() => Comment(
+    id: json['id'] as String,
+    author: FeedUserModel.fromJson(json['author'] as Map<String, dynamic>)
+        .toEntity(),
+    text: json['text'] as String,
+    timeText: json['time_text'] as String,
+    likeCount: json['like_count'] as int? ?? 0,
+    isLiked: json['is_liked'] as bool? ?? false,
+    replyToHandle: json['reply_to_handle'] as String?,
   );
 }

@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart' show ScrollCacheExtent;
 import 'package:flutter/services.dart';
@@ -10,17 +8,22 @@ import '../../../../core/error/failure.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/app_avatar.dart';
 import '../../../../core/widgets/app_image.dart';
+import '../../../../core/config/app_config.dart';
 import '../../../../core/widgets/error_view.dart';
+import '../../../../core/widgets/toast_pill.dart';
 import '../../domain/entities/feed_tab.dart';
 import '../../domain/entities/feed_user.dart';
 import '../../domain/entities/post.dart';
 import '../providers/feed_controller.dart';
 import '../providers/feed_providers.dart';
+import '../widgets/comments_sheet.dart';
 import '../widgets/feed_header.dart';
 import '../widgets/post_card.dart';
 import '../widgets/post_card_skeleton.dart';
 import '../widgets/post_menu_sheet.dart';
+import '../widgets/share_sheet.dart';
 import '../widgets/story_row.dart';
+import 'create_post_page.dart';
 
 class CommunityPage extends ConsumerStatefulWidget {
   const CommunityPage({super.key});
@@ -29,14 +32,11 @@ class CommunityPage extends ConsumerStatefulWidget {
   ConsumerState<CommunityPage> createState() => _CommunityPageState();
 }
 
-class _CommunityPageState extends ConsumerState<CommunityPage> {
+class _CommunityPageState extends ConsumerState<CommunityPage> with ToastMixin {
   final _scroll = ScrollController();
 
   /// โพสต์ที่เปิดดูจากกริดแท็บ "บันทึกไว้" (null = โชว์กริด)
   String? _openSavedPostId;
-
-  Timer? _toastTimer;
-  String? _toastMessage;
 
   @override
   void initState() {
@@ -46,7 +46,7 @@ class _CommunityPageState extends ConsumerState<CommunityPage> {
 
   @override
   void dispose() {
-    _toastTimer?.cancel();
+    disposeToast();
     _scroll.dispose();
     super.dispose();
   }
@@ -57,14 +57,7 @@ class _CommunityPageState extends ConsumerState<CommunityPage> {
     }
   }
 
-  /// toast เม็ดยาสีน้ำตาลเหนือแท็บล่าง หายเองใน 1.8 วินาที (ตามเว็บ)
-  void _toast(String message) {
-    _toastTimer?.cancel();
-    setState(() => _toastMessage = message);
-    _toastTimer = Timer(const Duration(milliseconds: 1800), () {
-      if (mounted) setState(() => _toastMessage = null);
-    });
-  }
+  void _toast(String message) => showToast(message);
 
   void _comingSoon(String feature) =>
       _toast('$feature — กำลังพัฒนา จะมาในเฟสถัดไป');
@@ -116,7 +109,7 @@ class _CommunityPageState extends ConsumerState<CommunityPage> {
         }
       case PostMenuAction.copyLink:
         await Clipboard.setData(
-          ClipboardData(text: 'https://แมว.live/p/${post.id}'),
+          ClipboardData(text: AppConfig.postUrl(post.id)),
         );
         if (mounted) _toast('คัดลอกลิงก์แล้ว');
       case PostMenuAction.report:
@@ -127,6 +120,18 @@ class _CommunityPageState extends ConsumerState<CommunityPage> {
         final f = await controller.delete(post);
         if (mounted) _toast(f?.message ?? 'ลบโพสต์แล้ว');
     }
+  }
+
+  Future<void> _createPost() async {
+    final shareTo = await CreatePostPage.open(context);
+    if (shareTo == null || !mounted) return;
+    if (_openSavedPostId != null) setState(() => _openSavedPostId = null);
+    _toast(
+      shareTo.isEmpty
+          ? 'โพสต์แล้ว'
+          : 'โพสต์แล้ว · แชร์ไป ${shareTo.join(', ')}',
+    );
+    if (_scroll.hasClients) _scroll.jumpTo(0);
   }
 
   void _selectTab(FeedTab tab) {
@@ -156,6 +161,7 @@ class _CommunityPageState extends ConsumerState<CommunityPage> {
             tab: state.tab,
             onTabChanged: _selectTab,
             onComingSoon: _comingSoon,
+            onCreatePost: _createPost,
           ),
           Expanded(
             child: switch (state.status) {
@@ -187,6 +193,8 @@ class _CommunityPageState extends ConsumerState<CommunityPage> {
                   onToggleSave: _toggleSave,
                   onToggleFollow: _toggleFollow,
                   onOpenMenu: _openMenu,
+                  onOpenComments: (p) => showCommentsSheet(context, p),
+                  onShare: (p) => showShareSheet(context, p),
                   onComingSoon: _comingSoon,
                 ),
               ),
@@ -199,49 +207,16 @@ class _CommunityPageState extends ConsumerState<CommunityPage> {
     return Stack(
       children: [
         feed,
-        if (_toastMessage != null)
+        if (toastMessage != null)
           Positioned(
             left: 0,
             right: 0,
             bottom: 40,
             child: IgnorePointer(
-              child: Center(child: _ToastPill(message: _toastMessage!)),
+              child: Center(child: ToastPill(message: toastMessage!)),
             ),
           ),
       ],
-    );
-  }
-}
-
-/// ข้อความแจ้งสั้น ๆ รูปเม็ดยา — สี/ขนาดตามเว็บ (role=status)
-class _ToastPill extends StatelessWidget {
-  const _ToastPill({required this.message});
-
-  final String message;
-
-  @override
-  Widget build(BuildContext context) {
-    return Semantics(
-      liveRegion: true,
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 24),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: const Color(0xD94A3428),
-          borderRadius: BorderRadius.circular(999),
-        ),
-        child: Text(
-          message,
-          textAlign: TextAlign.center,
-          style: const TextStyle(
-            fontSize: 13,
-            height: 1.5,
-            fontWeight: FontWeight.w500,
-            color: Colors.white,
-            decoration: TextDecoration.none,
-          ),
-        ),
-      ),
     );
   }
 }
@@ -258,6 +233,8 @@ class _FeedList extends ConsumerWidget {
     required this.onToggleSave,
     required this.onToggleFollow,
     required this.onOpenMenu,
+    required this.onOpenComments,
+    required this.onShare,
     required this.onComingSoon,
   });
 
@@ -271,6 +248,8 @@ class _FeedList extends ConsumerWidget {
   final ValueChanged<Post> onToggleSave;
   final ValueChanged<Post> onToggleFollow;
   final ValueChanged<Post> onOpenMenu;
+  final ValueChanged<Post> onOpenComments;
+  final ValueChanged<Post> onShare;
   final ValueChanged<String> onComingSoon;
 
   PostCard _card(Post post) => PostCard(
@@ -280,6 +259,8 @@ class _FeedList extends ConsumerWidget {
     onToggleSave: onToggleSave,
     onToggleFollow: onToggleFollow,
     onOpenMenu: onOpenMenu,
+    onOpenComments: onOpenComments,
+    onShare: onShare,
     onComingSoon: onComingSoon,
   );
 

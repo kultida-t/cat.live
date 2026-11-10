@@ -66,5 +66,11 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>แมว.live ใช้เลือกรูปและวิดีโอแมวของคุณมาโพสต์</string>
+	<key>NSCameraUsageDescription</key>
+	<string>แมว.live ใช้ถ่ายรูปและวิดีโอน้องแมวเพื่อโพสต์</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>แมว.live ใช้บันทึกเสียงตอนถ่ายวิดีโอ</string>
 </dict>
 </plist>

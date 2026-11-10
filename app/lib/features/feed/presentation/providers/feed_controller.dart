@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/error/failure.dart';
 import '../../domain/entities/feed_tab.dart';
 import '../../domain/entities/feed_user.dart';
+import '../../domain/entities/new_post.dart';
 import '../../domain/entities/post.dart';
 import 'feed_providers.dart';
 
@@ -238,6 +239,36 @@ class FeedController extends Notifier<FeedState> {
       return null;
     } on Failure catch (f) {
       if (ref.mounted) state = state.copyWith(posts: before);
+      return f;
+    }
+  }
+
+  /// เพิ่มยอดคอมเมนต์บนการ์ดหลังส่งคอมเมนต์สำเร็จ
+  void bumpCommentCount(String postId, {int by = 1}) {
+    state = state.copyWith(
+      posts: [
+        for (final p in state.posts)
+          p.id == postId
+              ? p.copyWith(
+                  commentCount: (p.commentCount + by).clamp(0, 1 << 30),
+                )
+              : p,
+      ],
+    );
+  }
+
+  /// สร้างโพสต์ใหม่ แล้วพาไปแท็บ "ทั้งหมด" ให้เห็นโพสต์ที่ด้านบนสุด (ตามเว็บ)
+  Future<Failure?> createPost(NewPost draft) async {
+    try {
+      final post = await ref.read(createPostProvider)(draft);
+      if (!ref.mounted) return null;
+      if (state.tab == FeedTab.all) {
+        state = state.copyWith(posts: [post, ...state.posts]);
+      } else {
+        await selectTab(FeedTab.all);
+      }
+      return null;
+    } on Failure catch (f) {
       return f;
     }
   }

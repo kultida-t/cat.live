@@ -1,8 +1,10 @@
 import 'package:catlive/core/error/failure.dart';
 import 'package:catlive/features/feed/data/datasources/mock_feed_data_source.dart';
 import 'package:catlive/features/feed/data/repositories/feed_repository_impl.dart';
+import 'package:catlive/features/feed/domain/entities/comment.dart';
 import 'package:catlive/features/feed/domain/entities/feed_tab.dart';
 import 'package:catlive/features/feed/domain/entities/feed_user.dart';
+import 'package:catlive/features/feed/domain/entities/new_post.dart';
 import 'package:catlive/features/feed/domain/entities/post.dart';
 import 'package:catlive/features/feed/domain/repositories/feed_repository.dart';
 import 'package:catlive/features/feed/presentation/providers/feed_controller.dart';
@@ -61,6 +63,30 @@ class _FlakyRepository implements FeedRepository {
   @override
   Future<void> deletePost(String postId) =>
       _write(() => _inner.deletePost(postId));
+
+  @override
+  Future<Post> getPost(String postId) => _inner.getPost(postId);
+
+  @override
+  Future<Post> createPost(NewPost draft) =>
+      _write(() => _inner.createPost(draft));
+
+  @override
+  Future<List<Comment>> getComments(String postId) =>
+      _inner.getComments(postId);
+
+  @override
+  Future<Comment> addComment(
+    String postId,
+    String text, {
+    String? replyToHandle,
+  }) => _write(
+    () => _inner.addComment(postId, text, replyToHandle: replyToHandle),
+  );
+
+  @override
+  Future<Comment> toggleCommentLike(String postId, String commentId) =>
+      _write(() => _inner.toggleCommentLike(postId, commentId));
 }
 
 ProviderContainer _container(_FlakyRepository repo) {
@@ -110,7 +136,7 @@ void main() {
   });
 
   test(
-    'แท็บติดตาม — มีทะเบียนบัญชี: ติดตามอยู่ 3 + แนะนำ 3 (สูงสุด 4)',
+    'แท็บติดตาม — มีทะเบียนบัญชี: ติดตามอยู่ 3 + แนะนำสูงสุด 4 ตามลำดับเว็บ',
     () async {
       final c = _container(_newRepo());
       await _loaded(c);
@@ -125,9 +151,10 @@ void main() {
         'rescue.bkk',
       ]);
       expect(state.suggestedAccounts.map((a) => a.handle), [
+        'guy.oldcat',
         'muk.ari',
         'somjeed.daily',
-        'guy.oldcat',
+        'pim.kittenhouse',
       ]);
     },
   );

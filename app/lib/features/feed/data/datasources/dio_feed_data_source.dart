@@ -1,6 +1,11 @@
-import 'package:dio/dio.dart';
+import 'dart:io';
 
+import 'package:dio/dio.dart';
+import 'package:flutter/services.dart' show rootBundle;
+
+import '../../../../core/media/strip_image_metadata.dart';
 import '../../domain/entities/feed_tab.dart';
+import '../../domain/entities/new_post.dart';
 import '../models/feed_models.dart';
 import 'feed_remote_data_source.dart';
 
@@ -77,5 +82,74 @@ class DioFeedDataSource implements FeedRemoteDataSource {
   @override
   Future<void> deletePost(String postId) async {
     await _dio.delete<void>('/v1/posts/$postId');
+  }
+
+  @override
+  Future<PostModel> fetchPost(String postId) async {
+    final res = await _dio.get<Map<String, dynamic>>('/v1/posts/$postId');
+    return PostModel.fromJson(res.data!);
+  }
+
+  /// สร้างโพสต์แบบ multipart — รูปถูกลบข้อมูลแฝง (GPS) ก่อนส่งเสมอ
+  /// ส่วนวิดีโอส่งไฟล์เดิม เซิร์ฟเวอร์ต้องลบข้อมูลแฝงเอง
+  @override
+  Future<PostModel> createPost(NewPost draft) async {
+    final files = <MultipartFile>[];
+    for (final m in draft.media) {
+      final path = m.source.substring(m.source.indexOf(':') + 1);
+      final bytes = m.source.startsWith('file:')
+          ? await File(path).readAsBytes()
+          : (await rootBundle.load(path)).buffer.asUint8List();
+      files.add(
+        m.isVideo
+            ? MultipartFile.fromBytes(bytes, filename: m.name)
+            : MultipartFile.fromBytes(
+                await stripImageMetadata(bytes),
+                filename: '${m.name.split('.').first}.png',
+              ),
+      );
+    }
+    final res = await _dio.post<Map<String, dynamic>>(
+      '/v1/posts',
+      data: FormData.fromMap({
+        'caption': draft.caption,
+        'category': 'daily',
+        'media': files,
+      }),
+    );
+    return PostModel.fromJson(res.data!);
+  }
+
+  @override
+  Future<List<CommentModel>> fetchComments(String postId) async {
+    final res = await _dio.get<List<dynamic>>('/v1/posts/$postId/comments');
+    return res.data!
+        .cast<Map<String, dynamic>>()
+        .map(CommentModel.fromJson)
+        .toList();
+  }
+
+  @override
+  Future<CommentModel> addComment(
+    String postId,
+    String text, {
+    String? replyToHandle,
+  }) async {
+    final res = await _dio.post<Map<String, dynamic>>(
+      '/v1/posts/$postId/comments',
+      data: {'text': text, 'reply_to_handle': ?replyToHandle},
+    );
+    return CommentModel.fromJson(res.data!);
+  }
+
+  @override
+  Future<CommentModel> toggleCommentLike(
+    String postId,
+    String commentId,
+  ) async {
+    final res = await _dio.post<Map<String, dynamic>>(
+      '/v1/posts/$postId/comments/$commentId/like',
+    );
+    return CommentModel.fromJson(res.data!);
   }
 }

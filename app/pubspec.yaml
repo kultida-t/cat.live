@@ -40,6 +40,10 @@ dependencies:
   flutter_svg: ^2.3.2
   lucide_icons_flutter: ^4.0.3
   equatable: ^3.0.0
+  image_picker: ^1.2.4
+  share_plus: ^13.3.1
+  url_launcher: ^6.3.3
+  video_player: ^2.14.1
 
 dev_dependencies:
   flutter_test:

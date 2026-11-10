@@ -5,14 +5,22 @@ import 'feed_user.dart';
 enum PostType { normal, lostCat }
 
 class PostMedia extends Equatable {
-  const PostMedia({required this.url, required this.alt, this.isVideo = false});
+  const PostMedia({
+    required this.url,
+    required this.alt,
+    this.isVideo = false,
+    this.seconds,
+  });
 
   final String url;
   final String alt;
   final bool isVideo;
 
+  /// ความยาววิดีโอเป็นวินาที (เฉพาะวิดีโอ)
+  final double? seconds;
+
   @override
-  List<Object?> get props => [url, alt, isVideo];
+  List<Object?> get props => [url, alt, isVideo, seconds];
 }
 
 class CommentPreview extends Equatable {
@@ -52,6 +60,7 @@ class Post extends Equatable {
     required this.isLiked,
     required this.isSaved,
     required this.isOwn,
+    this.categoryLabel = '',
     this.subtitle,
     this.subtitleHasPin = false,
   });
@@ -59,6 +68,9 @@ class Post extends Equatable {
   final String id;
   final PostType type;
   final FeedUser author;
+
+  /// ป้ายหมวด เช่น "ชีวิตแมว" — ใช้ในหน้าลิงก์โพสต์ (ฟีดโชว์ [subtitle])
+  final String categoryLabel;
   final String? subtitle;
   final bool subtitleHasPin;
   final String caption;
@@ -76,6 +88,7 @@ class Post extends Equatable {
 
   Post copyWith({
     int? likeCount,
+    int? commentCount,
     bool? isFollowingAuthor,
     bool? isLiked,
     bool? isSaved,
@@ -84,12 +97,13 @@ class Post extends Equatable {
       id: id,
       type: type,
       author: author,
+      categoryLabel: categoryLabel,
       subtitle: subtitle,
       subtitleHasPin: subtitleHasPin,
       caption: caption,
       media: media,
       likeCount: likeCount ?? this.likeCount,
-      commentCount: commentCount,
+      commentCount: commentCount ?? this.commentCount,
       shareCount: shareCount,
       likedBy: likedBy,
       previewComments: previewComments,
@@ -106,6 +120,7 @@ class Post extends Equatable {
     id,
     type,
     author,
+    categoryLabel,
     subtitle,
     subtitleHasPin,
     caption,
