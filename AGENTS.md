@@ -38,16 +38,14 @@
 
 ## โครงสร้างการทำงานและ Skills ประจำโปรเจกต์ (`.agents/skills/`)
 
-โปรเจกต์นี้ติดตั้ง Skills มาตรฐานสำหรับบริหารจัดการงานและหลักฐานส่งตรวจไว้ใน `.agents/skills/` ดังนี้:
+โปรเจกต์นี้ติดตั้ง Skills มาตรฐานสำหรับบริหารจัดการงานไว้ใน `.agents/skills/` ดังนี้:
 
-1. **`mission-planning` (`.agents/skills/mission-planning/SKILL.md`):**
-   - ใช้เมื่อเริ่มวางแผนภารกิจรายวัน (Mission), แยกเป้าหมาย (Objective / Feature / Task), สร้าง Mission Plan Summary และ Session Handoff หลังพี่มาเต็มอนุมัติแผน รวมถึงสรุปผลหลังทำตามแผน
-2. **`work-summary` (`.agents/skills/work-summary/SKILL.md`):**
+1. **`work-summary` (`.agents/skills/work-summary/SKILL.md`):**
    - ใช้จับเวลาและสรุปงานราย Task (เริ่มทำ Task → เก็บภาพ Before → ส่ง Manual Review Checklist → ปิด Task → สร้าง Final Work Summary และ Session Handoff)
-3. **`submission-evidence` (`.agents/skills/submission-evidence/SKILL.md`):**
-   - ใช้เตรียมชุดหลักฐานส่งตรวจรับต่อเป้าหมาย (Objective) ตามเกณฑ์ AI Worklog QA Auditor (ไฟล์แนบ, ภาพหน้าจอ Desktop 1440px + Mobile 390px, Checklist Card, `external_url` และคำอธิบาย)
-4. **`ai-conversation-daily-log` (`.agents/skills/ai-conversation-daily-log/SKILL.md`):**
+2. **`ai-conversation-daily-log` (`.agents/skills/ai-conversation-daily-log/SKILL.md`):**
    - ใช้สร้างไฟล์สรุปประวัติการสนทนากับ AI รายวัน (`YYYY-MM-DD_ai-log.json`) โดยดึงข้อมูลจริงจาก IDE Transcript Store
+
+*(ถอด `mission-planning` และ `submission-evidence` ออกแล้วตั้งแต่ 2026-11-10 — ระบบส่งงานยกเลิกการทำ Mission; ถ้าวันไหนต้องใช้อีกเรียกคืนได้จาก Git history)*
 
 ### กฎการส่ง Worklog เข้า Core Portal (ห้ามทำผิด)
 - **ห้ามสร้าง worklog ด้วยมือผ่าน `submit_logs` เด็ดขาด** — เคยเกิดเคสส่งเองแล้วเสียเหรียญ + ได้รายการซ้ำกับของระบบ การทำผิดจะเสียเหรียญอีกและต้องไปนั่งลบทีหลัง
@@ -75,10 +73,10 @@
 
 - **Repository:** `https://github.com/kultida-t/cat.live.git`
 - **Local Path:** `D:\cat.live`
-- **สถานะล่าสุด (2026-11-09):**
-  - ติดตั้ง Skills ทั้ง 4 ตัว (`mission-planning`, `work-summary`, `submission-evidence`, `ai-conversation-daily-log`) ใน `.agents/skills/` และปรับที่อยู่โฟลเดอร์/GitHub URL ให้ตรงกับ `cat.live` แล้ว
+- **สถานะล่าสุด (2026-11-10):**
+  - ใช้ Skills 2 ตัว (`work-summary`, `ai-conversation-daily-log`) ใน `.agents/skills/` — ถอด `mission-planning` และ `submission-evidence` ออกแล้ว (เรียกคืนได้จาก Git history)
   - สร้างโครงสร้างโฟลเดอร์มาตรฐาน (`screenshots/`, `deliverables/`, `docs/`, `scripts/`), `.gitignore` และ `PROTECTED_SCREENS.md` เรียบร้อยแล้ว
-  - จัดตั้ง Git Branches (`master`, `dev`, และ `chore/project-setup`) พร้อมใช้งาน
+  - Git Branches ปัจจุบัน: `master`, `dev` และ `feat/mobile-app` (สายงานที่กำลังทำแอปมือถืออยู่)
 
 ## Protected Screens / Features
 
