@@ -25,18 +25,18 @@
 **`audit_logs`** — บันทึกทุกการกระทำสำคัญของระบบ
 | ฟิลด์ | ชนิด | คำอธิบาย |
 |---|---|---|
-| id | uuid | |
+| id | uuid |รหัส log |
 | actor_id | uuid→users | ใครทำ (null = ระบบ) |
 | action | text | เช่น announcement.create, report.resolve |
 | entity_type / entity_id | text / uuid | กระทำกับอะไร |
 | meta | jsonb | รายละเอียดเพิ่ม (ค่าเดิม→ค่าใหม่) |
 | ip | inet | ที่อยู่ผู้เรียก |
-| created_at | timestamptz | |
+| created_at | timestamptz |เวลาที่บันทึก |
 
 **`events`** — คิวเหตุการณ์กลางเบา ๆ ให้ระบบอื่น subscribe (U-08)
 | ฟิลด์ | ชนิด | คำอธิบาย |
 |---|---|---|
-| id | uuid | |
+| id | uuid |รหัสเหตุการณ์ |
 | type | text | เช่น cat.lost, sighting.created, payment.paid |
 | payload | jsonb | ข้อมูลเหตุการณ์ |
 | emitted_at | timestamptz | เวลาที่เกิด |
@@ -44,22 +44,22 @@
 **`webhook_subscriptions`** — เผื่อ Agent Interface/ระบบภายนอกมารับ event (U-09)
 | ฟิลด์ | ชนิด | คำอธิบาย |
 |---|---|---|
-| id | uuid | |
+| id | uuid |รหัส subscription |
 | owner_id | uuid→users | ใครลงทะเบียน |
 | url | text | ปลายทางรับ webhook |
 | event_types | text[] | อยากรับ event แบบไหน |
 | secret | text | 🔒 ใช้เซ็นยืนยัน payload |
-| is_active | bool | |
+| is_active | bool |เปิด/ปิดการส่ง webhook |
 
 ### Phase 1 — แมวและฉัน
 
 **`users`** — ข้อมูลสาธารณะของผู้ใช้
 | ฟิลด์ | ชนิด | คำอธิบาย |
 |---|---|---|
-| id | uuid | |
+| id | uuid |รหัสผู้ใช้ |
 | username | text | ไม่ซ้ำ |
 | display_name | text | ชื่อที่โชว์ |
-| avatar_url / bio | text | |
+| avatar_url / bio | text |รูปโปรไฟล์ / คำแนะนำตัวสั้น |
 | verified_status | text | pending / verified / rejected — ยืนยันตัวตน |
 | locale | text | th / en |
 | quiet_hours | jsonb | ช่วงเงียบแจ้งเตือน (ดีฟอลต์ 22:00–07:00) |
@@ -79,14 +79,14 @@
 **`cats`** — แมวหลายตัวต่อผู้ใช้
 | ฟิลด์ | ชนิด | คำอธิบาย |
 |---|---|---|
-| id | uuid | |
+| id | uuid |รหัสแมวในระบบ |
 | owner_id | uuid→users | เจ้าของหลัก |
 | public_id | text | Cat ID สาธารณะ @MAW000xxx |
-| name / breed / sex / neutered / birth_date | text / bool / date | |
-| photo_urls | text[] | |
+| name / breed / sex / neutered / birth_date | text / bool / date |ชื่อ / สายพันธุ์ / เพศ / ทำหมันแล้วไหม / วันเกิด |
+| photo_urls | text[] |รูปแมวหลายรูป |
 | qr_payload | text | ข้อมูลใน QR Cat ID |
 | status | text | normal / lost / found / memorial |
-| created_at / updated_at / deleted_at | timestamptz | |
+| created_at / updated_at / deleted_at | timestamptz |สร้าง / แก้ / ลบ (soft delete) |
 
 **`cat_caretakers`** — ผู้ดูแลร่วมหลายคนต่อแมวตัวเดียว
 | ฟิลด์ | ชนิด | คำอธิบาย |
@@ -97,8 +97,8 @@
 **`cat_health`** — สมุดสุขภาพและรูทีนดูแล
 | ฟิลด์ | ชนิด | คำอธิบาย |
 |---|---|---|
-| id | uuid | |
-| cat_id | uuid→cats | |
+| id | uuid |รหัสบันทึกสุขภาพ |
+| cat_id | uuid→cats |บันทึกของแมวตัวไหน |
 | type | text | vaccine / weight / symptom / routine / note |
 | detail | jsonb | รายละเอียดตาม type (เช่น ชื่อวัคซีน, น้ำหนัก) |
 | attachments | text[] | รูปแนบ |
@@ -109,24 +109,24 @@
 **`posts`**
 | ฟิลด์ | ชนิด | คำอธิบาย |
 |---|---|---|
-| id | uuid | |
+| id | uuid |รหัสโพสต์ |
 | author_id / cat_id | uuid | โพสต์ผูกแมวตัวไหน (ได้หรือไม่ได้) |
 | type | text | normal / lost_cat (โพสต์จากประกาศ) |
-| caption / category | text | |
+| caption / category | text |ข้อความโพสต์ / หมวดหมู่ |
 | media | jsonb | รูป ≤3 หรือวิดีโอ ≤60 วิ (เก็บ url+kind) — ลบ EXIF GPS ก่อนเก็บ |
 | announcement_id | uuid→announcements | ถ้ามาจากประกาศแมวหาย |
 | visibility | text | public / followers |
-| created_at / updated_at / deleted_at | timestamptz | |
+| created_at / updated_at / deleted_at | timestamptz |สร้าง / แก้ / ลบ (soft delete) |
 
 **`comments`** (post_id, author_id, body, parent_id สำหรับตอบกลับ) · **`likes`** (post_id, user_id) · **`saves`** (post_id, user_id) · **`follows`** (follower_id, followee_id)
 
 **`reports`** — รายงานโพสต์/ผู้ใช้/ประกาศส่งทีมงาน
 | ฟิลด์ | ชนิด | คำอธิบาย |
 |---|---|---|
-| id | uuid | |
-| reporter_id | uuid→users | |
+| id | uuid |รหัสรายงาน |
+| reporter_id | uuid→users |คนกดรายงาน |
 | target_type / target_id | text / uuid | report อะไร (post/comment/user/announcement) |
-| reason / detail | text | |
+| reason / detail | text |เหตุผลที่เลือก / รายละเอียดเพิ่มเติม |
 | status | text | open / reviewing / resolved |
 | resolved_by | uuid→users | ทีมงานคนปิดเคส |
 
@@ -135,34 +135,34 @@
 **`announcements`** — ประกาศ 5 แบบ + ระดมทุน
 | ฟิลด์ | ชนิด | คำอธิบาย |
 |---|---|---|
-| id | uuid | |
+| id | uuid |รหัสประกาศ |
 | user_id / cat_id | uuid | ประกาศของใคร ผูกแมวตัวไหน |
 | type | text | lost / found / help_wanted / adoption / foster / fundraiser |
-| title / detail | text | |
+| title / detail | text |หัวข้อประกาศ / รายละเอียด |
 | area_label | text | ชื่อย่านที่โชว์สาธารณะ (~500 ม.) |
 | location_point | geometry(Point,4326) | 🔒 พิกัดจริง ห้ามส่งสาธารณะ |
 | secret_landmark | text | 🔒 จุดสังเกตลับ เฉพาะเจ้าของประกาศ |
 | status | text | open / resolved / closed — ปิดแล้วถอนออกจากฟีด |
 | post_id | uuid→posts | ลิงก์โพสต์ในฟีด (ถ้าสลับลงฟีด) |
 | goal_amount / raised_amount | numeric | เฉพาะประกาศระดมทุน |
-| created_at / updated_at / closed_at | timestamptz | |
+| created_at / updated_at / closed_at | timestamptz |สร้าง / แก้ / ปิดประกาศ |
 
 **`sightings`** — เบาะแสพบแมว
 | ฟิลด์ | ชนิด | คำอธิบาย |
 |---|---|---|
-| id | uuid | |
-| announcement_id | uuid→announcements | |
+| id | uuid |รหัสเบาะแส |
+| announcement_id | uuid→announcements |เบาะแสของประกาศไหน |
 | reporter_id | uuid→users | คนแจ้งเบาะแส |
 | location_point | geometry(Point,4326) | 🔒 ส่งเจ้าของ+ทีมงานเท่านั้น |
-| photo_url / note | text | |
-| created_at | timestamptz | |
+| photo_url / note | text |รูปที่ถ่ายเจอ / บันทึกเพิ่มเติม |
+| created_at | timestamptz |เวลาแจ้งเบาะแส |
 
 ### Phase 4 — ใกล้ฉัน
 
 **`places`** — สถานที่ผูกพิกัด
 | ฟิลด์ | ชนิด | คำอธิบาย |
 |---|---|---|
-| id | uuid | |
+| id | uuid |รหัสสถานที่ |
 | name / category | text | cafe / clinic / shop / grooming / boarding / emergency_vet |
 | location_point | geometry(Point,4326) | พิกัดสาธารณะ (อันนี้เปิดได้) |
 | open_hours | jsonb | เวลาเปิดปิดรายวัน |
@@ -181,7 +181,7 @@
 **`knowledge_chunks`** — ความรู้การเลี้ยงแมวให้ AI ค้น (RAG)
 | ฟิลด์ | ชนิด | คำอธิบาย |
 |---|---|---|
-| id | uuid | |
+| id | uuid |รหัสชิ้นความรู้ |
 | source / title | text | ที่มาของความรู้ |
 | content | text | เนื้อความ |
 | embedding | vector | เวกเตอร์สำหรับค้นคล้าย (pgvector) |
@@ -191,7 +191,7 @@
 **`transactions`** — เลี้ยงขนม / บริจาค / ระดมทุน / สั่งซื้อ Tag
 | ฟิลด์ | ชนิด | คำอธิบาย |
 |---|---|---|
-| id | uuid | |
+| id | uuid |รหัสธุรกรรม |
 | type | text | treat / donation / fundraiser / tag_order |
 | payer_id / payee_user_id | uuid→users | ผู้จ่าย / ผู้รับ (payee ไม่โชว์เลขบัญชีให้ payer) |
 | announcement_id | uuid | ถ้าเป็นบริจาคประกาศระดมทุน |
@@ -199,26 +199,26 @@
 | status | text | pending / paid / failed / refunded |
 | payment_ref | text | 🔒 อ้างอิงจากผู้ให้บริการชำระเงิน (QR) |
 | shipping_address | jsonb | 🔒 ที่อยู่จัดส่ง (เฉพาะออเดอร์ของจริง) |
-| created_at / paid_at | timestamptz | |
+| created_at / paid_at | timestamptz |สร้างรายการ / จ่ายสำเร็จ |
 
 ### Phase 8 — Tag/IoT
 
 **`devices`** — แมว.live Tag
 | ฟิลด์ | ชนิด | คำอธิบาย |
 |---|---|---|
-| id | uuid | |
+| id | uuid |รหัสอุปกรณ์ในระบบ |
 | public_id | text | รหัสอุปกรณ์ |
 | cat_id | uuid→cats | ผูกแมวตัวไหน |
 | battery_pct / is_connected | int / bool | สถานะอุปกรณ์ |
-| last_seen_at | timestamptz | |
+| last_seen_at | timestamptz |เห็นอุปกรณ์ล่าสุดเมื่อไหร่ |
 
 **`cat_locations`** 🔒 — ประวัติตำแหน่งจาก Tag
 | ฟิลด์ | ชนิด | คำอธิบาย |
 |---|---|---|
-| id | uuid | |
-| device_id | uuid→devices | |
+| id | uuid |รหัสบันทึกพิกัด |
+| device_id | uuid→devices |พิกัดจาก Tag ตัวไหน |
 | location_point | geometry(Point,4326) | 🔒 เจ้าของแมว+ผู้ดูแลเท่านั้น |
-| recorded_at | timestamptz | |
+| recorded_at | timestamptz |เวลาที่บันทึกพิกัด |
 
 ### ข้อความ (ทุกเฟสที่ต้องแชต)
 
