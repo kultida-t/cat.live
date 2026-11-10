@@ -86,7 +86,12 @@ class CommentsController extends Notifier<CommentsState> {
       isLiked: false,
       replyToHandle: replyTo?.author.handle,
     );
-    state = state.copyWith(comments: [...state.comments, temp], replyTo: null);
+    final comments = List<Comment>.of(state.comments);
+    final index = replyTo == null
+        ? comments.length
+        : comments.indexWhere((c) => c.id == replyTo.id) + 1;
+    comments.insert(index.clamp(0, comments.length), temp);
+    state = state.copyWith(comments: comments, replyTo: null);
     try {
       final saved = await ref.read(addCommentProvider)(
         postId,

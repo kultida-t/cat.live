@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:video_player/video_player.dart';
@@ -754,10 +755,10 @@ class _CreatePostPageState extends ConsumerState<CreatePostPage>
                       color: const Color(0xFFFFF3EF),
                       borderRadius: BorderRadius.circular(14),
                     ),
-                    child: const Row(
+                    child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Padding(
+                        const Padding(
                           padding: EdgeInsets.only(top: 2),
                           child: Icon(
                             LucideIcons.circleAlert,
@@ -765,11 +766,12 @@ class _CreatePostPageState extends ConsumerState<CreatePostPage>
                             color: Color(0xFFC2503B),
                           ),
                         ),
-                        SizedBox(width: 8),
+                        const SizedBox(width: 8),
                         Expanded(
-                          child: Text(
-                            'ดูเหมือนโฆษณาหรือขายอาหารแมว ซึ่งทำได้เฉพาะ แบรนด์อาหารแมวพาร์ทเนอร์ทางการ · กฎการโพสต์',
-                            style: TextStyle(
+                          child: _RuleNote(
+                            'ดูเหมือนโฆษณาหรือขายอาหารแมว ซึ่งทำได้เฉพาะ ',
+                            bold: 'แบรนด์อาหารแมวพาร์ทเนอร์ทางการ',
+                            style: const TextStyle(
                               fontSize: 13,
                               height: 1.6,
                               color: Color(0xFF6B2A1E),
@@ -780,9 +782,12 @@ class _CreatePostPageState extends ConsumerState<CreatePostPage>
                     ),
                   )
                 else
-                  const Text(
-                    'ห้ามโฆษณาหรือขายอาหารแมว · กฎการโพสต์',
-                    style: TextStyle(fontSize: 12, color: AppColors.muted),
+                  _RuleNote(
+                    'ห้ามโฆษณาหรือขายอาหารแมว · ',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AppColors.muted,
+                    ),
                   ),
                 const SizedBox(height: 16),
                 const Divider(height: 1, color: AppColors.line),
@@ -847,16 +852,13 @@ class _CreatePostPageState extends ConsumerState<CreatePostPage>
               height: 22,
               alignment: Alignment.center,
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(6),
+                shape: BoxShape.circle,
                 border: Border.all(color: AppColors.text, width: 1.7),
               ),
-              child: const Text(
-                '↗',
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.text,
-                ),
+              child: const Icon(
+                LucideIcons.arrowUpRight,
+                size: 12,
+                color: AppColors.text,
               ),
             ),
             const SizedBox(width: 12),
@@ -1137,6 +1139,49 @@ class _DetailThumb extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// ข้อความกฎ + ลิงก์ "กฎการโพสต์" (ขีดเส้นใต้ กดเปิดหน้ากฎชุมชนได้ เหมือนเว็บ)
+class _RuleNote extends StatelessWidget {
+  const _RuleNote(this.prefix, {required this.style, this.bold});
+
+  final String prefix;
+  final String? bold;
+  final TextStyle style;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text.rich(
+      TextSpan(
+        children: [
+          TextSpan(text: prefix),
+          if (bold != null)
+            TextSpan(
+              text: bold,
+              style: const TextStyle(fontWeight: FontWeight.w700),
+            ),
+          const TextSpan(text: ' · '),
+          WidgetSpan(
+            alignment: PlaceholderAlignment.baseline,
+            baseline: TextBaseline.alphabetic,
+            child: GestureDetector(
+              onTap: () => context.push('/guidelines'),
+              child: const Text(
+                'กฎการโพสต์',
+                style: TextStyle(
+                  decoration: TextDecoration.underline,
+                  decorationColor: Color(0xFF8F2E1E),
+                  color: Color(0xFF8F2E1E),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+      style: style,
     );
   }
 }

@@ -94,6 +94,21 @@ void main() {
     );
   });
 
+  test('ตอบกลับ — แสดงใต้คอมเมนต์ที่เลือก ไม่ใช่ต่อท้ายลิสต์', () async {
+    final c = _container(_repo());
+    final state = await _loaded(c, 'p3');
+    final notifier = c.read(commentsControllerProvider('p3').notifier);
+    final target = state.comments.first;
+
+    notifier.startReply(target);
+    await notifier.add('ตอบกลับตรงนี้');
+
+    final comments = c.read(commentsControllerProvider('p3')).comments;
+    final targetIndex = comments.indexWhere((x) => x.id == target.id);
+    expect(comments[targetIndex + 1].replyToHandle, target.author.handle);
+    expect(comments.last.id, isNot(comments[targetIndex + 1].id));
+  });
+
   test('ตอบกลับ — บันทึกชื่อผู้ถูกตอบและล้างโหมดตอบกลับ', () async {
     final c = _container(_repo());
     final state = await _loaded(c, 'p3');
@@ -106,7 +121,8 @@ void main() {
 
     final after = c.read(commentsControllerProvider('p3'));
     expect(after.replyTo, isNull);
-    expect(after.comments.last.replyToHandle, target.author.handle);
+    final targetIndex = after.comments.indexWhere((x) => x.id == target.id);
+    expect(after.comments[targetIndex + 1].replyToHandle, target.author.handle);
   });
 
   test(

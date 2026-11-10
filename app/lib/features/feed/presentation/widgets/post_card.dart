@@ -251,7 +251,7 @@ class _FollowButton extends StatelessWidget {
         height: 32,
         padding: const EdgeInsets.symmetric(horizontal: 12),
         decoration: BoxDecoration(
-          color: following ? Colors.white : AppColors.btn,
+          color: following ? AppColors.btnFollowing : AppColors.btn,
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
             color: following ? AppColors.line2 : AppColors.btnBorder,
