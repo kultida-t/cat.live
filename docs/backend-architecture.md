@@ -127,3 +127,17 @@ catlive/
 2. ยืนยันเรื่อง **EXIF GPS ถูกลบจาก variants หรือไม่** — ถ้าไม่ ต้อง strip ฝั่งเราก่อนอัป
 3. วิธี **verify callback** ว่ามาจาก CloudImageLab จริง (signature/secret?) — ดูในเอกสารส่วน Callback (Webhook) อีกทีตอน implement
 4. S3 ที่ variants ไปลงเป็นของบริษัท หรือต้อง BYOS (bring your own storage) — ถ้า BYOS ต้องเตรียม bucket ของเราเอง
+
+## 12. บริการกลางของบริษัทที่เกี่ยวกับแมว.live (Univerza Shared Services)
+
+ประกาศจากทีมกลาง (2026-11-10) — บริษัทมีบริการร่วมที่ทุกแอปสามารถ/ควรใช้ ไม่ต้องทำเอง:
+
+| บริการ | คืออะไร | แมว.live ใช้ยังไง | เว็บ |
+|---|---|---|---|
+| **CloudImageLab** | อัปโหลด+ประมวลผลภาพ/วิดีโอ (variants, callback) | ระบบสื่อทั้งหมด (ข้อ 7) | stg `stg-cloudimagelab-api.mrfox.store` |
+| **UGC** (Univerza Governance Center) | คลังเอกสารกลาง: นโยบาย, PDPA, เอกสารแอป + เวอร์ชัน + API | (ก) ลงทะเบียนแอปแมว.live ใน BackOffice — **บังคับตามประกาศ: เอกสารที่ล็อก baseline ต้องย้ายขึ้น UGC** (ข) หน้ากฎชุมชน/PDPA ในแอปดึงเนื้อหาจาก UGC API ได้ | stg `stg-ugc.mrfox.store` |
+| **Today** | ตัวกลางข้อมูลภายนอก (อากาศ, ฝุ่น, ปฏิทิน, ทอง, หุ้น ฯลฯ) | nice-to-have เฟสหลัง: widget อากาศ/ฝุ่น หน้าแรกหรือใกล้ฉัน — บริการอื่นไม่เกี่ยว | stg `stg-today.mrfox.store` |
+
+**กฎใช้ key ร่วมกันทุกบริการ:** key แยกตาม environment (staging/prod) และแยกตาม application, เรียกจาก backend เท่านั้น — ห้ามฝังในแอป/โค้ด/แชท/ภาพหน้าจอ (ตรงกับกฎ repo เราอยู่แล้ว)
+
+**ลำดับ onboarding ที่ต้องทำ:** ลงทะเบียนแอปใน UGC ก่อน (ต้องมี owner/member + สถานะ Active) → แล้วค่อยขอ key บริการอื่นตาม flow ของแต่ละระบบ

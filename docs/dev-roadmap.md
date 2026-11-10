@@ -52,6 +52,8 @@
 | เครื่องมือดู DB | pgAdmin 4 | เครื่องมือบนเครื่อง dev (อยู่ใน `env-setup.md` ข้อลงเครื่องแล้ว ไม่ใช่ส่วนของระบบ) |
 | Cache/คิว | Redis | cache, rate limit, คิวงานพื้นหลัง (ลบ EXIF, แจ้งเตือน) |
 | ไฟล์สื่อ | CloudImageLab (บริการกลางของบริษัท) | อัปโหลด+resize รูป/วิดีโอผ่าน API เดิมของทีม ไม่ทำเอง |
+| เอกสารกลาง | UGC (Univerza Governance Center) | เอกสารที่ล็อก baseline/PDPA ย้ายขึ้น UGC ตามประกาศ — ร่างอยู่ใน git ได้จนกว่าล็อก |
+| ข้อมูลภายนอก | Today (บริการกลาง) — optional | widget อากาศ/ฝุ่น เฟสหลังถ้าต้องการ |
 | ยืนยันตัวตน | OIDC + LINE Login | ออกแบบให้ย้ายขึ้น UNIVERZA Gateway ได้ (U-05) |
 | AI | AI Model Router กลาง + เผื่อ MCP server | ตรงข้อ 2-3 ของกติกาพี่คิง |
 
