@@ -27,6 +27,9 @@ class _FlakyRepository implements FeedRepository {
   @override
   Future<List<FeedUser>> getStoryUsers() => _inner.getStoryUsers();
 
+  @override
+  Future<List<FeedUser>> getAccounts() => _inner.getAccounts();
+
   Future<T> _write<T>(Future<T> Function() action) async {
     if (failWrites) throw const NetworkFailure();
     return action();
@@ -101,6 +104,83 @@ void main() {
       'rescue.bkk',
     ]);
   });
+
+  test(
+    'แท็บติดตาม — มีทะเบียนบัญชี: ติดตามอยู่ 3 + แนะนำ 3 (สูงสุด 4)',
+    () async {
+      final c = _container(_newRepo());
+      await _loaded(c);
+      await c
+          .read(feedControllerProvider.notifier)
+          .selectTab(FeedTab.following);
+
+      final state = c.read(feedControllerProvider);
+      expect(state.followedAccounts.map((a) => a.handle), [
+        'noon.mochi',
+        'maew.vetnote',
+        'rescue.bkk',
+      ]);
+      expect(state.suggestedAccounts.map((a) => a.handle), [
+        'muk.ari',
+        'somjeed.daily',
+        'guy.oldcat',
+      ]);
+    },
+  );
+
+  test(
+    'ติดตามจากแนะนำ — ย้ายบัญชีไปฝั่งติดตามแล้ว อัปเดตโพสต์ของบัญชีด้วย',
+    () async {
+      final c = _container(_newRepo());
+      await _loaded(c);
+      final notifier = c.read(feedControllerProvider.notifier);
+      await notifier.selectTab(FeedTab.following);
+
+      final guy = c
+          .read(feedControllerProvider)
+          .suggestedAccounts
+          .firstWhere((a) => a.handle == 'guy.oldcat');
+      expect(await notifier.toggleFollowUser(guy), isNull);
+
+      final state = c.read(feedControllerProvider);
+      expect(
+        state.followedAccounts.any((a) => a.handle == 'guy.oldcat'),
+        isTrue,
+      );
+      expect(
+        state.suggestedAccounts.any((a) => a.handle == 'guy.oldcat'),
+        isFalse,
+      );
+    },
+  );
+
+  test(
+    'ติดตามจากแนะนำแล้วเน็ตหลุด — บัญชีกลับไปอยู่ฝั่งแนะนำเหมือนเดิม',
+    () async {
+      final repo = _newRepo();
+      final c = _container(repo);
+      await _loaded(c);
+      final notifier = c.read(feedControllerProvider.notifier);
+      await notifier.selectTab(FeedTab.following);
+
+      final guy = c
+          .read(feedControllerProvider)
+          .suggestedAccounts
+          .firstWhere((a) => a.handle == 'guy.oldcat');
+      repo.failWrites = true;
+      expect(await notifier.toggleFollowUser(guy), isA<NetworkFailure>());
+
+      final state = c.read(feedControllerProvider);
+      expect(
+        state.suggestedAccounts.any((a) => a.handle == 'guy.oldcat'),
+        isTrue,
+      );
+      expect(
+        state.followedAccounts.any((a) => a.handle == 'guy.oldcat'),
+        isFalse,
+      );
+    },
+  );
 
   test('แท็บบันทึกไว้ — เห็นโพสต์ที่เซฟไว้ 2 โพสต์', () async {
     final c = _container(_newRepo());

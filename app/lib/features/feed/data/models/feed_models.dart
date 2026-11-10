@@ -11,6 +11,7 @@ class FeedUserModel {
     required this.avatarUrl,
     required this.avatarBg,
     required this.hasUnseenStory,
+    this.isFollowing = false,
   });
 
   factory FeedUserModel.fromJson(Map<String, dynamic> json) => FeedUserModel(
@@ -19,6 +20,7 @@ class FeedUserModel {
     avatarUrl: json['avatar_url'] as String,
     avatarBg: json['avatar_bg'] as int,
     hasUnseenStory: json['has_unseen_story'] as bool? ?? false,
+    isFollowing: json['is_following'] as bool? ?? false,
   );
 
   final String id;
@@ -26,6 +28,7 @@ class FeedUserModel {
   final String avatarUrl;
   final int avatarBg;
   final bool hasUnseenStory;
+  final bool isFollowing;
 
   FeedUser toEntity() => FeedUser(
     id: id,
@@ -33,6 +36,7 @@ class FeedUserModel {
     avatar: avatarUrl,
     avatarBg: avatarBg,
     hasUnseenStory: hasUnseenStory,
+    isFollowing: isFollowing,
   );
 }
 

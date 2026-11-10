@@ -11,6 +11,7 @@ abstract interface class FeedRepository {
     int limit = 5,
   });
   Future<List<FeedUser>> getStoryUsers();
+  Future<List<FeedUser>> getAccounts();
   Future<Post> toggleLike(String postId);
   Future<Post> toggleSave(String postId);
   Future<void> toggleFollow(String userId);

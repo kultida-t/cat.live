@@ -9,6 +9,7 @@ abstract interface class FeedRemoteDataSource {
     required int limit,
   });
   Future<List<FeedUserModel>> fetchStoryUsers();
+  Future<List<FeedUserModel>> fetchAccounts();
   Future<PostModel> toggleLike(String postId);
   Future<PostModel> toggleSave(String postId);
   Future<void> toggleFollow(String userId);

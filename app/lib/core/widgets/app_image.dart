@@ -17,6 +17,12 @@ class AppImage extends StatelessWidget {
   final BoxFit fit;
   final String? semanticLabel;
 
+  /// provider ของรูปเดียวกัน — ใช้กับ precacheImage เพื่ออุ่นแคชก่อนเลื่อนถึง
+  static ImageProvider providerOf(String source) =>
+      source.startsWith(_assetPrefix)
+      ? AssetImage(source.substring(_assetPrefix.length))
+      : NetworkImage(source);
+
   @override
   Widget build(BuildContext context) {
     if (source.startsWith(_assetPrefix)) {

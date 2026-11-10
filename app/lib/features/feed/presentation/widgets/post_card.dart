@@ -33,18 +33,24 @@ class PostCard extends StatefulWidget {
 class _PostCardState extends State<PostCard> {
   final _pageController = PageController();
   int _mediaIndex = 0;
+  bool _precached = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // อุ่นแคชรูปของโพสต์ล่วงหน้า ลดอาการกระตุกตอนเลื่อนฟีดถึงการ์ด
+    if (_precached) return;
+    _precached = true;
+    for (final media in widget.post.media) {
+      precacheImage(AppImage.providerOf(media.url), context);
+    }
+  }
 
   @override
   void dispose() {
     _pageController.dispose();
     super.dispose();
   }
-
-  void _goTo(int index) => _pageController.animateToPage(
-    index,
-    duration: const Duration(milliseconds: 250),
-    curve: Curves.easeOut,
-  );
 
   @override
   Widget build(BuildContext context) {
@@ -69,7 +75,6 @@ class _PostCardState extends State<PostCard> {
             controller: _pageController,
             index: _mediaIndex,
             onChanged: (i) => setState(() => _mediaIndex = i),
-            onNext: () => _goTo(_mediaIndex + 1),
           ),
           _Actions(
             post: post,
@@ -259,14 +264,12 @@ class _Media extends StatelessWidget {
     required this.controller,
     required this.index,
     required this.onChanged,
-    required this.onNext,
   });
 
   final Post post;
   final PageController controller;
   final int index;
   final ValueChanged<int> onChanged;
-  final VoidCallback onNext;
 
   @override
   Widget build(BuildContext context) {
@@ -312,41 +315,6 @@ class _Media extends StatelessWidget {
                 ),
               ),
             ),
-            if (index < count - 1)
-              Positioned(
-                right: 8,
-                top: 0,
-                bottom: 0,
-                child: Center(
-                  child: Semantics(
-                    button: true,
-                    label: 'รูปถัดไป',
-                    child: GestureDetector(
-                      onTap: onNext,
-                      child: Container(
-                        width: 32,
-                        height: 32,
-                        decoration: const BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Color(0xD9FFFFFF),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Color(0x2E000000),
-                              blurRadius: 4,
-                              offset: Offset(0, 1),
-                            ),
-                          ],
-                        ),
-                        child: const Icon(
-                          LucideIcons.chevronRight,
-                          size: 18,
-                          color: AppColors.text,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
             Positioned(
               left: 0,
               right: 0,

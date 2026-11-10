@@ -31,6 +31,9 @@ final getFeedPageProvider = Provider(
 final getStoryUsersProvider = Provider(
   (ref) => GetStoryUsers(ref.watch(feedRepositoryProvider)),
 );
+final getAccountsProvider = Provider(
+  (ref) => GetAccounts(ref.watch(feedRepositoryProvider)),
+);
 final toggleLikeProvider = Provider(
   (ref) => ToggleLike(ref.watch(feedRepositoryProvider)),
 );

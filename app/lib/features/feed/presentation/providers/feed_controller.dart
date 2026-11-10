@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/error/failure.dart';
 import '../../domain/entities/feed_tab.dart';
+import '../../domain/entities/feed_user.dart';
 import '../../domain/entities/post.dart';
 import 'feed_providers.dart';
 
@@ -12,6 +15,7 @@ class FeedState {
     this.tab = FeedTab.all,
     this.status = FeedStatus.loading,
     this.posts = const [],
+    this.accounts = const [],
     this.nextCursor,
     this.loadingMore = false,
     this.errorMessage,
@@ -20,14 +24,27 @@ class FeedState {
   final FeedTab tab;
   final FeedStatus status;
   final List<Post> posts;
+
+  /// ทะเบียนบัญชีพร้อมสถานะติดตาม — ใช้วาดแท็บ "ติดตาม"
+  final List<FeedUser> accounts;
   final int? nextCursor;
   final bool loadingMore;
   final String? errorMessage;
+
+  List<FeedUser> get followedAccounts =>
+      accounts.where((a) => a.isFollowing).toList();
+
+  /// บัญชีแนะนำในแท็บติดตาม — ยังไม่ได้ติดตาม สูงสุด 4 บัญชีตามเว็บ
+  List<FeedUser> get suggestedAccounts => accounts
+      .where((a) => !a.isFollowing && a.id != 'me')
+      .take(4)
+      .toList();
 
   FeedState copyWith({
     FeedTab? tab,
     FeedStatus? status,
     List<Post>? posts,
+    List<FeedUser>? accounts,
     Object? nextCursor = _keep,
     bool? loadingMore,
     String? errorMessage,
@@ -36,6 +53,7 @@ class FeedState {
       tab: tab ?? this.tab,
       status: status ?? this.status,
       posts: posts ?? this.posts,
+      accounts: accounts ?? this.accounts,
       nextCursor: identical(nextCursor, _keep)
           ? this.nextCursor
           : nextCursor as int?,
@@ -91,14 +109,20 @@ class FeedController extends Notifier<FeedState> {
     final id = ++_requestId;
     final tab = state.tab;
     try {
-      final page = await ref.read(getFeedPageProvider)(
+      final pageFuture = ref.read(getFeedPageProvider)(
         tab: tab,
         cursor: reset ? 0 : (state.nextCursor ?? 0),
       );
+      // แท็บติดตามต้องมีทะเบียนบัญชีเพื่อวาดแถว "กำลังติดตาม" + "แนะนำให้ติดตาม"
+      final accountsFuture = tab == FeedTab.following
+          ? ref.read(getAccountsProvider)()
+          : Future<List<FeedUser>>.value(state.accounts);
+      final (page, accounts) = await (pageFuture, accountsFuture).wait;
       if (!ref.mounted || id != _requestId) return;
       state = state.copyWith(
         status: FeedStatus.ready,
         posts: reset ? page.posts : [...state.posts, ...page.posts],
+        accounts: accounts,
         nextCursor: page.nextCursor,
         loadingMore: false,
       );
@@ -151,22 +175,34 @@ class FeedController extends Notifier<FeedState> {
     }
   }
 
-  Future<Failure?> toggleFollow(Post post) async {
-    final following = !post.isFollowingAuthor;
-    final before = state.posts;
+  Future<Failure?> toggleFollow(Post post) =>
+      _setFollowing(post.author.id, !post.isFollowingAuthor);
+
+  /// กดติดตามจากแถว "แนะนำให้ติดตาม" (ไม่มีโพสต์เป็นตัวอ้าง)
+  Future<Failure?> toggleFollowUser(FeedUser user) =>
+      _setFollowing(user.id, !user.isFollowing);
+
+  /// เปลี่ยนสถานะติดตามของบัญชี — อัปเดตทุกโพสต์ของบัญชีนั้นและทะเบียน accounts
+  /// พร้อมกัน ถ้า API ล้มเหลวย้อนทั้ง state เดิมกลับ
+  Future<Failure?> _setFollowing(String userId, bool following) async {
+    final before = state;
     state = state.copyWith(
       posts: [
-        for (final p in before)
-          p.author.id == post.author.id
+        for (final p in before.posts)
+          p.author.id == userId
               ? p.copyWith(isFollowingAuthor: following)
               : p,
       ],
+      accounts: [
+        for (final a in before.accounts)
+          a.id == userId ? a.copyWith(isFollowing: following) : a,
+      ],
     );
     try {
-      await ref.read(toggleFollowProvider)(post.author.id);
+      await ref.read(toggleFollowProvider)(userId);
       return null;
     } on Failure catch (f) {
-      if (ref.mounted) state = state.copyWith(posts: before);
+      if (ref.mounted) state = before;
       return f;
     }
   }

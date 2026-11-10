@@ -41,6 +41,12 @@ class FeedRepositoryImpl implements FeedRepository {
   );
 
   @override
+  Future<List<FeedUser>> getAccounts() => _guard(
+    () async =>
+        (await _remote.fetchAccounts()).map((u) => u.toEntity()).toList(),
+  );
+
+  @override
   Future<Post> toggleLike(String postId) =>
       _guard(() async => (await _remote.toggleLike(postId)).toEntity());
 

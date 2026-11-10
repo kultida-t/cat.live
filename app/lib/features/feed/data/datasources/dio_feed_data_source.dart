@@ -34,6 +34,15 @@ class DioFeedDataSource implements FeedRemoteDataSource {
   }
 
   @override
+  Future<List<FeedUserModel>> fetchAccounts() async {
+    final res = await _dio.get<List<dynamic>>('/v1/feed/accounts');
+    return res.data!
+        .cast<Map<String, dynamic>>()
+        .map(FeedUserModel.fromJson)
+        .toList();
+  }
+
+  @override
   Future<PostModel> toggleLike(String postId) async {
     final res = await _dio.post<Map<String, dynamic>>('/v1/posts/$postId/like');
     return PostModel.fromJson(res.data!);

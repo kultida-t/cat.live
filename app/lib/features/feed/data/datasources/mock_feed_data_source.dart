@@ -195,13 +195,25 @@ List<Map<String, dynamic>> _seedPosts() => [
   },
 ];
 
+/// ทะเบียนบัญชีทั้งหมด + สถานะติดตามเริ่มต้น — ตรงกับ seed โพสต์ด้านบน
+List<Map<String, dynamic>> _seedAccounts() => [
+  {..._noon, 'is_following': true},
+  {..._vet, 'is_following': true},
+  {..._muk, 'is_following': false},
+  {..._rescue, 'is_following': true},
+  {..._somjeed, 'is_following': false},
+  {..._guy, 'is_following': false},
+];
+
 /// ข้อมูล mock ในหน่วยความจำ — ใช้ช่วงยังไม่มี backend (ตามแนวทาง "ทำหน้าจอให้เห็นก่อน")
 class MockFeedDataSource implements FeedRemoteDataSource {
   MockFeedDataSource({this.latency = const Duration(milliseconds: 400)})
-    : _posts = _seedPosts();
+    : _posts = _seedPosts(),
+      _accounts = _seedAccounts();
 
   final Duration latency;
   List<Map<String, dynamic>> _posts;
+  final List<Map<String, dynamic>> _accounts;
   final _hiddenIds = <String>{};
 
   Future<void> _delay() => Future<void>.delayed(latency);
@@ -244,6 +256,12 @@ class MockFeedDataSource implements FeedRemoteDataSource {
   }
 
   @override
+  Future<List<FeedUserModel>> fetchAccounts() async {
+    await _delay();
+    return _accounts.map(FeedUserModel.fromJson).toList();
+  }
+
+  @override
   Future<PostModel> toggleLike(String postId) async {
     await _delay();
     final post = _find(postId);
@@ -264,6 +282,11 @@ class MockFeedDataSource implements FeedRemoteDataSource {
   @override
   Future<void> toggleFollow(String userId) async {
     await _delay();
+    for (final a in _accounts) {
+      if (a['id'] == userId) {
+        a['is_following'] = !(a['is_following'] as bool);
+      }
+    }
     for (final p in _posts) {
       if ((p['author'] as Map<String, dynamic>)['id'] == userId) {
         p['is_following_author'] = !(p['is_following_author'] as bool);

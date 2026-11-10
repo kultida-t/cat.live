@@ -20,6 +20,13 @@ class GetStoryUsers {
   Future<List<FeedUser>> call() => _repo.getStoryUsers();
 }
 
+class GetAccounts {
+  const GetAccounts(this._repo);
+  final FeedRepository _repo;
+
+  Future<List<FeedUser>> call() => _repo.getAccounts();
+}
+
 class ToggleLike {
   const ToggleLike(this._repo);
   final FeedRepository _repo;
