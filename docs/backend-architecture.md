@@ -41,7 +41,7 @@ catlive/
 | `DevicesModule` | 6 Integration — Tag/IoT | devices, cat_locations |
 | `ChatModule` | 4 Business — ข้อความ | chats, chat_members, messages |
 | `NotificationsModule` | 6 Integration — แจ้งเตือน | (อ่าน events → push/LINE) |
-| `FilesModule` | 6 Integration — สื่อ | media (S3 + คิวลบ EXIF) |
+| `FilesModule` | 6 Integration — สื่อ (ผ่าน CloudImageLab ของบริษัท) | media metadata |
 | `AuditModule` | 7 Trust — U-10 | audit_logs |
 | `EventsModule` | 5 Data — กระดานเหตุการณ์ (U-08) | events |
 | `WebhooksModule` | 3 Agent Interface — U-09 | webhook_subscriptions |
@@ -79,15 +79,23 @@ catlive/
 3. **ประกาศสาธารณะส่งแค่ `area_label`** — `location_point`/`secret_landmark` อยู่ใน DTO เวอร์ชันเจ้าของเท่านั้น
 4. **ทุกครั้งที่อ่านฟิลด์ลับ → audit log** — รู้ว่าใครเปิดข้อมูลอะไรเมื่อไหร่ (U-10)
 
-## 7. Media Pipeline (รูป/วิดีโอ)
+## 7. Media Pipeline — ใช้ CloudImageLab ของบริษัท
+
+ไม่ต้องทำระบบอัปโหลด/resize เอง ใช้บริการกลาง **CloudImageLab** (Flow A: Presigned Upload → Process) แบบ fire-and-forget:
 
 ```
-อัปโหลด → S3 (ชั่วคราว) → คิว BullMQ/Redis → ลบ EXIF GPS + ตรวจชนิด/ขนาดซ้ำ
-        → ย้ายเข้าที่จริง → ผูกกับโพสต์/แมว → ล้างไฟล์ชั่วคราว
+แอปขอ presigned URL (ผ่าน api เรา) → อัปไฟล์ขึ้น S3 ตรง ๆ
+→ แจ้ง upload-complete พร้อม callbackUrl → CloudImageLab gen variants
+→ callback กลับมาที่ POST /api/v1/webhooks/cloudimagelab
+→ api อัปเดตสถานะ media + ผูกกับโพสต์/แมว
 ```
 
-- ลบ GPS ใน EXIF เสมอก่อนเก็บ — ไม่งั้นรูปแมวหายรั่วพิกัดบ้านคนโพสต์
-- เช็กขีดจำกัด (รูป ≤3, วิดีโอ ≤60 วิ ≤200MB) ซ้ำฝั่ง server แม้ client เช็กแล้ว
+- **Base URL:** staging `https://stg-cloudimagelab-api.mrfox.store` / production `https://cloudimagelab-api.univerza.co` — เอกสาร: `/docs/api-usage-guide`
+- **Auth:** header `X-Api-Key` — ต้องขอ key ของแอปแมว.live จากทีมที่ดูแล CloudImageLab (staging/prod คนละตัว) เก็บใน env/secrets **ห้าม commit ลง repo**
+- **Output path:** แยกตาม entity เช่น `posts/{postId}`, `cats/{catId}`, `announcements/{id}`, `avatars/{userId}` — ระบบ gen variants ตาม preset ที่ admin config (เช่น thumbnail/medium/large) รู้ path ล่วงหน้าได้ไม่ต้องถาม
+- **Callback เป็นหลัก ไม่ใช้ polling** — endpoint รับ callback ต้อง verify ว่ามาจาก CloudImageLab จริง และรองรับ retry
+- **เช็กฝั่งเราก่อนส่งเสมอ:** ชนิดไฟล์ (jpeg/png/webp/gif, mp4/mov/avi/webm), ขนาด (ระบบรับถึง 500MB แต่เราล็อกเอง รูป ≤3 ใบ/โพสต์, วิดีโอ ≤60 วิ ≤200MB)
+- **⚠️ EXIF GPS:** เอกสารยังไม่ยืนยันว่า variants ลบ EXIF ให้ — ต้องถามทีม CloudImageLab ถ้าไม่ลบ เราต้อง strip เองก่อนอัป (ห้ามข้าม เพราะรูปจะรั่วพิกัดบ้านคนโพสต์)
 
 ## 8. Events → แจ้งเตือน
 
@@ -103,9 +111,19 @@ catlive/
 | คิวงาน | BullMQ + Redis | คิวลบ EXIF, ส่งแจ้งเตือน, webhook retry |
 | Validation | zod หรือ class-validator ใน `shared` | schema เดียวใช้ได้ทั้งสองฝั่ง |
 
-## 10. ประเด็นรอตัดสินใจ
+## 10. ข้อตัดสินใจ (ล็อกแล้ว 2026-11-10)
 
-1. Monorepo ตามข้อ 1 โอเคไหม (หรืออยากแยก repo แอป/api)
-2. ORM เลือก Prisma ตามข้อ 9 ไหม
-3. LINE OA/LINE Login เอาเข้าเฟสไหน (ใน roadmap อยู่เฟส 8 — แต่ล็อกอินไทยอาจความจำเป็นเร็วกว่านั้น รอดูคำตอบ BA)
-4. Expo push + ช่องทางแจ้งเตือนอื่นลำดับความสำคัญ
+| เรื่อง | ตัดสินใจ | เหตุผล |
+|---|---|---|
+| โครง repo | **Monorepo ใน repo `catlive` อันเดียว** | คนเดียวดูแล+ภาษาเดียวกัน แชร์ type ได้ ไม่ต้องไล่แก้ 2 repo |
+| ORM | **Prisma** | นิยมคู่ NestJS, type-safe, migration ชัด — query พิกัด PostGIS ใช้ raw SQL เฉพาะจุด |
+| LINE | **LINE Login เข้า Phase 0–1 คู่กับ auth** (คนไทยล็อกอินผ่าน LINE เป็นเรื่องพื้นฐาน) ส่วน **LINE OA ส่งข้อความ/แจ้งเตือนอยู่เฟส 8** ตาม roadmap เดิม | แยก "ล็อกอิน" (จำเป็นเร็ว) ออกจาก "ช่องทางแจ้งเตือน" (ทีหลังได้) |
+| แจ้งเตือน | **Expo push เป็นช่องหลักก่อน** LINE OA ตามมาเฟส 8, email เป็น optional | push มากับ Expo อยู่แล้ว ไม่เพิ่ม dependency ภายนอก |
+| ระบบสื่อ | **ใช้ CloudImageLab ของบริษัท** ไม่ทำเอง | มีของกลางตรง spec (ภาพ+วิดีโอ, variants, callback) ประหยัดงานและตรงแนว Integration Engine |
+
+## 11. ประเด็นที่ต้องถาม/ทำต่อกับทีม CloudImageLab
+
+1. ขอ **API key** สำหรับแอปแมว.live (staging ก่อน) + ให้ admin config **presets** ที่เราต้องการ (thumbnail square สำหรับฟีด, medium, large)
+2. ยืนยันเรื่อง **EXIF GPS ถูกลบจาก variants หรือไม่** — ถ้าไม่ ต้อง strip ฝั่งเราก่อนอัป
+3. วิธี **verify callback** ว่ามาจาก CloudImageLab จริง (signature/secret?) — ดูในเอกสารส่วน Callback (Webhook) อีกทีตอน implement
+4. S3 ที่ variants ไปลงเป็นของบริษัท หรือต้อง BYOS (bring your own storage) — ถ้า BYOS ต้องเตรียม bucket ของเราเอง

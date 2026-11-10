@@ -51,7 +51,7 @@
 | ฐานข้อมูล | PostgreSQL + PostGIS + pgvector | ตัวเดียวครอบ: ข้อมูลหลัก / พิกัดแผนที่ / ความรู้ AI |
 | เครื่องมือดู DB | pgAdmin 4 | เครื่องมือบนเครื่อง dev (อยู่ใน `env-setup.md` ข้อลงเครื่องแล้ว ไม่ใช่ส่วนของระบบ) |
 | Cache/คิว | Redis | cache, rate limit, คิวงานพื้นหลัง (ลบ EXIF, แจ้งเตือน) |
-| ไฟล์สื่อ | S3-compatible storage | รูป/วิดีโอโพสต์และแมว |
+| ไฟล์สื่อ | CloudImageLab (บริการกลางของบริษัท) | อัปโหลด+resize รูป/วิดีโอผ่าน API เดิมของทีม ไม่ทำเอง |
 | ยืนยันตัวตน | OIDC + LINE Login | ออกแบบให้ย้ายขึ้น UNIVERZA Gateway ได้ (U-05) |
 | AI | AI Model Router กลาง + เผื่อ MCP server | ตรงข้อ 2-3 ของกติกาพี่คิง |
 
