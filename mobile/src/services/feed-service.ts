@@ -9,7 +9,6 @@ import type { FeedTab, FeedUser, Post } from '@/types/feed';
 
 export interface FeedQuery {
   tab: FeedTab;
-  category?: string;
   cursor?: number;
   limit?: number;
 }
@@ -39,12 +38,11 @@ class MockFeedService implements FeedService {
   private posts: Post[] = MOCK_POSTS.map((p) => ({ ...p }));
   private hiddenIds = new Set<string>();
 
-  async fetchPosts({ tab, category, cursor = 0, limit = PAGE_SIZE }: FeedQuery): Promise<FeedPage> {
+  async fetchPosts({ tab, cursor = 0, limit = PAGE_SIZE }: FeedQuery): Promise<FeedPage> {
     await delay();
     let list = this.posts.filter((p) => !this.hiddenIds.has(p.id));
     if (tab === 'following') list = list.filter((p) => p.isFollowingAuthor);
     if (tab === 'saved') list = list.filter((p) => p.isSaved);
-    if (category && category !== 'ทั้งหมด') list = list.filter((p) => p.category === category);
 
     const page = list.slice(cursor, cursor + limit);
     const nextCursor = cursor + limit < list.length ? cursor + limit : undefined;
@@ -53,9 +51,7 @@ class MockFeedService implements FeedService {
 
   async fetchStoryUsers(): Promise<FeedUser[]> {
     await delay();
-    return FEED_USERS.filter((u) =>
-      this.posts.some((p) => p.author.id === u.id && p.isFollowingAuthor),
-    );
+    return [...FEED_USERS];
   }
 
   async toggleLike(postId: string): Promise<Post> {

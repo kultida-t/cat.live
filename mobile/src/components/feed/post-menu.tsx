@@ -1,4 +1,6 @@
-import { Modal, Pressable, Text, View } from 'react-native';
+import { Modal, Pressable, View } from 'react-native';
+
+import { Text } from '@/components/ui/text';
 
 export type PostMenuAction =
   | 'not_interested'
@@ -29,26 +31,24 @@ export function PostMenu({ visible, isOwnPost, onClose, onAction }: Props) {
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <Pressable className="flex-1 justify-end bg-black/40" onPress={onClose}>
         <Pressable
-          className="rounded-t-2xl bg-card pb-8 pt-2"
+          className="rounded-t-2xl bg-page pb-8 pt-2"
           onPress={(e) => e.stopPropagation()}>
           <View className="my-2 h-1 w-10 self-center rounded-full bg-unchecked" />
           {items.map((item) => (
             <Pressable
               key={item.action}
               onPress={() => onAction(item.action)}
-              className="border-b border-line px-6 py-4 active:bg-soft">
+              className="min-h-12 justify-center border-b border-line px-6 py-3.5 active:bg-soft">
               <Text
                 className={`text-center text-base ${
-                  item.danger ? 'font-semibold text-danger' : 'text-ink'
+                  item.danger ? 'font-semibold text-danger' : 'text-text'
                 }`}>
                 {item.label}
               </Text>
             </Pressable>
           ))}
-          <Pressable onPress={onClose} className="px-6 py-4 active:bg-soft">
-            <Text className="text-center text-base font-semibold text-ink-muted">
-              ยกเลิก
-            </Text>
+          <Pressable onPress={onClose} className="min-h-12 justify-center px-6 py-3.5 active:bg-soft">
+            <Text className="text-center text-base font-semibold text-muted">ยกเลิก</Text>
           </Pressable>
         </Pressable>
       </Pressable>

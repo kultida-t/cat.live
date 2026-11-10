@@ -5,30 +5,28 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        page: "#FFFCF3",
+        page: "#FFFBF5",
         card: "#FFFFFF",
-        ink: {
+        text: {
           DEFAULT: "#4A3428",
-          secondary: "#5E4636",
-          muted: "#7A6255",
-          accent: "#6E4B00",
+          2: "#5E4636",
         },
+        muted: "#7A6255",
+        ink: "#5A4030",
         btn: {
-          DEFAULT: "#FFE89A",
-          border: "#E6C24F",
+          DEFAULT: "#FFF1E6",
+          border: "#F2CFB4",
         },
-        soft: "#FFF6D6",
+        soft: "#F6EFE6",
         line: {
-          DEFAULT: "#F1E6C6",
-          strong: "#E8D7A4",
+          DEFAULT: "#F0E6DA",
+          2: "#E6D9C8",
         },
-        navtile: "#FFF1C9",
+        tile: "#DCEBFF",
+        media: "#F3EDE6",
+        heart: "#E2557A",
         unchecked: "#D4C4B8",
         danger: "#C0392B",
-      },
-      borderRadius: {
-        card: "12px",
-        "card-lg": "16px",
       },
     },
   },

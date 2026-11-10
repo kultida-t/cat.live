@@ -1,5 +1,7 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Pressable, View } from 'react-native';
+
+import { Text } from '@/components/ui/text';
 
 type Props = { children: ReactNode };
 type State = { hasError: boolean };
@@ -26,14 +28,14 @@ export class ScreenErrorBoundary extends Component<Props, State> {
     return (
       <View className="flex-1 items-center justify-center bg-page p-6">
         <Text className="text-5xl">😿</Text>
-        <Text className="mt-4 text-xl font-bold text-ink">หน้าจอนี้มีปัญหา</Text>
-        <Text className="mt-2 text-center text-base text-ink-muted">
+        <Text className="mt-4 text-xl font-bold text-text">หน้าจอนี้มีปัญหา</Text>
+        <Text className="mt-2 text-center text-base text-muted">
           เกิดข้อผิดพลาดที่ไม่คาดคิด ลองเปิดหน้านี้ใหม่อีกครั้ง
         </Text>
         <Pressable
           onPress={this.reset}
-          className="mt-6 rounded-xl border border-btn-border bg-btn px-8 py-3 active:opacity-80">
-          <Text className="text-base font-bold text-ink-accent">ลองใหม่</Text>
+          className="mt-6 min-h-11 items-center justify-center rounded-lg border-[1.5px] border-btn-border bg-btn px-8 active:opacity-80">
+          <Text className="text-[15px] font-semibold text-ink">ลองใหม่</Text>
         </Pressable>
       </View>
     );

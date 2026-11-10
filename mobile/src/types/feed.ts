@@ -1,3 +1,7 @@
+import type { ImageProps } from 'expo-image';
+
+type ImageSourcePropType = ImageProps['source'];
+
 /**
  * โมเดลข้อมูลฟีดชุมชน — อิง docs/data-schema.md (ตาราง posts/comments/likes/saves/follows)
  * ช่วง mock: ใช้ interface ชุดนี้เหมือนกัน วันที่ต่อ API จริงไม่ต้องแก้หน้าจอ
@@ -10,16 +14,17 @@ export type PostType = 'normal' | 'lost_cat';
 export interface FeedUser {
   id: string;
   handle: string;
-  displayName?: string;
-  avatarEmoji: string;
+  avatar: ImageSourcePropType;
+  /** สีพื้นหลังวงกลมอวตารระหว่างรอรูปโหลด */
+  avatarBg: string;
+  /** มีสตอรี่ที่ยังไม่ได้ดู — วงแหวนสีฟ้า (ดูแล้วเป็นสีเทา) */
+  hasUnseenStory: boolean;
 }
 
 export interface PostMedia {
   kind: 'image' | 'video';
-  /** คำอธิบายรูป (mock ยังไม่มีไฟล์จริง — ของจริงจะเป็น url) */
   alt: string;
-  /** สีพื้นจำลองรูป สำหรับช่วง mock */
-  mockColor: string;
+  source: ImageSourcePropType;
   durationSec?: number;
 }
 
@@ -32,17 +37,16 @@ export interface Post {
   id: string;
   type: PostType;
   author: FeedUser;
-  /** ป้ายข้างชื่อบัญชี เช่น "คำถาม · สุขภาพ" */
-  badgeLabel?: string;
-  /** ย่าน/ระยะทางที่โชว์สาธารณะ (พิกัดจริงห้ามส่งออก — ตามกฎ privacy) */
-  areaLabel?: string;
-  distanceMeters?: number;
-  category: string;
+  /** บรรทัดเล็กใต้ชื่อบัญชี เช่น "ความรู้" หรือ "อารีย์ · ห่างจากคุณ 900 ม." */
+  subtitle?: string;
+  subtitleHasPin: boolean;
   caption: string;
   media: PostMedia[];
   likeCount: number;
   commentCount: number;
-  likedByHandle?: string;
+  shareCount: number;
+  /** บัญชีที่แสดงในบรรทัด "X และคนอื่น ๆ ถูกใจ" พร้อมอวตารซ้อนกัน */
+  likedBy: { handle: string; avatars: { source: ImageSourcePropType; bg: string }[] };
   previewComments: CommentPreview[];
   postedAgoText: string;
   announcementId?: string;
