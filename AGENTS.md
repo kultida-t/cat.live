@@ -45,13 +45,14 @@
 2. **`ai-conversation-daily-log` (`.agents/skills/ai-conversation-daily-log/SKILL.md`):**
    - ใช้สร้างไฟล์สรุปประวัติการสนทนากับ AI รายวัน (`YYYY-MM-DD_ai-log.json`) โดยดึงข้อมูลจริงจาก IDE Transcript Store
 
+*(ถอด `mission-planning` และ `submission-evidence` ออกแล้วตั้งแต่ 2026-11-10 — ระบบส่งงานยกเลิกการทำ Mission; ถ้าวันไหนต้องใช้อีกเรียกคืนได้จาก Git history)*
+
 ### กฎการส่ง Worklog เข้า Core Portal (ห้ามทำผิด)
 - **ห้ามสร้าง worklog ด้วยมือผ่าน `submit_logs` เด็ดขาด** — เคยเกิดเคสส่งเองแล้วเสียเหรียญ + ได้รายการซ้ำกับของระบบ การทำผิดจะเสียเหรียญอีกและต้องไปนั่งลบทีหลัง
 - วิธีที่ถูกต้องเพียงวิธีเดียว: อัปโหลดไฟล์ `YYYY-MM-DD_ai-log.json` เข้า Portal (`POST /api/agent/prompt-logs` พร้อม `autoCreateWorklog: true`) แล้วปล่อยให้ worker แตกสร้าง worklog อัตโนมัติ
 - ตั้ง `auto_worklog: true` ในไฟล์เฉพาะเมื่อพี่มาเต็มสั่งให้สร้าง worklog อัตโนมัติ ค่าเริ่มต้นเป็น `false`
 - ก่อนอัปโหลดต้องผ่าน Pre-Delivery Consistency Check ของ skill (ลำดับเวลา, gap accounting, การสะกด project) — เคยพลาดเรื่องตัดข้อความใน quoted_artifact ทิ้งจน prompt หายและชั่วโมงต่ำกว่าจริง
 
-*(ถอด `mission-planning` และ `submission-evidence` ออกแล้วตั้งแต่ 2026-11-10 — ระบบส่งงานยกเลิกการทำ Mission; ถ้าวันไหนต้องใช้อีกเรียกคืนได้จาก Git history)*
 
 ### โครงสร้างโฟลเดอร์หลักฐานและสคริปต์ช่วยงาน
 - `screenshots/` — เก็บภาพหน้าจอ Before/After และ Checklist Card แยกตาม `mission-<N>-objective-<M>/`
@@ -74,12 +75,11 @@
 - **Repository:** GitLab `https://git.mrfox.store/Kultida.t/catlive.git` (remote `origin` — ใช้งานหลัก), GitHub `https://github.com/kultida-t/cat.live.git` (remote `github`)
 - **Local Path:** `/Users/kultida/Desktop/Projects/cat.live` (macOS)
 - **สถานะล่าสุด (2026-11-10):**
-  - ถอด Skills `mission-planning` และ `submission-evidence` ออก (ระบบส่งงานยกเลิกการทำ Mission) เหลือ `work-summary` และ `ai-conversation-daily-log`
+  - ใช้ Skills 2 ตัว (`work-summary`, `ai-conversation-daily-log`) — ลบ `mission-planning` และ `submission-evidence` ออกจาก `.agents/skills/` แล้ว (เรียกคืนได้จาก Git history)
   - ย้าย remote หลักไป GitLab และหมุน access token ใหม่ เก็บใน macOS Keychain (ไม่ฝังรหัสใน URL)
-  - เริ่ม branch `docs/app-dev-plan` เพื่อวิเคราะห์มาตรฐาน UNIVERZA (Standard Requirement จากพี่คิง) และวางแผนลำดับการพัฒนาแอป
+  - Git Branches ปัจจุบัน: `master`, `dev` และ `feat/mobile-app` (สายงานที่กำลังทำแอปมือถืออยู่ — สาย `docs/app-dev-plan` merge เข้า dev แล้วลบทิ้ง)
 - **สถานะก่อนหน้า (2026-11-09):**
   - สร้างโครงสร้างโฟลเดอร์มาตรฐาน (`screenshots/`, `deliverables/`, `docs/`, `scripts/`), `.gitignore` และ `PROTECTED_SCREENS.md` เรียบร้อยแล้ว
-  - จัดตั้ง Git Branches (`master`, `dev`, และ `chore/project-setup`) พร้อมใช้งาน
 
 ## Protected Screens / Features
 

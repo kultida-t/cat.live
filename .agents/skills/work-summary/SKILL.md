@@ -214,7 +214,7 @@ Final Summary ชุดนี้ต้องเป็นแหล่งเดี
 
 #### 6. รวมและบันทึกหลักฐานประจำ Task (Task Evidence Bundle — บังคับ)
 
-หลังสร้าง Final Summary แล้ว ต้องรวมหลักฐานของ task นั้นให้ครบและแนบไว้กับ task/note ว่าทำอะไรไปบ้าง — หลักฐานราย task ชุดนี้จะถูกดึงไปคัดเลือกและรวมเป็นหลักฐานส่งตรวจระดับเป้าหมายใน `submission-evidence` ภายหลัง:
+หลังสร้าง Final Summary แล้ว ต้องรวมหลักฐานของ task นั้นให้ครบและแนบไว้กับ task/note ว่าทำอะไรไปบ้าง เพื่อให้ trace ย้อนกลับได้เสมอ:
 
 - **task ที่ผลลัพธ์เห็นบนหน้าจอ (UI/prototype/logic/data ที่สะท้อนบนจอ):** Manual Review Checklist ที่ผู้ใช้ตรวจจริงพร้อมผลรายเคส (ผ่าน / ไม่ผ่าน / พบอะไร + ผลแก้ไข) บันทึกเป็นไฟล์หลักฐาน + ภาพผลลัพธ์ที่ตรวจ + ภาพ Before/After (1440 + 390) ตาม 2.2
 - **task ที่มี test:** สรุป test list ออกมาเป็นไฟล์ — `.spec.js` ที่รัน, เคสที่เทสอะไรบ้าง, ผ่าน/ไม่ผ่าน, จำนวน passed/failed/skipped ตามผลจริง + raw runner output (`test-results.txt`) + ภาพ HTML report dashboard หรือภาพ/screencast พฤติกรรม UI ที่ test ตรวจ (จาก 2.2) + triage note ของเคส skipped/blocked
@@ -257,9 +257,9 @@ Final Summary ชุดนี้ต้องเป็นแหล่งเดี
 - ⚠️ **เวลารอผู้ใช้รีวิวหน้าจอ/prototype = เวลาทำงานจริง** — task ที่เปลี่ยนสิ่งที่เห็นบนหน้าจอแล้วรอผู้ใช้ตรวจตาม Manual Review Checklist ต้องนับเวลาต่อเนื่อง เพราะ review gate คือส่วนหนึ่งของงาน ห้ามตัดเวลารอรีวิวออกจาก `hours_spent`
 - ⚠️ **ตัดเวลาหลุดได้เฉพาะงานประเภท run** (เช่น run tests/regression/long-running command) ที่ผลลัพธ์เสร็จสมบูรณ์แล้วแต่ timer ยังเดินต่อเพราะผู้ใช้ไม่ได้อยู่หน้าจอ — ถ้าพบ banked time มีช่วงหลุดแบบนี้หลังปิด task ให้แจ้งผู้ใช้พร้อมตัวเลข banked vs เวลางานจริง และ correct `hours_spent` ด้วย `update_task` (SET) เมื่อผู้ใช้ยืนยันเวลาจริงแล้วเท่านั้น โดยทำเป็น correction workflow แยกหลังปิด task
 - ทุก task ที่ปิดต้องมี Final Session Note และ Task Block
-- ⚠️ **Task Evidence Bundle บังคับ:** ทุก task ที่ปิดต้องรวมหลักฐานประจำ task (checklist ผลตรวจ / test list + raw output / ภาพ Before-After / ไฟล์+commit ที่แก้) ทันทีหลังปิด และระบุ path ใน Final Session Note — หลักฐานราย task เหล่านี้จะถูกดึงไปรวมเป็นหลักฐานส่งตรวจระดับเป้าหมายใน `submission-evidence`
+- ⚠️ **Task Evidence Bundle บังคับ:** ทุก task ที่ปิดต้องรวมหลักฐานประจำ task (checklist ผลตรวจ / test list + raw output / ภาพ Before-After / ไฟล์+commit ที่แก้) ทันทีหลังปิด และระบุ path ใน Final Session Note
 - ⚠️ **Manual Review Checklist:** task ที่เปลี่ยนสิ่งที่เห็นบนหน้าจอ (UI/prototype/logic/data ที่สะท้อนบนจอ) ต้องส่ง checklist ทดสอบ manual (เคส + ข้อมูลทดสอบ + ขั้นกด + ผลที่คาด) ให้ผู้ใช้ตรวจก่อนขอปิด — รีวิวต้องเกิดก่อน `move_task → done` ตามกฎการยืนยันผลลัพธ์เดิม
-- **ถ้า task ที่ปิดเป็น task สุดท้ายของเป้าหมาย (Objective) ใน Mission** — ทุก task ของเป้าหมายนั้นเป็น done แล้ว → แจ้งผู้ใช้ว่าเป้าหมายครบ และเสนอเตรียม **หลักฐานส่งตรวจรับด้วย AI** ตาม skill `submission-evidence` (ไฟล์แนบ/ภาพหน้าจอ + คำอธิบาย + ช่อง external_url) ให้ลง log พร้อมกัน
+- **ถ้า task ที่ปิดเป็น task สุดท้ายของเป้าหมาย (Objective) ใน Mission** — ทุก task ของเป้าหมายนั้นเป็น done แล้ว → แจ้งผู้ใช้ว่าเป้าหมายครบ
 - ลำดับบังคับ: Verify → `move_task → done` → อ่าน Final Task + Activity → อ่าน Actual Start/End/Final `hours_spent` → สร้าง Final Summary → รวมหลักฐานประจำ Task → `save_session_note` → แสดง Task Block → session handoff + prompt งานถัดไป หรือข้อเสนอแนะงานต่อไป (ตามขั้น 9)
 
 ---

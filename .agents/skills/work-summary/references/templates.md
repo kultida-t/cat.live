@@ -231,11 +231,11 @@ Task: <TASK-CODE> <Task Name>
 
 ### เงื่อนไขก่อนสร้าง (บังคับ)
 
-- **ต้องมี approved baseline ที่เรียกย้อนได้** — เรียก `get_mission` เพื่ออ่าน Objective/Feature/Task mapping แล้วหา Feature labels จาก mission description หรือ session note ที่ persist baseline ไว้ (ตาม Baseline Persistence ใน mission-planning) — Objective/Feature labels ต้อง copy verbatim เท่านั้น ห้ามเดาเอง
+- **ต้องมี approved baseline ที่เรียกย้อนได้** — เรียก `get_mission` เพื่ออ่าน Objective/Feature/Task mapping แล้วหา Feature labels จาก mission description หรือ session note ที่ persist baseline ไว้ — Objective/Feature labels ต้อง copy verbatim เท่านั้น ห้ามเดาเอง
 - **ถ้าดึง baseline ไม่ได้** (mission description ไม่มี Feature labels และไม่มี plan note) → ถามผู้ใช้ขอ approved Mission Plan Summary แล้ว **บันทึกลง `save_session_note` ทันที** (บน planning task หรือ task แรกของ mission) ก่อนสรุป — ห้ามสรุปโดยเดา Feature แล้วค่อยแก้ทีหลัง
 - เวลาจริงราย task ใช้ `hours_spent` จาก `get_task` (ตามกฎเดิม ห้ามปรับเอง); เวลาแผนใช้ `Planned` จาก task description และ Baseline จาก mission
 - Task ที่ถูกสร้างเพิ่มระหว่าง execution (ไม่มีในแผนเดิม) ต้องแสดงแยกในส่วน "งานที่เพิ่มระหว่าง execution" พร้อม mapping Objective/Feature ที่บันทึกไว้ ห้ามยัดเข้า task list ของแผนเดิมเงียบ ๆ
-- ถ้ามีการ rename Objective/Feature ให้ใช้ชื่อล่าสุดใน mission description และบันทึก correction note ลง task ที่เกี่ยว (ตามกฎ label ใน mission-planning)
+- ถ้ามีการ rename Objective/Feature ให้ใช้ชื่อล่าสุดใน mission description และบันทึก correction note ลง task ที่เกี่ยว
 
 ### รูปแบบ (template)
 
