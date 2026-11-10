@@ -38,15 +38,11 @@
 
 ## โครงสร้างการทำงานและ Skills ประจำโปรเจกต์ (`.agents/skills/`)
 
-โปรเจกต์นี้ติดตั้ง Skills มาตรฐานสำหรับบริหารจัดการงานและหลักฐานส่งตรวจไว้ใน `.agents/skills/` ดังนี้:
+โปรเจกต์นี้ติดตั้ง Skills มาตรฐานสำหรับบริหารจัดการงานไว้ใน `.agents/skills/` ดังนี้:
 
-1. **`mission-planning` (`.agents/skills/mission-planning/SKILL.md`):**
-   - ใช้เมื่อเริ่มวางแผนภารกิจรายวัน (Mission), แยกเป้าหมาย (Objective / Feature / Task), สร้าง Mission Plan Summary และ Session Handoff หลังพี่มาเต็มอนุมัติแผน รวมถึงสรุปผลหลังทำตามแผน
-2. **`work-summary` (`.agents/skills/work-summary/SKILL.md`):**
+1. **`work-summary` (`.agents/skills/work-summary/SKILL.md`):**
    - ใช้จับเวลาและสรุปงานราย Task (เริ่มทำ Task → เก็บภาพ Before → ส่ง Manual Review Checklist → ปิด Task → สร้าง Final Work Summary และ Session Handoff)
-3. **`submission-evidence` (`.agents/skills/submission-evidence/SKILL.md`):**
-   - ใช้เตรียมชุดหลักฐานส่งตรวจรับต่อเป้าหมาย (Objective) ตามเกณฑ์ AI Worklog QA Auditor (ไฟล์แนบ, ภาพหน้าจอ Desktop 1440px + Mobile 390px, Checklist Card, `external_url` และคำอธิบาย)
-4. **`ai-conversation-daily-log` (`.agents/skills/ai-conversation-daily-log/SKILL.md`):**
+2. **`ai-conversation-daily-log` (`.agents/skills/ai-conversation-daily-log/SKILL.md`):**
    - ใช้สร้างไฟล์สรุปประวัติการสนทนากับ AI รายวัน (`YYYY-MM-DD_ai-log.json`) โดยดึงข้อมูลจริงจาก IDE Transcript Store
 
 ### กฎการส่ง Worklog เข้า Core Portal (ห้ามทำผิด)
@@ -54,6 +50,8 @@
 - วิธีที่ถูกต้องเพียงวิธีเดียว: อัปโหลดไฟล์ `YYYY-MM-DD_ai-log.json` เข้า Portal (`POST /api/agent/prompt-logs` พร้อม `autoCreateWorklog: true`) แล้วปล่อยให้ worker แตกสร้าง worklog อัตโนมัติ
 - ตั้ง `auto_worklog: true` ในไฟล์เฉพาะเมื่อพี่มาเต็มสั่งให้สร้าง worklog อัตโนมัติ ค่าเริ่มต้นเป็น `false`
 - ก่อนอัปโหลดต้องผ่าน Pre-Delivery Consistency Check ของ skill (ลำดับเวลา, gap accounting, การสะกด project) — เคยพลาดเรื่องตัดข้อความใน quoted_artifact ทิ้งจน prompt หายและชั่วโมงต่ำกว่าจริง
+
+*(ถอด `mission-planning` และ `submission-evidence` ออกแล้วตั้งแต่ 2026-11-10 — ระบบส่งงานยกเลิกการทำ Mission; ถ้าวันไหนต้องใช้อีกเรียกคืนได้จาก Git history)*
 
 ### โครงสร้างโฟลเดอร์หลักฐานและสคริปต์ช่วยงาน
 - `screenshots/` — เก็บภาพหน้าจอ Before/After และ Checklist Card แยกตาม `mission-<N>-objective-<M>/`
@@ -73,10 +71,13 @@
 
 ## สถานะปัจจุบันของโปรเจกต์ (Session Context / Handoff)
 
-- **Repository:** `https://github.com/kultida-t/cat.live.git`
-- **Local Path:** `D:\cat.live`
-- **สถานะล่าสุด (2026-11-09):**
-  - ติดตั้ง Skills ทั้ง 4 ตัว (`mission-planning`, `work-summary`, `submission-evidence`, `ai-conversation-daily-log`) ใน `.agents/skills/` และปรับที่อยู่โฟลเดอร์/GitHub URL ให้ตรงกับ `cat.live` แล้ว
+- **Repository:** GitLab `https://git.mrfox.store/Kultida.t/catlive.git` (remote `origin` — ใช้งานหลัก), GitHub `https://github.com/kultida-t/cat.live.git` (remote `github`)
+- **Local Path:** `/Users/kultida/Desktop/Projects/cat.live` (macOS)
+- **สถานะล่าสุด (2026-11-10):**
+  - ถอด Skills `mission-planning` และ `submission-evidence` ออก (ระบบส่งงานยกเลิกการทำ Mission) เหลือ `work-summary` และ `ai-conversation-daily-log`
+  - ย้าย remote หลักไป GitLab และหมุน access token ใหม่ เก็บใน macOS Keychain (ไม่ฝังรหัสใน URL)
+  - เริ่ม branch `docs/app-dev-plan` เพื่อวิเคราะห์มาตรฐาน UNIVERZA (Standard Requirement จากพี่คิง) และวางแผนลำดับการพัฒนาแอป
+- **สถานะก่อนหน้า (2026-11-09):**
   - สร้างโครงสร้างโฟลเดอร์มาตรฐาน (`screenshots/`, `deliverables/`, `docs/`, `scripts/`), `.gitignore` และ `PROTECTED_SCREENS.md` เรียบร้อยแล้ว
   - จัดตั้ง Git Branches (`master`, `dev`, และ `chore/project-setup`) พร้อมใช้งาน
 
