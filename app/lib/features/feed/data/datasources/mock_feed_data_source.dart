@@ -215,6 +215,7 @@ class MockFeedDataSource implements FeedRemoteDataSource {
   List<Map<String, dynamic>> _posts;
   final List<Map<String, dynamic>> _accounts;
   final _hiddenIds = <String>{};
+  final _hiddenAccountIds = <String>{};
 
   Future<void> _delay() => Future<void>.delayed(latency);
 
@@ -227,6 +228,8 @@ class MockFeedDataSource implements FeedRemoteDataSource {
     await _delay();
     final filtered = _posts.where((p) {
       if (_hiddenIds.contains(p['id'])) return false;
+      final authorId = (p['author'] as Map<String, dynamic>)['id'];
+      if (_hiddenAccountIds.contains(authorId)) return false;
       return switch (tab) {
         FeedTab.all => true,
         FeedTab.following => p['is_following_author'] == true,
@@ -298,6 +301,12 @@ class MockFeedDataSource implements FeedRemoteDataSource {
   Future<void> hidePost(String postId) async {
     await _delay();
     _hiddenIds.add(postId);
+  }
+
+  @override
+  Future<void> hideAccountPosts(String userId) async {
+    await _delay();
+    _hiddenAccountIds.add(userId);
   }
 
   @override

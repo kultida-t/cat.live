@@ -46,6 +46,9 @@ final toggleFollowProvider = Provider(
 final hidePostProvider = Provider(
   (ref) => HidePost(ref.watch(feedRepositoryProvider)),
 );
+final hideAccountPostsProvider = Provider(
+  (ref) => HideAccountPosts(ref.watch(feedRepositoryProvider)),
+);
 final reportPostProvider = Provider(
   (ref) => ReportPost(ref.watch(feedRepositoryProvider)),
 );

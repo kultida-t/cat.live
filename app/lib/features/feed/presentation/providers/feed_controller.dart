@@ -35,10 +35,8 @@ class FeedState {
       accounts.where((a) => a.isFollowing).toList();
 
   /// บัญชีแนะนำในแท็บติดตาม — ยังไม่ได้ติดตาม สูงสุด 4 บัญชีตามเว็บ
-  List<FeedUser> get suggestedAccounts => accounts
-      .where((a) => !a.isFollowing && a.id != 'me')
-      .take(4)
-      .toList();
+  List<FeedUser> get suggestedAccounts =>
+      accounts.where((a) => !a.isFollowing && a.id != 'me').take(4).toList();
 
   FeedState copyWith({
     FeedTab? tab,
@@ -189,9 +187,7 @@ class FeedController extends Notifier<FeedState> {
     state = state.copyWith(
       posts: [
         for (final p in before.posts)
-          p.author.id == userId
-              ? p.copyWith(isFollowingAuthor: following)
-              : p,
+          p.author.id == userId ? p.copyWith(isFollowingAuthor: following) : p,
       ],
       accounts: [
         for (final a in before.accounts)
@@ -210,6 +206,21 @@ class FeedController extends Notifier<FeedState> {
   /// ซ่อนโพสต์ (ไม่สนใจ/ซ่อนจากบัญชีนี้) — เอาออกจากหน้าจอทันที
   Future<Failure?> hide(Post post) =>
       _remove(post, ref.read(hidePostProvider).call);
+
+  /// ซ่อนทุกโพสต์ของบัญชีนี้ แต่ยังติดตามอยู่ (ตามเว็บ)
+  Future<Failure?> hideAuthor(Post post) async {
+    final before = state.posts;
+    state = state.copyWith(
+      posts: before.where((p) => p.author.id != post.author.id).toList(),
+    );
+    try {
+      await ref.read(hideAccountPostsProvider)(post.author.id);
+      return null;
+    } on Failure catch (f) {
+      if (ref.mounted) state = state.copyWith(posts: before);
+      return f;
+    }
+  }
 
   Future<Failure?> delete(Post post) =>
       _remove(post, ref.read(deletePostProvider).call);

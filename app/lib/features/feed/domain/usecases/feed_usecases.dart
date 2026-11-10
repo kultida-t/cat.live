@@ -55,6 +55,13 @@ class HidePost {
   Future<void> call(String postId) => _repo.hidePost(postId);
 }
 
+class HideAccountPosts {
+  const HideAccountPosts(this._repo);
+  final FeedRepository _repo;
+
+  Future<void> call(String userId) => _repo.hideAccountPosts(userId);
+}
+
 class ReportPost {
   const ReportPost(this._repo);
   final FeedRepository _repo;

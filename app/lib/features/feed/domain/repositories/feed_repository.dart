@@ -16,6 +16,7 @@ abstract interface class FeedRepository {
   Future<Post> toggleSave(String postId);
   Future<void> toggleFollow(String userId);
   Future<void> hidePost(String postId);
+  Future<void> hideAccountPosts(String userId);
   Future<void> reportPost(String postId, String reason);
   Future<void> deletePost(String postId);
 }

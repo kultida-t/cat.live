@@ -51,6 +51,10 @@ class _FlakyRepository implements FeedRepository {
   Future<void> hidePost(String postId) => _write(() => _inner.hidePost(postId));
 
   @override
+  Future<void> hideAccountPosts(String userId) =>
+      _write(() => _inner.hideAccountPosts(userId));
+
+  @override
   Future<void> reportPost(String postId, String reason) =>
       _write(() => _inner.reportPost(postId, reason));
 
@@ -291,6 +295,41 @@ void main() {
         .firstWhere((p) => p.id == 'p5');
     repo.failWrites = true;
     expect(await notifier.hide(p5), isA<NetworkFailure>());
+    expect(
+      c.read(feedControllerProvider).posts.any((p) => p.id == 'p5'),
+      isTrue,
+    );
+  });
+
+  test('ซ่อนโพสต์จากบัญชี — โพสต์ของบัญชีนั้นหายหมด แต่ยังติดตามอยู่ และย้อนกลับถ้าล้มเหลว', () async {
+    final repo = _newRepo();
+    final c = _container(repo);
+    await _loaded(c);
+    final notifier = c.read(feedControllerProvider.notifier);
+    final p2 = c
+        .read(feedControllerProvider)
+        .posts
+        .firstWhere((p) => p.id == 'p2');
+
+    expect(await notifier.hideAuthor(p2), isNull);
+    final state = c.read(feedControllerProvider);
+    expect(state.posts.any((p) => p.author.handle == 'maew.vetnote'), isFalse);
+
+    await notifier.refresh();
+    expect(
+      c
+          .read(feedControllerProvider)
+          .posts
+          .any((p) => p.author.handle == 'maew.vetnote'),
+      isFalse,
+    );
+
+    final p5 = c
+        .read(feedControllerProvider)
+        .posts
+        .firstWhere((p) => p.id == 'p5');
+    repo.failWrites = true;
+    expect(await notifier.hideAuthor(p5), isA<NetworkFailure>());
     expect(
       c.read(feedControllerProvider).posts.any((p) => p.id == 'p5'),
       isTrue,

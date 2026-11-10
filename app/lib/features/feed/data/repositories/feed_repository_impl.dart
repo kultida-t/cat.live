@@ -63,6 +63,10 @@ class FeedRepositoryImpl implements FeedRepository {
       _guard(() => _remote.hidePost(postId));
 
   @override
+  Future<void> hideAccountPosts(String userId) =>
+      _guard(() => _remote.hideAccountPosts(userId));
+
+  @override
   Future<void> reportPost(String postId, String reason) =>
       _guard(() => _remote.reportPost(postId, reason));
 

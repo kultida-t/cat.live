@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart' show ScrollCacheExtent;
 import 'package:flutter/services.dart';
@@ -33,6 +35,9 @@ class _CommunityPageState extends ConsumerState<CommunityPage> {
   /// โพสต์ที่เปิดดูจากกริดแท็บ "บันทึกไว้" (null = โชว์กริด)
   String? _openSavedPostId;
 
+  Timer? _toastTimer;
+  String? _toastMessage;
+
   @override
   void initState() {
     super.initState();
@@ -41,6 +46,7 @@ class _CommunityPageState extends ConsumerState<CommunityPage> {
 
   @override
   void dispose() {
+    _toastTimer?.cancel();
     _scroll.dispose();
     super.dispose();
   }
@@ -51,13 +57,13 @@ class _CommunityPageState extends ConsumerState<CommunityPage> {
     }
   }
 
+  /// toast เม็ดยาสีน้ำตาลเหนือแท็บล่าง หายเองใน 1.8 วินาที (ตามเว็บ)
   void _toast(String message) {
-    final messenger = ScaffoldMessenger.of(context);
-    messenger
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
-      );
+    _toastTimer?.cancel();
+    setState(() => _toastMessage = message);
+    _toastTimer = Timer(const Duration(milliseconds: 1800), () {
+      if (mounted) setState(() => _toastMessage = null);
+    });
   }
 
   void _comingSoon(String feature) =>
@@ -68,52 +74,59 @@ class _CommunityPageState extends ConsumerState<CommunityPage> {
     if (failure != null && mounted) _toast(failure.message);
   }
 
+  Future<void> _toggleFollow(Post post) async {
+    final wasFollowing = post.isFollowingAuthor;
+    final failure = await ref
+        .read(feedControllerProvider.notifier)
+        .toggleFollow(post);
+    if (!mounted) return;
+    final handle = post.author.handle;
+    _toast(
+      failure?.message ??
+          (wasFollowing ? 'เลิกติดตาม $handle' : 'ติดตาม $handle แล้ว'),
+    );
+  }
+
+  Future<void> _toggleSave(Post post) async {
+    final wasSaved = post.isSaved;
+    final failure = await ref
+        .read(feedControllerProvider.notifier)
+        .toggleSave(post);
+    if (!mounted) return;
+    _toast(
+      failure?.message ??
+          (wasSaved
+              ? 'นำออกจากรายการที่บันทึกไว้'
+              : 'บันทึกแล้ว · ดูได้ที่แท็บบันทึกไว้'),
+    );
+  }
+
   Future<void> _openMenu(Post post) async {
-    final action = await showPostMenuSheet(context, isOwnPost: post.isOwn);
-    if (action == null || !mounted) return;
+    final result = await showPostMenuSheet(context, post);
+    if (result == null || !mounted) return;
     final controller = ref.read(feedControllerProvider.notifier);
-    switch (action) {
-      case PostMenuAction.notInterested || PostMenuAction.hideAuthor:
-        await _run(() => controller.hide(post));
+    switch (result.action) {
+      case PostMenuAction.notInterested:
+        final f = await controller.hide(post);
+        if (mounted) _toast(f?.message ?? 'ซ่อนโพสต์แล้ว จะแสดงแบบนี้น้อยลง');
+      case PostMenuAction.hideAuthor:
+        final f = await controller.hideAuthor(post);
+        if (mounted) {
+          _toast(f?.message ?? 'ซ่อนโพสต์จาก ${post.author.handle} แล้ว');
+        }
       case PostMenuAction.copyLink:
         await Clipboard.setData(
           ClipboardData(text: 'https://แมว.live/p/${post.id}'),
         );
-        _toast('คัดลอกลิงก์แล้ว');
+        if (mounted) _toast('คัดลอกลิงก์แล้ว');
       case PostMenuAction.report:
-        await _askReportReason(post);
+        final f = await controller.report(post, result.reason ?? '');
+        if (f == null) await controller.hide(post);
+        if (mounted) _toast(f?.message ?? 'ขอบคุณที่รายงาน ทีมงานจะตรวจสอบ');
       case PostMenuAction.delete:
-        await _confirmDelete(post);
+        final f = await controller.delete(post);
+        if (mounted) _toast(f?.message ?? 'ลบโพสต์แล้ว');
     }
-  }
-
-  Future<void> _askReportReason(Post post) async {
-    const reasons = {
-      'spam': 'สแปมหรือโฆษณา',
-      'inappropriate': 'เนื้อหาไม่เหมาะสม',
-      'animal_abuse': 'ทารุณสัตว์',
-    };
-    final reason = await showDialog<String>(
-      context: context,
-      builder: (context) => SimpleDialog(
-        title: const Text(
-          'รายงานโพสต์',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
-        ),
-        children: [
-          for (final e in reasons.entries)
-            SimpleDialogOption(
-              onPressed: () => Navigator.pop(context, e.key),
-              child: Text(e.value, style: const TextStyle(fontSize: 16)),
-            ),
-        ],
-      ),
-    );
-    if (reason == null || !mounted) return;
-    await _run(
-      () => ref.read(feedControllerProvider.notifier).report(post, reason),
-    );
-    if (mounted) _toast('ส่งรายงานแล้ว ขอบคุณที่ช่วยดูแลชุมชน');
   }
 
   void _selectTab(FeedTab tab) {
@@ -130,35 +143,12 @@ class _CommunityPageState extends ConsumerState<CommunityPage> {
     _toast(failure?.message ?? 'ติดตาม ${user.handle} แล้ว');
   }
 
-  Future<void> _confirmDelete(Post post) async {
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('ลบโพสต์'),
-        content: const Text('ลบโพสต์นี้ถาวร ไม่สามารถกู้คืนได้'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('ยกเลิก'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('ลบ', style: TextStyle(color: AppColors.danger)),
-          ),
-        ],
-      ),
-    );
-    if (ok == true && mounted) {
-      await _run(() => ref.read(feedControllerProvider.notifier).delete(post));
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(feedControllerProvider);
     final controller = ref.read(feedControllerProvider.notifier);
 
-    return SafeArea(
+    final feed = SafeArea(
       bottom: false,
       child: Column(
         children: [
@@ -194,8 +184,8 @@ class _CommunityPageState extends ConsumerState<CommunityPage> {
                       setState(() => _openSavedPostId = null),
                   onFollowUser: _followUser,
                   onToggleLike: (p) => _run(() => controller.toggleLike(p)),
-                  onToggleSave: (p) => _run(() => controller.toggleSave(p)),
-                  onToggleFollow: (p) => _run(() => controller.toggleFollow(p)),
+                  onToggleSave: _toggleSave,
+                  onToggleFollow: _toggleFollow,
                   onOpenMenu: _openMenu,
                   onComingSoon: _comingSoon,
                 ),
@@ -203,6 +193,54 @@ class _CommunityPageState extends ConsumerState<CommunityPage> {
             },
           ),
         ],
+      ),
+    );
+
+    return Stack(
+      children: [
+        feed,
+        if (_toastMessage != null)
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 40,
+            child: IgnorePointer(
+              child: Center(child: _ToastPill(message: _toastMessage!)),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+/// ข้อความแจ้งสั้น ๆ รูปเม็ดยา — สี/ขนาดตามเว็บ (role=status)
+class _ToastPill extends StatelessWidget {
+  const _ToastPill({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      liveRegion: true,
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 24),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: const Color(0xD94A3428),
+          borderRadius: BorderRadius.circular(999),
+        ),
+        child: Text(
+          message,
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+            fontSize: 13,
+            height: 1.5,
+            fontWeight: FontWeight.w500,
+            color: Colors.white,
+            decoration: TextDecoration.none,
+          ),
+        ),
       ),
     );
   }
@@ -509,11 +547,7 @@ class _SuggestedAccounts extends StatelessWidget {
               padding: const EdgeInsets.symmetric(vertical: 6),
               child: Row(
                 children: [
-                  AppAvatar(
-                    source: user.avatar,
-                    bg: user.avatarBg,
-                    size: 44,
-                  ),
+                  AppAvatar(source: user.avatar, bg: user.avatarBg, size: 44),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(

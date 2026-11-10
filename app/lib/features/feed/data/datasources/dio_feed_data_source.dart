@@ -65,6 +65,11 @@ class DioFeedDataSource implements FeedRemoteDataSource {
   }
 
   @override
+  Future<void> hideAccountPosts(String userId) async {
+    await _dio.post<void>('/v1/users/$userId/hide-posts');
+  }
+
+  @override
   Future<void> reportPost(String postId, String reason) async {
     await _dio.post<void>('/v1/posts/$postId/report', data: {'reason': reason});
   }

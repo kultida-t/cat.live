@@ -14,6 +14,7 @@ abstract interface class FeedRemoteDataSource {
   Future<PostModel> toggleSave(String postId);
   Future<void> toggleFollow(String userId);
   Future<void> hidePost(String postId);
+  Future<void> hideAccountPosts(String userId);
   Future<void> reportPost(String postId, String reason);
   Future<void> deletePost(String postId);
 }
