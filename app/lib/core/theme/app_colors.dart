@@ -90,4 +90,21 @@ abstract final class AppColors {
   static const logoutText = Color(0xFF8F1C13);
   static const brandLine = Color(0xFF06C755);
   static const brandFacebook = Color(0xFF1877F2);
+
+  // ตามหาแมว (/my-cat/tracker)
+  static const trackerMapFallback = Color(0xFFEDE7DF);
+  static const trackerMapGrid = Color(0xFFE0D7CC);
+  static const trackerMapRoad = Color(0xFFFDFBF7);
+  static const trackerSafeTeal = Color(0xFF2F7F7A);
+  static const trackerSafeTealLight = Color(0xFF5AAAA2);
+  static const trackerSafeZoneFill = Color(0x1A2F7F7A);
+  static const trackerOutZoneFill = Color(0x14E2557A);
+  static const trackerHomePin = Color(0xFF3B82F6);
+  static const trackerTimelineInactive = Color(0xFFCDBFB0);
+  static const trackerLostIconOff = Color(0xFFD9772B);
+  static const trackerLostBgOn = Color(0xFFFFF1F3);
+  static const trackerLostBtnBorder = Color(0xFFE7B3AA);
+  static const trackerLostBtnInk = Color(0xFFA3321F);
+  static const trackerCollarTeal = Color(0xFF328F87);
+  static const trackerCollarSand = Color(0xFFDFC8A3);
 }

@@ -308,6 +308,275 @@ enum CatIdSkin {
   final String enLabel;
 }
 
+/// ความถี่ในการอัปเดตตำแหน่งของแท็ก
+enum TrackerUpdateFrequency {
+  batterySaver(
+    'ประหยัดแบต',
+    'Battery saver',
+    'ทุก 10 นาที · แบตอยู่ ~14 วัน',
+    'Every 10 min · battery ~14 days',
+  ),
+  normal(
+    'ปกติ',
+    'Normal',
+    'ทุก 2 นาที · แบตอยู่ ~7 วัน',
+    'Every 2 min · battery ~7 days',
+  ),
+  realtime(
+    'เรียลไทม์',
+    'Real-time',
+    'ทุก 10 วินาที · แบตอยู่ ~1 วัน',
+    'Every 10 sec · battery ~1 day',
+  );
+
+  const TrackerUpdateFrequency(
+    this.thLabel,
+    this.enLabel,
+    this.thSummary,
+    this.enSummary,
+  );
+  final String thLabel;
+  final String enLabel;
+  final String thSummary;
+  final String enSummary;
+}
+
+/// ระดับเสียงปลอกคอแท็ก
+enum TrackerCollarVolume {
+  quiet('เบา', 'Quiet'),
+  medium('กลาง', 'Medium'),
+  loud('ดัง', 'Loud');
+
+  const TrackerCollarVolume(this.thLabel, this.enLabel);
+  final String thLabel;
+  final String enLabel;
+}
+
+/// จุดแวะในไทม์ไลน์เส้นทางวันนี้ของแมว
+class TrackerRouteStop extends Equatable {
+  const TrackerRouteStop({
+    required this.placeTh,
+    required this.placeEn,
+    required this.timeTh,
+    required this.timeEn,
+  });
+
+  final String placeTh;
+  final String placeEn;
+  final String timeTh;
+  final String timeEn;
+
+  @override
+  List<Object?> get props => [placeTh, placeEn, timeTh, timeEn];
+}
+
+/// ข้อมูลฮาร์ดแวร์และการตั้งค่าของอุปกรณ์ แมว.live Tag
+class CatTrackerDevice extends Equatable {
+  const CatTrackerDevice({
+    required this.tagNumber,
+    required this.collarColorHex,
+    required this.signalGood,
+    required this.lastSyncedTh,
+    required this.lastSyncedEn,
+    this.frequency = TrackerUpdateFrequency.normal,
+    this.volume = TrackerCollarVolume.medium,
+    this.nightLed = true,
+    this.saveBatteryAtHome = true,
+    this.lowBatteryAlert = true,
+    required this.firmwareVersion,
+    required this.latestFirmwareVersion,
+    required this.serialCode,
+  });
+
+  final int tagNumber;
+  final int collarColorHex;
+  final bool signalGood;
+  final String lastSyncedTh;
+  final String lastSyncedEn;
+  final TrackerUpdateFrequency frequency;
+  final TrackerCollarVolume volume;
+  final bool nightLed;
+  final bool saveBatteryAtHome;
+  final bool lowBatteryAlert;
+  final String firmwareVersion;
+  final String latestFirmwareVersion;
+  final String serialCode;
+
+  bool get hasFirmwareUpdate => firmwareVersion != latestFirmwareVersion;
+
+  CatTrackerDevice copyWith({
+    int? tagNumber,
+    int? collarColorHex,
+    bool? signalGood,
+    String? lastSyncedTh,
+    String? lastSyncedEn,
+    TrackerUpdateFrequency? frequency,
+    TrackerCollarVolume? volume,
+    bool? nightLed,
+    bool? saveBatteryAtHome,
+    bool? lowBatteryAlert,
+    String? firmwareVersion,
+    String? latestFirmwareVersion,
+    String? serialCode,
+  }) {
+    return CatTrackerDevice(
+      tagNumber: tagNumber ?? this.tagNumber,
+      collarColorHex: collarColorHex ?? this.collarColorHex,
+      signalGood: signalGood ?? this.signalGood,
+      lastSyncedTh: lastSyncedTh ?? this.lastSyncedTh,
+      lastSyncedEn: lastSyncedEn ?? this.lastSyncedEn,
+      frequency: frequency ?? this.frequency,
+      volume: volume ?? this.volume,
+      nightLed: nightLed ?? this.nightLed,
+      saveBatteryAtHome: saveBatteryAtHome ?? this.saveBatteryAtHome,
+      lowBatteryAlert: lowBatteryAlert ?? this.lowBatteryAlert,
+      firmwareVersion: firmwareVersion ?? this.firmwareVersion,
+      latestFirmwareVersion:
+          latestFirmwareVersion ?? this.latestFirmwareVersion,
+      serialCode: serialCode ?? this.serialCode,
+    );
+  }
+
+  @override
+  List<Object?> get props => [
+    tagNumber,
+    collarColorHex,
+    signalGood,
+    lastSyncedTh,
+    lastSyncedEn,
+    frequency,
+    volume,
+    nightLed,
+    saveBatteryAtHome,
+    lowBatteryAlert,
+    firmwareVersion,
+    latestFirmwareVersion,
+    serialCode,
+  ];
+}
+
+/// ข้อมูลการติดตามและเขตปลอดภัยของแมวหนึ่งตัว (/my-cat/tracker)
+class CatTrackerInfo extends Equatable {
+  const CatTrackerInfo({
+    this.hasTag = false,
+    this.latitude = 13.7796,
+    this.longitude = 100.5447,
+    this.locationTh = '',
+    this.locationEn = '',
+    this.listSummaryTh = '',
+    this.listSummaryEn = '',
+    this.distanceMeters = 0,
+    this.lastUpdatedTh = '',
+    this.lastUpdatedEn = '',
+    this.detailTimeTh = '',
+    this.detailTimeEn = '',
+    this.batteryPercent = 0,
+    this.safeZoneRadiusMeters = 100,
+    this.alertOnLeaveZone = true,
+    this.lostMode = false,
+    this.showContactNumber = true,
+    this.contactPhone = '081-234-5678',
+    this.shareWithCommunity = false,
+    this.routeStops = const [],
+    this.device,
+  });
+
+  final bool hasTag;
+  final double latitude;
+  final double longitude;
+  final String locationTh;
+  final String locationEn;
+  final String listSummaryTh;
+  final String listSummaryEn;
+  final int distanceMeters;
+  final String lastUpdatedTh;
+  final String lastUpdatedEn;
+  final String detailTimeTh;
+  final String detailTimeEn;
+  final int batteryPercent;
+  final int safeZoneRadiusMeters;
+  final bool alertOnLeaveZone;
+  final bool lostMode;
+  final bool showContactNumber;
+  final String contactPhone;
+  final bool shareWithCommunity;
+  final List<TrackerRouteStop> routeStops;
+  final CatTrackerDevice? device;
+
+  CatTrackerInfo copyWith({
+    bool? hasTag,
+    double? latitude,
+    double? longitude,
+    String? locationTh,
+    String? locationEn,
+    String? listSummaryTh,
+    String? listSummaryEn,
+    int? distanceMeters,
+    String? lastUpdatedTh,
+    String? lastUpdatedEn,
+    String? detailTimeTh,
+    String? detailTimeEn,
+    int? batteryPercent,
+    int? safeZoneRadiusMeters,
+    bool? alertOnLeaveZone,
+    bool? lostMode,
+    bool? showContactNumber,
+    String? contactPhone,
+    bool? shareWithCommunity,
+    List<TrackerRouteStop>? routeStops,
+    CatTrackerDevice? device,
+  }) {
+    return CatTrackerInfo(
+      hasTag: hasTag ?? this.hasTag,
+      latitude: latitude ?? this.latitude,
+      longitude: longitude ?? this.longitude,
+      locationTh: locationTh ?? this.locationTh,
+      locationEn: locationEn ?? this.locationEn,
+      listSummaryTh: listSummaryTh ?? this.listSummaryTh,
+      listSummaryEn: listSummaryEn ?? this.listSummaryEn,
+      distanceMeters: distanceMeters ?? this.distanceMeters,
+      lastUpdatedTh: lastUpdatedTh ?? this.lastUpdatedTh,
+      lastUpdatedEn: lastUpdatedEn ?? this.lastUpdatedEn,
+      detailTimeTh: detailTimeTh ?? this.detailTimeTh,
+      detailTimeEn: detailTimeEn ?? this.detailTimeEn,
+      batteryPercent: batteryPercent ?? this.batteryPercent,
+      safeZoneRadiusMeters: safeZoneRadiusMeters ?? this.safeZoneRadiusMeters,
+      alertOnLeaveZone: alertOnLeaveZone ?? this.alertOnLeaveZone,
+      lostMode: lostMode ?? this.lostMode,
+      showContactNumber: showContactNumber ?? this.showContactNumber,
+      contactPhone: contactPhone ?? this.contactPhone,
+      shareWithCommunity: shareWithCommunity ?? this.shareWithCommunity,
+      routeStops: routeStops ?? this.routeStops,
+      device: device ?? this.device,
+    );
+  }
+
+  @override
+  List<Object?> get props => [
+    hasTag,
+    latitude,
+    longitude,
+    locationTh,
+    locationEn,
+    listSummaryTh,
+    listSummaryEn,
+    distanceMeters,
+    lastUpdatedTh,
+    lastUpdatedEn,
+    detailTimeTh,
+    detailTimeEn,
+    batteryPercent,
+    safeZoneRadiusMeters,
+    alertOnLeaveZone,
+    lostMode,
+    showContactNumber,
+    contactPhone,
+    shareWithCommunity,
+    routeStops,
+    device,
+  ];
+}
+
 /// รายละเอียดเพิ่มเติมสำหรับบัตร Cat ID (/my-cat/profile)
 class CatIdCardDetails extends Equatable {
   const CatIdCardDetails({
@@ -380,6 +649,7 @@ class CatProfile extends Equatable {
     required this.healthHighlights,
     required this.caregivers,
     this.idCard = const CatIdCardDetails(),
+    this.trackerInfo = const CatTrackerInfo(),
   });
 
   final String id;
@@ -404,6 +674,7 @@ class CatProfile extends Equatable {
   final List<CatHealthHighlight> healthHighlights;
   final List<CatCaregiver> caregivers;
   final CatIdCardDetails idCard;
+  final CatTrackerInfo trackerInfo;
 
   String get summarySubtitle =>
       '$breed · ${gender.label} · ${neutered ? 'ทำหมันแล้ว' : 'ยังไม่ทำหมัน'}';
@@ -437,6 +708,7 @@ class CatProfile extends Equatable {
     List<CatHealthHighlight>? healthHighlights,
     List<CatCaregiver>? caregivers,
     CatIdCardDetails? idCard,
+    CatTrackerInfo? trackerInfo,
   }) {
     return CatProfile(
       id: id ?? this.id,
@@ -462,6 +734,7 @@ class CatProfile extends Equatable {
       healthHighlights: healthHighlights ?? this.healthHighlights,
       caregivers: caregivers ?? this.caregivers,
       idCard: idCard ?? this.idCard,
+      trackerInfo: trackerInfo ?? this.trackerInfo,
     );
   }
 
@@ -489,6 +762,7 @@ class CatProfile extends Equatable {
     healthHighlights,
     caregivers,
     idCard,
+    trackerInfo,
   ];
 }
 

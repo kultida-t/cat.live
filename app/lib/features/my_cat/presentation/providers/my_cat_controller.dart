@@ -303,6 +303,18 @@ class MyCatController extends Notifier<MyCatState> {
     state = state.copyWith(catIdSkins: {...state.catIdSkins, catId: skin});
   }
 
+  /// อัปเดตการตั้งค่าแท็ก/เขตปลอดภัย/โหมดแมวหายของแมวตัวที่เลือก
+  void updateTrackerInfo(
+    String catId,
+    CatTrackerInfo Function(CatTrackerInfo current) updater,
+  ) {
+    final bundle = state.bundle;
+    if (bundle == null) return;
+    final cat = bundle.cats.where((c) => c.id == catId).firstOrNull;
+    if (cat == null) return;
+    _replaceCat(cat.copyWith(trackerInfo: updater(cat.trackerInfo)));
+  }
+
   void togglePhotoSave(String catId, String photoId) {
     _updatePhoto(catId, photoId, (p) => p.copyWith(isSaved: !p.isSaved));
   }
