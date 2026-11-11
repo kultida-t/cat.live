@@ -22,4 +22,21 @@ abstract final class AppColors {
   static const navBackground = Color(0xF2FFFDF9);
   static const ringUnseenFrom = Color(0xFFB5C8EC);
   static const ringUnseenTo = Color(0xFF8FA6DA);
+
+  // หน้าแรก — แบนเนอร์ต้อนรับและการ์ดทางลัด
+  static const heroStart = Color(0xFFFFF6EA);
+  static const heroEnd = Color(0xFFF6E6D6);
+  static const heroHeart = Color(0xFFF07E73);
+  static const quickFeedBg = Color(0xFFDDF2EE);
+  static const quickFeedBorder = Color(0xFFA9DCD3);
+  static const quickFeedInk = Color(0xFF0B5E58);
+  static const quickFeedIcon = Color(0xFF5FB3A8);
+  static const quickAiBg = Color(0xFFE9E6FB);
+  static const quickAiBorder = Color(0xFFC9C2F3);
+  static const quickAiInk = Color(0xFF403A9C);
+  static const quickAiIcon = Color(0xFF8F88DE);
+  static const quickHelpBg = Color(0xFFFDE6DF);
+  static const quickHelpBorder = Color(0xFFF5BFAF);
+  static const quickHelpInk = Color(0xFF963721);
+  static const quickHelpIcon = Color(0xFFE58A72);
 }
