@@ -4,6 +4,7 @@ import '../../features/feed/presentation/pages/community_page.dart';
 import '../../features/feed/presentation/pages/connections_page.dart';
 import '../../features/feed/presentation/pages/guidelines_page.dart';
 import '../../features/feed/presentation/pages/post_link_page.dart';
+import '../../features/home/presentation/pages/home_page.dart';
 import '../../features/shell/presentation/main_shell.dart';
 import '../../features/shell/presentation/placeholder_page.dart';
 
@@ -21,20 +22,7 @@ GoRouter createAppRouter() {
         builder: (context, state, shell) => MainShell(navigationShell: shell),
         branches: [
           StatefulShellBranch(
-            routes: [
-              GoRoute(
-                path: '/',
-                builder: (_, _) => const PlaceholderPage(
-                  title: 'แมว.live',
-                  subtitle: 'ภาพรวมแมวของฉันและทางลัดต่าง ๆ',
-                  notes: [
-                    'แมวของฉัน — การ์ดแมวพร้อมทางลัดสมุดสุขภาพ ประกาศ และแท็ก',
-                    'ทางลัด — สร้างโพสต์ แจ้งแมวหาย ค้นหาสถานที่',
-                    'หน้าเปิดแอป — แมววิ่งเข้าหาเจ้าของตอนเปิดแอป (ทีหลัง)',
-                  ],
-                ),
-              ),
-            ],
+            routes: [GoRoute(path: '/', builder: (_, _) => const HomePage())],
           ),
           StatefulShellBranch(
             routes: [

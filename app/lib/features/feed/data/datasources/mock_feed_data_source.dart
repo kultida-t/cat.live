@@ -58,7 +58,7 @@ List<Map<String, dynamic>> _seedPosts() => [
     'preview_comments': [
       {'author_handle': 'somjeed.daily', 'body': 'น่ารักมากกก ขอกอดด้วย'},
     ],
-    'posted_ago_text': '2 ชม.ที่แล้ว',
+    'posted_ago_text': '30 นาทีที่แล้ว',
     'is_following_author': true,
     'is_liked': true,
     'is_saved': false,
@@ -82,7 +82,7 @@ List<Map<String, dynamic>> _seedPosts() => [
     'share_count': 11,
     'liked_by': {'handle': 'tonkla_meow', 'avatars': _likedFirst},
     'preview_comments': <Map<String, dynamic>>[],
-    'posted_ago_text': '4 ชม.ที่แล้ว',
+    'posted_ago_text': '1 ชม.ที่แล้ว',
     'is_following_author': true,
     'is_liked': false,
     'is_saved': true,
@@ -109,7 +109,7 @@ List<Map<String, dynamic>> _seedPosts() => [
         'body': 'ลองให้หมอตรวจเลือดดูค่าไตกับน้ำตาลค่ะ',
       },
     ],
-    'posted_ago_text': '5 ชม.ที่แล้ว',
+    'posted_ago_text': '2 ชม.ที่แล้ว',
     'is_following_author': false,
     'is_liked': false,
     'is_saved': false,
@@ -133,7 +133,7 @@ List<Map<String, dynamic>> _seedPosts() => [
     'share_count': 2,
     'liked_by': {'handle': 'maew.vetnote', 'avatars': _likedSecond},
     'preview_comments': <Map<String, dynamic>>[],
-    'posted_ago_text': '1 ชม.ที่แล้ว',
+    'posted_ago_text': '4 ชม.ที่แล้ว',
     'is_following_author': false,
     'is_liked': false,
     'is_saved': true,
@@ -157,7 +157,7 @@ List<Map<String, dynamic>> _seedPosts() => [
     'share_count': 5,
     'liked_by': {'handle': 'maew.vetnote', 'avatars': _likedSecond},
     'preview_comments': <Map<String, dynamic>>[],
-    'posted_ago_text': '30 นาทีที่แล้ว',
+    'posted_ago_text': '5 ชม.ที่แล้ว',
     'is_following_author': true,
     'is_liked': false,
     'is_saved': false,
@@ -191,7 +191,13 @@ const _commentTemplates = [
 class MockFeedDataSource implements FeedRemoteDataSource {
   MockFeedDataSource({this.latency = const Duration(milliseconds: 400)})
     : _posts = _seedPosts(),
-      _accounts = _seedAccounts();
+      _accounts = _seedAccounts() {
+    // ให้ยอด comment_count บนการ์ดตรงกับจำนวนคอมเมนต์จริงที่เปิดดูในชีตเสมอ
+    for (final p in _posts) {
+      final id = p['id'] as String;
+      p['comment_count'] = _commentsOf(id).length;
+    }
+  }
 
   final Duration latency;
   List<Map<String, dynamic>> _posts;
@@ -345,14 +351,13 @@ class MockFeedDataSource implements FeedRemoteDataSource {
     return PostModel.fromJson(post);
   }
 
-  /// คอมเมนต์ตัวอย่างสร้างตามสูตรเดียวกับเว็บ: คอมเมนต์เด่นของโพสต์ก่อน
-  /// แล้วตามด้วยคอมเมนต์สำเร็จรูปของบัญชีอื่น 2–5 อัน
+  /// คอมเมนต์ตัวอย่างสร้างตามสูตร: คอมเมนต์เด่นของโพสต์ก่อน แล้วตามด้วยคอมเมนต์ของบัญชีอื่น
   List<Map<String, dynamic>> _seedComments(Map<String, dynamic> post) {
     final id = post['id'] as String;
     final authorKey = (post['author'] as Map<String, dynamic>)['id'] as String;
     final preview = (post['preview_comments'] as List<dynamic>)
         .cast<Map<String, dynamic>>();
-    final count = (post['comment_count'] as int) > 20 ? 5 : 3;
+    final count = (id == 'p1' || id == 'p2' || id == 'p5') ? 5 : 3;
     Map<String, dynamic> comment(
       String idSuffix,
       String account,
