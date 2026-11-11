@@ -107,4 +107,17 @@ abstract final class AppColors {
   static const trackerLostBtnInk = Color(0xFFA3321F);
   static const trackerCollarTeal = Color(0xFF328F87);
   static const trackerCollarSand = Color(0xFFDFC8A3);
+
+  // หน้าแอนิเมชันเปิดแอป (Splash / Intro)
+  static const splashBgStart = Color(0xFFFFF6EC);
+  static const splashBgMid = Color(0xFFFFF1E6);
+  static const splashBgEnd = Color(0xFFFBE3D0);
+  static const splashShadow = Color(0xFFE9CDB6);
+  static const splashShirt = Color(0xFFF4A3B4);
+  static const splashSkin = Color(0xFFF6D2B8);
+  static const splashCatBody = Color(0xFFF2B56B);
+  static const splashCatDark = Color(0xFFE7A25B);
+  static const splashCatStripe = Color(0xFFE29A4E);
+  static const splashHeartGold = Color(0xFFF6DC8E);
+  static const splashHint = Color(0xFF9C8A79);
 }
