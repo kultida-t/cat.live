@@ -12,18 +12,18 @@ Workflow สำหรับจับเวลาและสรุปงาน�
 **ลำดับบังคับต่อ scenario:**
 
 - **เริ่มทำ task:** `get_session_context` → `move_task → in_progress` (ผ่าน confirmation flow) → เริ่มงาน
-- **ทำเสร็จ (ผู้ใช้อนุญาตปิดแล้ว):** Verify → `move_task → done` → อ่าน Final Task + Activity → อ่าน Actual Start/End + Final `hours_spent` → สร้าง Final Summary → รวม Task Evidence Bundle → `save_session_note` → แสดง Task Block → handoff prompt งานถัดไป (หรือเสนอทางเลือกถ้าไม่มีงานต่อ)
+- **ทำเสร็จ (ผู้ใช้อนุญาตปิดแล้ว):** Verify → `move_task → done` → อ่าน Final Task + Activity → อ่าน Actual Start/End + Final `hours_spent` → สร้าง Final Summary → รวม Task Evidence Bundle → `save_session_note` → แจ้งปิด task + เวลา (`D.D ชม.`) → handoff prompt งานถัดไป (หรือเสนอทางเลือกถ้าไม่มีงานต่อ) — **ไม่ต้องแสดง Task Block / copy block สรุปหลังปิด task**
 - **Pause ข้าม session (task ยังไม่จบ):** `get_board` → Progress/Handoff Summary (ระบุชัดว่า**ไม่ใช่** Final + เวลายังไม่ใช่ Final Actual Time) → ถามยืนยัน → `save_session_note`
 - **สรุป task เดี่ยว:** อ่าน task + `hours_spent` จริงจาก Kanban → Task Block ราย task
 
 **กฎห้ามข้าม:**
 
-1. ⚠️ **Close First** — ห้ามสร้าง/แสดง Final Work Summary ก่อน `move_task → done`
+1. ⚠️ **Close First** — ห้ามสร้าง Final Work Summary ก่อน `move_task → done`
 2. ⚠️ **เวลาต้องมาจาก Kanban เท่านั้น** — ห้ามเดา, ห้ามใช้ elapsed/snapshot ตอน `in_progress` เป็น Final Actual Time
 3. ⚠️ **ห้าม `log_time` ใน completion workflow** และห้ามแก้ `hours_spent` เอง — ค่าผิดปกติให้แจ้งผู้ใช้ ทำ correction workflow แยกเมื่อผู้ใช้สั่ง
 4. ⚠️ **Task Evidence Bundle บังคับ** ทุก task ที่ปิด (checklist ผลตรวจ / test + raw output / ภาพ / ไฟล์+commit) — ระบุ path ใน Final Session Note
 5. ⚠️ **Manual Review Checklist** — งานที่เปลี่ยนสิ่งที่เห็นบนจอต้องส่ง checklist ให้ผู้ใช้ตรวจ **ก่อน** ขอปิด
-6. ⚠️ ทุก task ที่ปิดต้องมี Final Session Note + Task Block
+6. ⚠️ ทุก task ที่ปิดต้องมี Final Session Note ใน Kanban (**ไม่ต้องแสดง Task Block / copy block ในแชทหลังปิด task** — แสดงเฉพาะเมื่อผู้ใช้ขอสรุปในสถานการณ์ที่ 3 หรือ 4)
 7. ⚠️ เวลารอผู้ใช้รีวิวหน้าจอ = เวลาทำงานจริง ห้ามตัดออกจาก `hours_spent`
 
 **Self-check ก่อนส่ง output:** เทียบ output กับลำดับบังคับ + กฎข้างบน — ถ้าขาดข้อไหนให้ย้อนทำให้ครบก่อน ห้ามส่ง output ที่ข้ามขั้น
@@ -38,7 +38,7 @@ Workflow สำหรับจับเวลาและสรุปงาน�
 
 **ทำ task เสร็จ:**
 - User พูดว่า: "เสร็จแล้ว", "ทำเสร็จแล้ว", "ปิด task นี้", "จบ task แล้ว"
-- ผู้ใช้ยืนยันผลลัพธ์และอนุญาตให้ปิด task → Verify → ย้ายเข้า `done` → อ่าน Final Actual Time → สร้างและบันทึก Final Work Summary → แสดง Task Block
+- ผู้ใช้ยืนยันผลลัพธ์และอนุญาตให้ปิด task → Verify → ย้ายเข้า `done` → อ่าน Final Actual Time → สร้างและบันทึก Final Session Note ลง Kanban → แจ้งปิดงาน + เวลาสั้น ๆ + Session Handoff (**ไม่ต้องแสดง Task Block / copy block สรุป**)
 
 **บันทึก session ก่อนขึ้น session ใหม่ (task ยังไม่จบ):**
 - User พูดว่า: "บันทึก session", "ขอบันทึกก่อน", "เซฟ session", "จะทำต่อ session ใหม่"
@@ -78,7 +78,7 @@ Workflow สำหรับจับเวลาและสรุปงาน�
                                      ↓
                                      save_session_note (Final Summary)
                                      ↓
-                                     แสดง Task Block
+                                     แจ้งปิด task + เวลาสั้น ๆ
                                      ↓
                                      Session Handoff + Prompt งานถัดไป
                                      (หรือข้อเสนอแนะงานต่อไปถ้าไม่มีงานรอทำ)
@@ -102,10 +102,10 @@ Workflow สำหรับจับเวลาและสรุปงาน�
 **กฎเหล็ก:**
 - ไม่มีการส่ง log ไปยังระบบภายนอก (core-portal หรือ API ใด ๆ)
 - งานที่มีการแก้ไฟล์ต้องได้รับการยืนยันผลลัพธ์จากผู้ใช้ก่อนเริ่ม completion workflow ตามกฎ Kanban ของ repository
-- กรณีที่ 2: **ต้องปิด task ก่อนสร้าง Final Work Summary** และต้องบันทึก Final Session Note + แสดง Task Block จาก Final Summary ชุดเดียวกัน
+- กรณีที่ 2: **ต้องปิด task ก่อนสร้าง Final Work Summary** และบันทึก Final Session Note ลง Kanban (**ไม่ต้องแสดง Task Block / copy block สรุปในแชทหลังปิด task**)
 - กรณีที่ 3 (handoff): **ห้ามย้าย task เป็น `done`** — task ต้องอยู่ใน `in_progress` เพื่อทำต่อใน session ใหม่
 - Progress/Handoff Summary ไม่ใช่ Final Work Summary และห้ามใช้เวลาที่ยังวิ่งอยู่เป็น Final Actual Time
-- สำหรับ `progress/handoff` และ `report-only` ให้แสดงทั้งสรุปรวมและ Task Block ราย task ในผลลัพธ์เดียวกัน; `final` แสดง Task Block ตาม unified template จาก canonical Final Summary ชุดเดียวกับ Final Session Note
+- สำหรับ `progress/handoff` และ `report-only` ให้แสดงทั้งสรุปรวมและ Task Block ราย task ในผลลัพธ์เดียวกัน; ส่วน `final` (ปิด task) ไม่ต้องแสดง Task Block ในแชทแล้ว แสดงเฉพาะเมื่อผู้ใช้สั่งขอสรุปเพิ่มตามสถานการณ์ที่ 4
 
 ---
 
@@ -228,17 +228,14 @@ Final Summary ชุดนี้ต้องเป็นแหล่งเดี
 
 การบันทึก Final Session Note ไม่ใช่การเพิ่มเวลา และห้ามเรียก `log_time`
 
-#### 8. แสดง Task Block
+#### 8. แจ้งปิด task และเวลาสั้น ๆ (ไม่ต้องแสดง copy block สรุป)
 
-- หลัง `save_session_note` สำเร็จ ให้แสดง **Task Block** ตาม unified template ใน `references/templates.md` § รูปแบบผลลัพธ์ ทุกครั้ง
-- Task Block ต้องสร้างจาก canonical Final Summary ชุดเดียวกับที่บันทึกใน note
-- ใช้ Human-readable `text` Task Block เดียวตาม template ใน `references/templates.md` § Task Block โดยตรวจ Mission Mapping ก่อน แล้วแสดง Objective/Feature เมื่อมี mapping จริง ตามด้วย Task Code + Task Name, Category, เวลาเริ่ม/เวลาจบ/Final Actual Time, เป้าหมาย/ผลลัพธ์ที่คาดหวัง, ภาพรวม, ไฟล์ที่แก้ไข และรายละเอียดงานที่ทำ
-- Actual Start/End จาก Activity Timeline ใช้เป็นบรรทัด เวลาเริ่ม/เวลาจบ ใน Task Block; Decisions, Issues/Fixes, Next Step และ workflow metadata อื่นคงอยู่ใน canonical Final Summary / Final Session Note
-- แจ้งผู้ใช้ว่า task ถูกปิดแล้วและแสดงเวลาในรูปแบบ `D.D ชม.` (ทศนิยม 1 ตำแหน่ง)
+- หลัง `save_session_note` สำเร็จ ให้แจ้งผู้ใช้สั้น ๆ ว่า task ถูกปิดแล้ว พร้อมแสดงเวลาในรูปแบบ `D.D ชม.` (ทศนิยม 1 ตำแหน่ง) และหมายเหตุเรื่องเวลา (ถ้ามี เช่น มี dead time หรือไม่ได้เปิด timer ระหว่างทำ)
+- **ไม่ต้องแสดง Task Block / copy block สรุปในแชทหลังปิด task** (หากผู้ใช้ต้องการก๊อปไปลงระบบอื่นภายหลัง ค่อยสั่ง `"สรุป task นี้"` ตามสถานการณ์ที่ 4)
 
-#### 9. ปิดท้ายด้วย Session Handoff + Prompt งานถัดไป หรือข้อเสนอแนะงานต่อไป (บังคับทุกครั้งหลัง Task Block)
+#### 9. ปิดท้ายด้วย Session Handoff + Prompt งานถัดไป หรือข้อเสนอแนะงานต่อไป (บังคับทุกครั้งหลังปิด task)
 
-หลังแสดง Task Block แล้ว ต้องทำขั้นนี้เสมอก่อนจบ turn — ห้ามจบแค่ Task Block:
+หลังแจ้งปิด task แล้ว ต้องทำขั้นนี้เสมอก่อนจบ turn:
 
 **กรณีมีงานรอทำต่อ** (มี task ถัดไปใน approved execution order หรืองานที่เหลือใน mission/plan ที่ผู้ใช้อนุมัติแล้ว):
 
@@ -256,11 +253,11 @@ Final Summary ชุดนี้ต้องเป็นแหล่งเดี
 - ⚠️ ห้ามปรับ `hours_spent` เองระหว่าง completion workflow; ถ้าค่าผิดปกติให้รายงานผู้ใช้และแยกเป็น correction workflow ที่ผู้ใช้สั่งชัดเจน
 - ⚠️ **เวลารอผู้ใช้รีวิวหน้าจอ/prototype = เวลาทำงานจริง** — task ที่เปลี่ยนสิ่งที่เห็นบนหน้าจอแล้วรอผู้ใช้ตรวจตาม Manual Review Checklist ต้องนับเวลาต่อเนื่อง เพราะ review gate คือส่วนหนึ่งของงาน ห้ามตัดเวลารอรีวิวออกจาก `hours_spent`
 - ⚠️ **ตัดเวลาหลุดได้เฉพาะงานประเภท run** (เช่น run tests/regression/long-running command) ที่ผลลัพธ์เสร็จสมบูรณ์แล้วแต่ timer ยังเดินต่อเพราะผู้ใช้ไม่ได้อยู่หน้าจอ — ถ้าพบ banked time มีช่วงหลุดแบบนี้หลังปิด task ให้แจ้งผู้ใช้พร้อมตัวเลข banked vs เวลางานจริง และ correct `hours_spent` ด้วย `update_task` (SET) เมื่อผู้ใช้ยืนยันเวลาจริงแล้วเท่านั้น โดยทำเป็น correction workflow แยกหลังปิด task
-- ทุก task ที่ปิดต้องมี Final Session Note และ Task Block
+- ทุก task ที่ปิดต้องมี Final Session Note ใน Kanban (ไม่ต้องแสดง Task Block / copy block ในแชทหลังปิด task)
 - ⚠️ **Task Evidence Bundle บังคับ:** ทุก task ที่ปิดต้องรวมหลักฐานประจำ task (checklist ผลตรวจ / test list + raw output / ภาพ Before-After / ไฟล์+commit ที่แก้) ทันทีหลังปิด และระบุ path ใน Final Session Note
 - ⚠️ **Manual Review Checklist:** task ที่เปลี่ยนสิ่งที่เห็นบนหน้าจอ (UI/prototype/logic/data ที่สะท้อนบนจอ) ต้องส่ง checklist ทดสอบ manual (เคส + ข้อมูลทดสอบ + ขั้นกด + ผลที่คาด) ให้ผู้ใช้ตรวจก่อนขอปิด — รีวิวต้องเกิดก่อน `move_task → done` ตามกฎการยืนยันผลลัพธ์เดิม
 - **ถ้า task ที่ปิดเป็น task สุดท้ายของเป้าหมาย (Objective) ใน Mission** — ทุก task ของเป้าหมายนั้นเป็น done แล้ว → แจ้งผู้ใช้ว่าเป้าหมายครบ
-- ลำดับบังคับ: Verify → `move_task → done` → อ่าน Final Task + Activity → อ่าน Actual Start/End/Final `hours_spent` → สร้าง Final Summary → รวมหลักฐานประจำ Task → `save_session_note` → แสดง Task Block → session handoff + prompt งานถัดไป หรือข้อเสนอแนะงานต่อไป (ตามขั้น 9)
+- ลำดับบังคับ: Verify → `move_task → done` → อ่าน Final Task + Activity → อ่าน Actual Start/End/Final `hours_spent` → สร้าง Final Summary → รวมหลักฐานประจำ Task → `save_session_note` → แจ้งปิด task + เวลาสั้น ๆ → session handoff + prompt งานถัดไป หรือข้อเสนอแนะงานต่อไป (ตามขั้น 9)
 
 ---
 

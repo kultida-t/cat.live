@@ -211,12 +211,12 @@ mcp_call_tool(
 1. **สรุปรวม** — ภาพรวมของ session/วัน พร้อม totalHours
 2. **Task Block** — 1 task = 1 บล็อก แสดงชื่อ task, ชั่วโมง, และสิ่งที่ทำ
 
-สำหรับ `final` ให้ทำตามสถานการณ์ที่ 2 เท่านั้น: ปิด task และอ่านข้อมูลสุดท้ายก่อน จากนั้นจึงสร้าง canonical Final Summary เพื่อบันทึกและแสดง Task Block
+สำหรับ `final` ให้ทำตามสถานการณ์ที่ 2 เท่านั้น: ปิด task และอ่านข้อมูลสุดท้ายก่อน จากนั้นจึงสร้าง canonical Final Summary เพื่อบันทึก `save_session_note` (ไม่ต้องแสดง Task Block / copy block ในแชท)
 
 ### 9. การยืนยันตามประเภท Summary
 
 - `progress/handoff`: แสดงร่างและถามผู้ใช้ก่อนบันทึก Session Note; เมื่อยืนยันแล้วบันทึก note และคง task เป็น `in_progress`
-- `final`: การยืนยันผลลัพธ์/อนุญาตปิดต้องเกิดก่อน `move_task → done`; หลังปิดให้สร้างและบันทึก Final Summary แล้วแสดง Task Block โดยไม่ย้อนกลับไปใช้ลำดับสรุปก่อนปิด
+- `final`: การยืนยันผลลัพธ์/อนุญาตปิดต้องเกิดก่อน `move_task → done`; หลังปิดให้สร้างและบันทึก Final Summary ลง Kanban แล้วแจ้งปิด task + เวลาสั้น ๆ + Session Handoff (**ไม่ต้องแสดง Task Block / copy block ในแชท**)
 - `report-only`: แสดงสรุปโดยไม่บันทึก Session Note และไม่เปลี่ยนสถานะ
 
 **ตัวอย่างคำถามที่ควรถาม:**
@@ -254,7 +254,7 @@ mcp_call_tool(
 - ⚠️ **ห้ามส่ง log ไปยังระบบภายนอกใด ๆ** (core-portal, API, curl) — skill นี้เป็นการสรุปเท่านั้น
 - ⚠️ Progress/Handoff Note และ Final Session Note เป็นคนละประเภท ห้ามใช้แทนกัน
 - ⚠️ Final Session Note ไม่ใช่การเพิ่มเวลา และห้ามเรียก `log_time`
-- Final Session Note และ Task Block ต้องมาจาก canonical Final Summary ชุดเดียวกัน
+- Final Session Note และ Task Block (เมื่อผู้ใช้สั่งขอสรุปตามสถานการณ์ที่ 4) ต้องมาจาก canonical Final Summary ชุดเดียวกัน
 
 ---
 
@@ -368,19 +368,11 @@ mcp_call_tool(
 - [ ] **ไม่มี floor correction** — ใช้ Final `hours_spent` จากระบบตามจริง แม้จะต่ำกว่า 0.3 ชม. ก็ใช้ค่านั้น ห้ามปรับขึ้นเอง
 - [ ] สร้าง canonical Final Summary จากข้อมูลหลังปิด โดยมี Final Result, Work Completed, Decisions, Verification/Test Result, Actual Start/End, Final Actual Time, Issues/Fixes, Scope Changes, Open Items และ Next Step
 - [ ] รวม Task Evidence Bundle: checklist ผลตรวจรายเคส (ถ้ามี) + ภาพ Before/After / test list + raw output + ภาพ HTML report หรือภาพ/screencast UI + triage note เคส skipped / ไฟล์+commit ที่แก้ — ตั้งชื่อไฟล์ trace ถึง task code และระบุ path ใน Final Session Note (หลักฐานขาด → บันทึก evidence gap ห้ามสร้างย้อนหลัง)
-- [ ] เรียก `save_session_note` ด้วย Final Summary ชุดเดียวกันเพื่อเก็บ Persistent Task History
-- [ ] ก่อนสร้าง Task Block ตรวจ Mission Mapping ที่บันทึกไว้จริง: ถ้ามีให้แสดง Objective → Feature → Task; ถ้าไม่มีให้เริ่มจาก Task และห้ามสร้าง Objective/Feature ขึ้นมาเอง
-- [ ] ตรวจว่า Objective/Feature labels ใน Task Block เป็น verbatim จาก approved mission baseline (`get_mission` → Objectives) ไม่ใช่ paraphrase หรือ label จาก task description ล้วน ๆ; ถ้า task description เขียนไม่ตรงให้ใช้ชื่อจาก mission แล้วแจ้งผู้ใช้เสนอแก้ description
-- [ ] แสดง **Task Block** จาก canonical Final Summary ชุดเดียวกันทุกครั้ง เป็น Human-readable `text` block เดียวตาม unified template: Objective/Feature เมื่อมี mapping จริง → Task + สถานะ + สถานะความสมบูรณ์ → Category → เวลาเริ่ม/เวลาจบ/Final Actual Time → เป้าหมาย/ผลลัพธ์ที่คาดหวัง → ภาพรวม → ไฟล์ที่แก้ไข (เฉพาะไฟล์งานจริง แสดงเมื่อมี) → รายละเอียดงานที่ทำ → ส่งต่อ/ค้างติดตาม (ตามเงื่อนไขสถานะ)
-- [ ] ตรวจว่า Task Block ใช้ business-facing Task Code และไม่มี Kanban UUID/internal ID
-- [ ] ตรวจว่า Task Block ไม่มี Decisions, Problems, Scope Changes, Next Step หรือ workflow metadata เป็น section แยก — field ที่แสดงมีเฉพาะตาม unified template (สถานะ/สถานะความสมบูรณ์/ส่งต่อ-ค้างติดตาม เป็น field มาตรฐาน; section ไฟล์ที่แก้ไขแสดงเมื่อมีไฟล์ส่งมอบจริง)
-- [ ] ตรวจว่ารายการใน Task Block ใช้ literal `- ` และไม่มี `*` หรือ rendered bullet `•`
-- [ ] ตรวจว่า Task Block ทั้งหมดอยู่ใน `text` code block เดียว ใช้รายการ `รายละเอียดงานที่ทำ` กระชับและอ่านเข้าใจได้ และไม่ได้แยก Verification/workstream เป็น section โดยไม่จำเป็น
-- [ ] ตรวจว่าเวลาหลังปิด task อ้างอิง Final `hours_spent`; แสดง Planned Time เฉพาะกรณี Case C ที่มีแผนตกลงไว้และเวลาจับจริงเชื่อถือได้; ถ้าเวลาถูกบันทึกย้อนหลังให้ระบุข้อจำกัดแทนการเรียกว่าเวลาจริง
-- [ ] ตรวจว่า canonical Final Summary / Final Session Note ยังคง Actual Start/End และรายละเอียดเต็มทั้งหมด แม้ Task Block จะย่อ presentation
+- [ ] เรียก `save_session_note` ด้วย Final Summary ชุดเดียวกันเพื่อเก็บ Persistent Task History (ไม่ต้องแสดง Task Block / copy block ในแชทหลังปิด task เว้นแต่ผู้ใช้สั่ง `"สรุป task นี้"`)
+- [ ] ตรวจว่า canonical Final Summary / Final Session Note ยังคง Actual Start/End และรายละเอียดเต็มทั้งหมด
 - [ ] เช็ค dead time ใน banked `hours_spent` — เฉพาะงานประเภท run (run tests/regression) ที่ผลลัพธ์เสร็จแล้วแต่ timer เดินต่อตอนผู้ใช้ไม่ได้อยู่หน้าจอ → แจ้งผู้ใช้พร้อมเสนอเวลางานจริง ถ้ายืนยันให้ correct ด้วย `update_task` (SET `hours_spent`) เป็น correction workflow แยกหลังปิด; เวลารอผู้ใช้รีวิวหน้าจอ/prototype = เวลาทำงานจริง นับต่อเนื่อง ห้ามตัด
 - [ ] แจ้งผู้ใช้ว่า "ปิด task <ชื่อ> แล้ว ใช้เวลา <D.D ชม.>"
-- [ ] หลัง Task Block: ถ้ามีงานรอทำต่อ → บันทึก session note (สถานะรวม + state + decisions/gotchas + Next Step) และสร้าง prompt งานถัดไปเป็น copy block ให้ผู้ใช้; ถ้าไม่มีงานต่อ → เสนอแนวทางงานต่อไปให้ผู้ใช้ตัดสินใจ (เช่น mission ใหม่, outstanding work, mission closure) โดยไม่สร้าง mission/task เอง
+- [ ] หลังแจ้งปิด task: ถ้ามีงานรอทำต่อ → บันทึก session note (สถานะรวม + state + decisions/gotchas + Next Step) และสร้าง prompt งานถัดไปเป็น copy block ให้ผู้ใช้; ถ้าไม่มีงานต่อ → เสนอแนวทางงานต่อไปให้ผู้ใช้ตัดสินใจ (เช่น mission ใหม่, outstanding work, mission closure) โดยไม่สร้าง mission/task เอง
 - [ ] ⚠️ **ห้ามบวก/ลด/ปรับชั่วโมงเอง** — ใช้ค่า hours_spent จากระบบเป็นค่าจริง
 - [ ] ⚠️ **ห้ามเรียก `log_time`** ก่อนหรือหลังปิด task
 - [ ] ⚠️ ห้ามใช้ elapsed/snapshot time ขณะ `in_progress` เป็น Final Actual Time
