@@ -78,6 +78,10 @@
 - **`master`** — สายงานหลักสำหรับเก็บโค้ดและเอกสารที่ตรวจรับผ่านแล้ว (Production / Locked Baseline)
 - **`dev`** — สายงานรวมโค้ดที่กำลังพัฒนาและทดสอบร่วมกันก่อนส่งขึ้น `master`
 - **Working Branches (เช่น `chore/project-setup`, `feat/...`, `fix/...`)** — สายงานย่อยที่แตกออกจาก `dev` เพื่อทำงานแต่ละเรื่องแยกกัน เมื่อเสร็จและตรวจรับผ่านแล้วจึงรวม (Merge) กลับเข้า `dev`
+- **กฎการเคลียร์ Branch หลัง Merge (ห้ามลบก่อนเช็กครบ — กันงานหาย):**
+  1. ตรวจว่าไม่มี commit ค้างใน branch ย่อยที่ยังไม่ได้เข้า `dev` (`git log dev..<branch>` ต้องว่างเปล่า)
+  2. Push `dev` ขึ้น remote แล้วตรวจให้ตรงกัน (`git rev-parse dev` == `git rev-parse origin/dev`)
+  3. ใช้ `git branch -d <branch>` (แบบปลอดภัยที่ Git กันลบถ้ายังไม่ merge — **ห้ามใช้ `-D` โดยไม่ถามพี่มาเต็ม**) แล้วค่อยลบที่ remote (`git push origin --delete <branch>`) เพื่อคงเหลือเฉพาะ `master` กับ `dev`
 
 ---
 
@@ -86,10 +90,12 @@
 - **Repository:** GitLab `https://git.mrfox.store/Kultida.t/catlive.git` (remote `origin` — ใช้งานหลัก), GitHub `https://github.com/kultida-t/cat.live.git` (remote `github`)
 - **Local Path:** `/Users/kultida/Desktop/Projects/cat.live` (macOS)
 - **สถานะล่าสุด (2026-11-11):**
+  - Merge `feat/my-cat-slice-2` (หน้า Cat ID `/my-cat/profile`, หน้าตามหาแมว `/my-cat/tracker` + ชื่อแอป `แมว.live`, Splash Screen แอนิเมชันเปิดแอป, อัปเดต `mcp-server.js` / Schema 2.0 และ `2026-11-11_ai-log.json`) เข้า `dev` และ push ขึ้นทั้ง `origin/dev` และ `github/dev` แล้ว (`flutter analyze` ผ่าน, `flutter test` 77 เคสผ่าน)
+  - งานถัดไปใน Slice 2 ที่ยังรอทำ: Task `b81b2133` หน้า `/my-cat/health` (สมุดสุขภาพทั้งหมด) — ให้แตก branch ใหม่จาก `dev` (เช่น `feat/my-cat-health`)
   - ตรวจรับและล็อกหน้าแมวและฉัน (`/my-cat` — Slice 1 UI Mock Baseline) บน branch `feat/my-cat` ลง `PROTECTED_SCREENS.md` และ merge เข้า `dev` เรียบร้อยแล้ว (`flutter analyze` ผ่าน, `flutter test` 60 เคสผ่าน บน Android `emulator-5554` และ iOS `iPhone 17`)
   - ปรับมาตรฐานข้ามฟีเจอร์ที่พี่มาเต็มอนุมัติแล้ว: โลโก้โซเชียลจริง (`social_brand_icons.dart`), รูปโปรไฟล์วงกลมเต็มในชีตแชร์ฟีด (`AppAvatar` / `StoryAvatar` / `share_sheet.dart`), ซิงก์ภาษา ไทย/EN ระดับแอป (`appLocaleProvider` + `MainShell` + `PlaceholderPage`), และแอนิเมชันสไลด์ขวา-ซ้าย/ปัดขอบซ้ายกลับ (`CupertinoPageTransitionsBuilder`)
   - Merge `feat/home-page` (หน้าแรก `/`) และ `feat/mobile-app` (ระบบฟีด `/community`, `/connections`, `/guidelines`, `/p/:id` และแถบเมนูล่าง 6 แท็บ) เข้า `dev` และ push ขึ้น `origin/dev` แล้ว
-  - Git Branches ปัจจุบัน: `master` และ `dev` (รวม `feat/mobile-app`, `feat/home-page`, `feat/my-cat` ครบแล้ว)
+  - Git Branches ปัจจุบัน: `master` และ `dev` (เคลียร์ branch ย่อยที่ merge แล้วออกทั้งหมด)
 - **สถานะก่อนหน้า (2026-11-10):**
   - ใช้ Skills 2 ตัว (`work-summary`, `ai-conversation-daily-log`) — ลบ `mission-planning` และ `submission-evidence` ออกจาก `.agents/skills/` แล้ว (เรียกคืนได้จาก Git history)
   - ย้าย remote หลักไป GitLab และหมุน access token ใหม่ เก็บใน macOS Keychain (ไม่ฝังรหัสใน URL)
