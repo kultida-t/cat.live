@@ -85,13 +85,16 @@
 
 - **Repository:** GitLab `https://git.mrfox.store/Kultida.t/catlive.git` (remote `origin` — ใช้งานหลัก), GitHub `https://github.com/kultida-t/cat.live.git` (remote `github`)
 - **Local Path:** `/Users/kultida/Desktop/Projects/cat.live` (macOS)
-- **สถานะล่าสุด (2026-11-10):**
+- **สถานะล่าสุด (2026-11-11):**
+  - ตรวจรับและล็อกระบบฟีด (`/community`, `/connections`, `/guidelines`, `/p/:id`) และแถบเมนูล่าง 6 แท็บใน `PROTECTED_SCREENS.md` เรียบร้อยแล้ว (`flutter analyze` ผ่าน, `flutter test` 46 เคสผ่าน)
+  - Git Branches ปัจจุบัน: `master`, `dev` และ `feat/mobile-app` (พัฒนาแอป Flutter)
+- **สถานะก่อนหน้า (2026-11-10):**
   - ใช้ Skills 2 ตัว (`work-summary`, `ai-conversation-daily-log`) — ลบ `mission-planning` และ `submission-evidence` ออกจาก `.agents/skills/` แล้ว (เรียกคืนได้จาก Git history)
   - ย้าย remote หลักไป GitLab และหมุน access token ใหม่ เก็บใน macOS Keychain (ไม่ฝังรหัสใน URL)
-  - Git Branches ปัจจุบัน: `master`, `dev` และ `feat/mobile-app` (สายงานที่กำลังทำแอปมือถืออยู่ — สาย `docs/app-dev-plan` merge เข้า dev แล้วลบทิ้ง)
-- **สถานะก่อนหน้า (2026-11-09):**
   - สร้างโครงสร้างโฟลเดอร์มาตรฐาน (`screenshots/`, `deliverables/`, `docs/`, `scripts/`), `.gitignore` และ `PROTECTED_SCREENS.md` เรียบร้อยแล้ว
 
 ## Protected Screens / Features
 
-*(ยังไม่มีหน้าจอที่ล็อก — ดูรายละเอียดเพิ่มเติมที่ `PROTECTED_SCREENS.md`)*
+- **แถบเมนูล่างหลัก 6 แท็บ (`MainShell` / `NavIcon`)** — ล็อกเมื่อ 2026-11-11
+- **ระบบฟีดชุมชน (`/community`, `/connections`, `/guidelines`, `/p/:id`)** — ล็อก UI Mock Baseline เมื่อ 2026-11-11
+*(ดูขอบเขตไฟล์และข้อยกเว้นสำหรับเชื่อมหน้าอื่น/API จริงได้ที่ `PROTECTED_SCREENS.md`)*
