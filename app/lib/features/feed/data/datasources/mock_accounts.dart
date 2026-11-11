@@ -101,6 +101,9 @@ const _accounts =
 /// บัญชีที่ติดตามอยู่ตอนเริ่มต้น (ตรงกับเว็บ: เจ้าของโพสต์ที่ following = true)
 const mockInitialFollowing = {'noon', 'vet', 'rescue'};
 
+/// บัญชีที่มีสตอรี่ที่ยังไม่ได้ดู (วงแหวนฟ้าไล่สีตามเว็บ prototype)
+const mockActiveStoryAccounts = {'noon', 'vet', 'muk', 'rescue'};
+
 List<String> get mockAccountKeys => _accounts.keys.toList();
 
 String mockHandleOf(String key) => _accounts[key]!.handle;
@@ -109,7 +112,7 @@ String mockHandleOf(String key) => _accounts[key]!.handle;
 String mockKeyOfHandle(String handle) =>
     _accounts.entries.firstWhere((e) => e.value.handle == handle).key;
 
-Map<String, dynamic> mockAccountJson(String key, {bool unseen = true}) {
+Map<String, dynamic> mockAccountJson(String key, {bool? unseen}) {
   final a = _accounts[key]!;
   return {
     'id': key,
@@ -117,6 +120,6 @@ Map<String, dynamic> mockAccountJson(String key, {bool unseen = true}) {
     'name': a.name,
     'avatar_url': '$_avatarDir/${a.photo}.jpg',
     'avatar_bg': a.bg,
-    'has_unseen_story': unseen,
+    'has_unseen_story': unseen ?? mockActiveStoryAccounts.contains(key),
   };
 }

@@ -11,12 +11,30 @@ import 'feed_providers.dart';
 
 enum FeedStatus { loading, ready, error }
 
+/// ลำดับผู้ติดตามเริ่มต้น 12 บัญชีตามเว็บ prototype (www.แมว.live/connections)
+const _followerOrder = [
+  'noon',
+  'pim',
+  'vet',
+  'tonkla',
+  'bow',
+  'muk',
+  'nat',
+  'fluke',
+  'rescue',
+  'mild',
+  'jay',
+  'ploy',
+];
+final _followerOrderSet = _followerOrder.toSet();
+
 class FeedState {
   const FeedState({
     this.tab = FeedTab.all,
     this.status = FeedStatus.loading,
     this.posts = const [],
     this.accounts = const [],
+    this.removedFollowerIds = const {},
     this.nextCursor,
     this.loadingMore = false,
     this.errorMessage,
@@ -28,12 +46,35 @@ class FeedState {
 
   /// ทะเบียนบัญชีพร้อมสถานะติดตาม — ใช้วาดแท็บ "ติดตาม"
   final List<FeedUser> accounts;
+  final Set<String> removedFollowerIds;
   final int? nextCursor;
   final bool loadingMore;
   final String? errorMessage;
 
   List<FeedUser> get followedAccounts =>
       accounts.where((a) => a.isFollowing).toList();
+
+  /// รายชื่อผู้ติดตามในหน้า /connections เรียงตามลำดับเว็บและตัดบัญชีที่ถูกลบออก
+  List<FeedUser> get followerAccounts {
+    final byId = {for (final a in accounts) a.id: a};
+    final ordered = [
+      for (final id in _followerOrder)
+        if (byId.containsKey(id) && !removedFollowerIds.contains(id)) byId[id]!,
+    ];
+    if (ordered.isNotEmpty || removedFollowerIds.isNotEmpty) return ordered;
+    return accounts
+        .where((a) => a.id != 'me' && !removedFollowerIds.contains(a.id))
+        .take(12)
+        .toList();
+  }
+
+  /// บัญชีแนะนำในแท็บ "แนะนำ" ของหน้า /connections
+  List<FeedUser> get allSuggestedAccounts => accounts
+      .where(
+        (a) =>
+            !a.isFollowing && a.id != 'me' && !_followerOrderSet.contains(a.id),
+      )
+      .toList();
 
   /// บัญชีแนะนำในแท็บติดตาม — ยังไม่ได้ติดตาม สูงสุด 4 บัญชีตามเว็บ
   List<FeedUser> get suggestedAccounts =>
@@ -44,6 +85,7 @@ class FeedState {
     FeedStatus? status,
     List<Post>? posts,
     List<FeedUser>? accounts,
+    Set<String>? removedFollowerIds,
     Object? nextCursor = _keep,
     bool? loadingMore,
     String? errorMessage,
@@ -53,6 +95,7 @@ class FeedState {
       status: status ?? this.status,
       posts: posts ?? this.posts,
       accounts: accounts ?? this.accounts,
+      removedFollowerIds: removedFollowerIds ?? this.removedFollowerIds,
       nextCursor: identical(nextCursor, _keep)
           ? this.nextCursor
           : nextCursor as int?,
@@ -180,6 +223,13 @@ class FeedController extends Notifier<FeedState> {
   /// กดติดตามจากแถว "แนะนำให้ติดตาม" (ไม่มีโพสต์เป็นตัวอ้าง)
   Future<Failure?> toggleFollowUser(FeedUser user) =>
       _setFollowing(user.id, !user.isFollowing);
+
+  /// ลบบัญชีออกจากรายชื่อผู้ติดตามในหน้า /connections
+  void removeFollower(FeedUser user) {
+    state = state.copyWith(
+      removedFollowerIds: {...state.removedFollowerIds, user.id},
+    );
+  }
 
   /// เปลี่ยนสถานะติดตามของบัญชี — อัปเดตทุกโพสต์ของบัญชีนั้นและทะเบียน accounts
   /// พร้อมกัน ถ้า API ล้มเหลวย้อนทั้ง state เดิมกลับ

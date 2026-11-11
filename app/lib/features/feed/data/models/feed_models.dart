@@ -55,6 +55,21 @@ class PostModel {
 
   Post toEntity() {
     final likedBy = json['liked_by'] as Map<String, dynamic>;
+    final parsedMedia = (json['media'] as List<dynamic>)
+        .cast<Map<String, dynamic>>()
+        .map(
+          (m) => PostMedia(
+            url: m['url'] as String,
+            alt: m['alt'] as String? ?? '',
+            isVideo: m['kind'] == 'video',
+            seconds: (m['seconds'] as num?)?.toDouble(),
+          ),
+        )
+        .toList();
+    // จำกัดจำนวนสื่อในฟีดให้ตรงกับเงื่อนไขการอัปโหลด (รูปสูงสุด 3 รูป หรือวิดีโอ 1 คลิป)
+    final media = parsedMedia.any((m) => m.isVideo)
+        ? parsedMedia.where((m) => m.isVideo).take(1).toList()
+        : parsedMedia.take(3).toList();
     return Post(
       id: json['id'] as String,
       type: json['type'] == 'lost_cat' ? PostType.lostCat : PostType.normal,
@@ -64,17 +79,7 @@ class PostModel {
       subtitle: json['subtitle'] as String?,
       subtitleHasPin: json['subtitle_has_pin'] as bool? ?? false,
       caption: json['caption'] as String,
-      media: (json['media'] as List<dynamic>)
-          .cast<Map<String, dynamic>>()
-          .map(
-            (m) => PostMedia(
-              url: m['url'] as String,
-              alt: m['alt'] as String? ?? '',
-              isVideo: m['kind'] == 'video',
-              seconds: (m['seconds'] as num?)?.toDouble(),
-            ),
-          )
-          .toList(),
+      media: media,
       likeCount: json['like_count'] as int,
       commentCount: json['comment_count'] as int,
       shareCount: json['share_count'] as int? ?? 0,

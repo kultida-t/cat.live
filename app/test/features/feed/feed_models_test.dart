@@ -57,4 +57,40 @@ void main() {
       expect(p3.nextCursor, isNull);
     },
   );
+
+  test(
+    'โพสต์ในฟีดและ mock แสดงรูปได้ไม่เกิน 3 รูปตามเงื่อนไขการอัปโหลด',
+    () async {
+      final capped = PostModel.fromJson({
+        'id': 'x2',
+        'type': 'normal',
+        'author': {
+          'id': 'u',
+          'handle': 'a.b',
+          'avatar_url': 'https://img/a.jpg',
+          'avatar_bg': 0xFFFFFFFF,
+        },
+        'caption': 'หลายรูป',
+        'media': [
+          for (var i = 1; i <= 5; i++)
+            {'url': 'https://img/$i.jpg', 'alt': 'r$i'},
+        ],
+        'like_count': 0,
+        'comment_count': 0,
+        'liked_by': {'handle': 'z', 'avatars': <Map<String, dynamic>>[]},
+        'posted_ago_text': 'เมื่อกี้',
+      }).toEntity();
+      expect(capped.media.length, 3);
+
+      final source = MockFeedDataSource(latency: Duration.zero);
+      final page = await source.fetchPosts(
+        tab: FeedTab.all,
+        cursor: 0,
+        limit: 5,
+      );
+      for (final post in page.posts) {
+        expect(post.toEntity().media.length, lessThanOrEqualTo(3));
+      }
+    },
+  );
 }

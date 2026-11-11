@@ -45,30 +45,12 @@ class _Story extends StatelessWidget {
       width: 68,
       child: Column(
         children: [
-          Container(
-            padding: const EdgeInsets.all(2.5),
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: user.hasUnseenStory
-                    ? const [AppColors.ringUnseenFrom, AppColors.ringUnseenTo]
-                    : const [AppColors.unchecked, AppColors.unchecked],
-              ),
-            ),
-            child: Container(
-              padding: const EdgeInsets.all(2),
-              decoration: const BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.white,
-              ),
-              child: AppAvatar(
-                source: user.avatar,
-                bg: user.avatarBg,
-                size: 56,
-              ),
-            ),
+          StoryAvatar(
+            source: user.avatar,
+            bg: user.avatarBg,
+            size: 56,
+            hasUnseenStory: user.hasUnseenStory,
+            showSeenRing: true,
           ),
           const SizedBox(height: 6),
           Text(

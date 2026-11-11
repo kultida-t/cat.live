@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart' show ScrollCacheExtent;
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../../core/error/failure.dart';
@@ -188,6 +189,7 @@ class _CommunityPageState extends ConsumerState<CommunityPage> with ToastMixin {
                       setState(() => _openSavedPostId = id),
                   onCloseSavedPost: () =>
                       setState(() => _openSavedPostId = null),
+                  onOpenConnections: () => context.push('/connections'),
                   onFollowUser: _followUser,
                   onToggleLike: (p) => _run(() => controller.toggleLike(p)),
                   onToggleSave: _toggleSave,
@@ -228,6 +230,7 @@ class _FeedList extends ConsumerWidget {
     required this.openSavedPostId,
     required this.onOpenSavedPost,
     required this.onCloseSavedPost,
+    required this.onOpenConnections,
     required this.onFollowUser,
     required this.onToggleLike,
     required this.onToggleSave,
@@ -243,6 +246,7 @@ class _FeedList extends ConsumerWidget {
   final String? openSavedPostId;
   final ValueChanged<String> onOpenSavedPost;
   final VoidCallback onCloseSavedPost;
+  final VoidCallback onOpenConnections;
   final ValueChanged<FeedUser> onFollowUser;
   final ValueChanged<Post> onToggleLike;
   final ValueChanged<Post> onToggleSave;
@@ -304,10 +308,7 @@ class _FeedList extends ConsumerWidget {
       physics: const AlwaysScrollableScrollPhysics(),
       scrollCacheExtent: const ScrollCacheExtent.pixels(800),
       children: [
-        _FollowingBar(
-          accounts: followed,
-          onTap: () => onComingSoon('รายชื่อบัญชีที่ติดตาม'),
-        ),
+        _FollowingBar(accounts: followed, onTap: onOpenConnections),
         if (posts.isEmpty)
           _EmptyLine(
             followed.isEmpty
@@ -576,7 +577,7 @@ class _SuggestedAccounts extends StatelessWidget {
   }
 }
 
-/// รูปย่อในกริดแท็บบันทึกไว้ — รูปแรกของโพสต์ แตะเพื่อเปิด
+/// รูปย่อในกริดแท็บบันทึกไว้ — รูปแรกของโพสต์ + ไอคอนหลายรูป/วิดีโอ แตะเพื่อเปิด
 class _SavedTile extends StatelessWidget {
   const _SavedTile({required this.post, required this.onOpen});
 
@@ -585,14 +586,49 @@ class _SavedTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final first = post.media.first;
+    final hasMultiple = post.media.length > 1;
+    final badgeIcon = first.isVideo
+        ? LucideIcons.play
+        : (hasMultiple ? LucideIcons.copy : null);
+
     return GestureDetector(
       onTap: onOpen,
-      child: ColoredBox(
-        color: AppColors.media,
-        child: AppImage(
-          source: post.media.first.url,
-          semanticLabel: post.media.first.alt,
-        ),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          ColoredBox(
+            color: AppColors.media,
+            child: AppImage(
+              source: first.url,
+              semanticLabel: hasMultiple
+                  ? '${first.alt} (${post.media.length} รูป)'
+                  : first.alt,
+            ),
+          ),
+          if (badgeIcon != null)
+            Positioned(
+              top: 6,
+              right: 6,
+              child: Icon(
+                badgeIcon,
+                size: 16,
+                color: Colors.white,
+                shadows: const [
+                  Shadow(
+                    color: Color(0x33000000),
+                    offset: Offset(0, 1),
+                    blurRadius: 2,
+                  ),
+                  Shadow(
+                    color: Color(0x1F000000),
+                    offset: Offset(0, 1),
+                    blurRadius: 1,
+                  ),
+                ],
+              ),
+            ),
+        ],
       ),
     );
   }

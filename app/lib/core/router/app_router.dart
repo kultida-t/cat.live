@@ -1,6 +1,7 @@
 import 'package:go_router/go_router.dart';
 
 import '../../features/feed/presentation/pages/community_page.dart';
+import '../../features/feed/presentation/pages/connections_page.dart';
 import '../../features/feed/presentation/pages/guidelines_page.dart';
 import '../../features/feed/presentation/pages/post_link_page.dart';
 import '../../features/shell/presentation/main_shell.dart';
@@ -40,6 +41,10 @@ GoRouter createAppRouter() {
               GoRoute(
                 path: '/community',
                 builder: (_, _) => const CommunityPage(),
+              ),
+              GoRoute(
+                path: '/connections',
+                builder: (_, _) => const ConnectionsPage(),
               ),
               GoRoute(
                 path: '/guidelines',
