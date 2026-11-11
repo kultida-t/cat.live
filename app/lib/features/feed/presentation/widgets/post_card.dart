@@ -420,7 +420,7 @@ class _Actions extends StatelessWidget {
           ),
           _ActionButton(
             label: 'แชร์',
-            count: (post.likeCount * 0.02).round(),
+            count: post.shareCount,
             onTap: onShare,
             icon: const Icon(LucideIcons.send, size: 24, color: AppColors.text),
           ),
