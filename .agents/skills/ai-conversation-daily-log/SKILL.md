@@ -142,14 +142,13 @@ Do NOT blindly use the local workspace folder name (e.g. `core_portal`) for the 
 
 Filename: `YYYY-MM-DD_ai-log.json`. Keep previous entries when updating, avoid duplicates, and sort messages chronologically when timestamps are known. Use Asia/Bangkok unless specified otherwise. Preserve prompts verbatim including code and line breaks, except redact secrets and personal data when requested or necessary; mark redactions as `[REDACTED]`. Mark whether any redactions were applied. Do not truncate prompts or silently summarize them. Summarize assistant content in one to three sentences when feasible, retaining essential details. Record each user message and each assistant response as separate ordered entries; exclude tool calls and private reasoning. If a response is unavailable, omit it and record the limitation. JSON strings must escape newlines and quotes correctly.
 
-Use this structure, with arrays empty and nullable fields null when unknown (optional Mission/Objective fields `"mission"`, `"objective"`, `"feature"`, `"objective_id"`, `"feature_id"` may be omitted or set to null when not applicable):
+Use this structure, with arrays empty and nullable fields null when unknown (optional Mission/Objective fields `"mission"`, `"objective"`, `"feature"`, `"objective_id"`, `"feature_id"` may be omitted or set to null when not applicable; do NOT add `"auto_worklog"` inside the JSON file because the MCP Schema 2.0 validator rejects unknown fields):
 
 ```json
 {
   "schema_version": "2.0",
   "date": "2026-10-28",
   "timezone": "Asia/Bangkok",
-  "auto_worklog": false,
   "sessions": [
     {
       "session_id": "session-001",
@@ -161,7 +160,6 @@ Use this structure, with arrays empty and nullable fields null when unknown (opt
       "feature": null,
       "objective_id": null,
       "feature_id": null,
-      "auto_worklog": false,
       "messages": [
         {"role": "user", "timestamp": "2026-10-28T09:15:00+07:00", "content": "ช่วยสร้าง API รายการเช่า"},
         {"role": "assistant", "timestamp": "2026-10-28T09:16:30+07:00", "summary": "เสนอแนวทางสร้าง API สำหรับดึงรายการเช่า"}
@@ -175,11 +173,12 @@ Use this structure, with arrays empty and nullable fields null when unknown (opt
 
 `session_id` is a source identifier if available, otherwise a sequential label. `timestamp` is ISO 8601 with timezone offset (`+07:00`) resolved via the 3-Tier Timestamp Resolution Rules above (exact transcript timestamp -> user-specified time window -> backward estimation from current time with a note in `limitations`). Separate different sessions, projects or tools. Note missing source history, incomplete source output, estimated timestamps, unavailable conversations or user-requested omissions in `limitations`; an empty array indicates no known limitations, not proof of completeness. Set `redactions_applied` true if any content was redacted. Validate JSON syntax before delivery and report the scope of history used. When updating a version 1.0 file, preserve all user messages and replace each available assistant content with a concise summary, changing the schema version to 2.0.
 
-## Controlling Automatic Worklog Creation (`auto_worklog` / `autoCreateWorklog`)
-- **Default is `"auto_worklog": false`** — the log records Prompt Log statistics and dashboard metrics only; do NOT let Core Portal's Background Worker create/consolidate Pending Worklogs unless the user explicitly asks for automatic worklog creation. Always set `"auto_worklog": false` at the top level of the JSON (and pass `autoCreateWorklog: false` when calling `upload_prompt_log`) unless the user requests otherwise.
-- If the user asks **to** create Worklogs automatically (e.g. "ให้สร้าง Worklog อัตโนมัติ", "สร้าง worklog จาก log ด้วย"):
-  - Set `"auto_worklog": true` at the top level (or pass `autoCreateWorklog: true` when calling `upload_prompt_log`) so the Background Worker extracts and creates/consolidates Pending Worklogs from the uploaded Prompt Log.
-  - `"auto_worklog"` can also be set per item in `"sessions"` if only specific sessions should be included in or excluded from Worklog extraction.
+## Controlling Automatic Worklog Creation (`autoCreateWorklog`)
+- **Do NOT put `auto_worklog` inside the JSON file.** `mcp-server.js` enforces strict Schema 2.0 keys (`schema_version`, `date`, `timezone`, `sessions`, `limitations`, `redactions_applied`) and rejects any JSON file containing `"auto_worklog"`.
+- **Control automatic worklog creation when uploading** via the `autoCreateWorklog` boolean parameter of the MCP tool `upload_prompt_log` (or `autoCreateWorklog` in `POST /api/agent/prompt-logs`):
+  - **Project default is `autoCreateWorklog: false`** (note that Core Portal's MCP server defaults to `true` if omitted, so ALWAYS pass `autoCreateWorklog` explicitly!).
+  - Pass **`autoCreateWorklog: false`** when only recording Prompt Log statistics/metrics without creating Pending Worklogs.
+  - Pass **`autoCreateWorklog: true`** when the user explicitly requests automatic worklog extraction/creation from the uploaded Prompt Log.
 
 ## Pre-Delivery Consistency Check (Required)
 
@@ -216,4 +215,4 @@ console.log(problems.length ? problems : 'OK — sorted, no unexplained gaps');
 ```
 
 ## Uploading to Core Portal (Persona) via MCP
-When the user explicitly asks to upload the generated `YYYY-MM-DD_ai-log.json` file to Core Portal (Persona), invoke the MCP tool `upload_prompt_log` (or `POST /api/agent/prompt-logs` with Header `X-API-Key`) using the user's Personal API Key (`sk_univ_...`), passing the full JSON content in `jsonContent` and optionally `autoCreateWorklog` (`true` or `false` according to the user's instruction). Do not upload automatically unless the user requests it.
+When the user explicitly asks to upload the generated `YYYY-MM-DD_ai-log.json` file to Core Portal (Persona), invoke the MCP tool `upload_prompt_log` (or `POST /api/agent/prompt-logs` with Header `X-API-Key`), passing either `filePath` (for files named `YYYY-MM-DD_ai-log.json`) or `jsonContent` + `filename`, and **always** passing `autoCreateWorklog` (`true` only when automatic worklog creation is requested, otherwise `false`). Never include `auto_worklog` inside the JSON file itself. Do not upload automatically unless the user requests it.

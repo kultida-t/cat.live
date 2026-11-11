@@ -825,6 +825,8 @@ Future<void> showShareProfileSheet(
   required int avatarBg,
   bool isEn = false,
   bool showPrivacyNote = true,
+  bool closeOnCopy = false,
+  String? copyNotifyMessage,
   required ValueChanged<String> onNotify,
   required VoidCallback onSendInApp,
 }) {
@@ -1008,8 +1010,13 @@ Future<void> showShareProfileSheet(
               _CopyUrlBar(
                 url: url,
                 isEn: isEn,
-                onAfterCopy: () =>
-                    onNotify(isEn ? 'Link copied' : 'คัดลอกลิงก์แล้ว'),
+                onAfterCopy: () {
+                  if (closeOnCopy) Navigator.of(ctx).pop();
+                  onNotify(
+                    copyNotifyMessage ??
+                        (isEn ? 'Link copied' : 'คัดลอกลิงก์แล้ว'),
+                  );
+                },
               ),
               const SizedBox(height: 12),
               OutlinedButton.icon(

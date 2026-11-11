@@ -52,7 +52,7 @@
 โปรเจกต์นี้ติดตั้ง Skills มาตรฐานสำหรับบริหารจัดการงานไว้ใน `.agents/skills/` ดังนี้:
 
 1. **`work-summary` (`.agents/skills/work-summary/SKILL.md`):**
-   - ใช้จับเวลาและสรุปงานราย Task (เริ่มทำ Task → เก็บภาพ Before → ส่ง Manual Review Checklist → ปิด Task → สร้าง Final Work Summary และ Session Handoff)
+   - ใช้จับเวลาและสรุปงานราย Task (เริ่มทำ Task → ส่ง Manual Review Checklist ในแชท → ปิด Task → บันทึก Session Note บน Kanban และ Session Handoff — ไม่ต้องสร้างไฟล์หลักฐานหรือแคปภาพ Before/After ลง `deliverables/`/`screenshots/`)
 2. **`ai-conversation-daily-log` (`.agents/skills/ai-conversation-daily-log/SKILL.md`):**
    - ใช้สร้างไฟล์สรุปประวัติการสนทนากับ AI รายวัน (`YYYY-MM-DD_ai-log.json`) โดยดึงข้อมูลจริงจาก IDE Transcript Store
 
@@ -60,8 +60,8 @@
 
 ### กฎการส่ง Worklog เข้า Core Portal (ห้ามทำผิด)
 - **ห้ามสร้าง worklog ด้วยมือผ่าน `submit_logs` เด็ดขาด** — เคยเกิดเคสส่งเองแล้วเสียเหรียญ + ได้รายการซ้ำกับของระบบ การทำผิดจะเสียเหรียญอีกและต้องไปนั่งลบทีหลัง
-- วิธีที่ถูกต้องเพียงวิธีเดียว: อัปโหลดไฟล์ `YYYY-MM-DD_ai-log.json` เข้า Portal (`POST /api/agent/prompt-logs` พร้อม `autoCreateWorklog: true`) แล้วปล่อยให้ worker แตกสร้าง worklog อัตโนมัติ
-- ตั้ง `auto_worklog: true` ในไฟล์เฉพาะเมื่อพี่มาเต็มสั่งให้สร้าง worklog อัตโนมัติ ค่าเริ่มต้นเป็น `false`
+- วิธีที่ถูกต้องเพียงวิธีเดียว: อัปโหลดไฟล์ `YYYY-MM-DD_ai-log.json` เข้า Portal ผ่าน MCP tool `upload_prompt_log` (หรือ `POST /api/agent/prompt-logs`) โดยส่ง `autoCreateWorklog: true` เพื่อปล่อยให้ worker แตกสร้าง worklog อัตโนมัติ (หรือ `autoCreateWorklog: false` หากต้องการเก็บแค่สถิติ)
+- **ห้ามใส่ฟิลด์ `auto_worklog` ลงในไฟล์ JSON (`YYYY-MM-DD_ai-log.json`)** เพราะตัวตรวจ Schema 2.0 ใน `mcp-server.js` จะปฏิเสธ ให้คุมผ่านพารามิเตอร์ `autoCreateWorklog` ตอนอัปโหลดแทนเสมอ (ค่าเริ่มต้นของโปรเจกต์คือ `false`; ส่ง `true` เมื่อพี่มาเต็มสั่งให้สร้าง worklog อัตโนมัติ)
 - ก่อนอัปโหลดต้องผ่าน Pre-Delivery Consistency Check ของ skill (ลำดับเวลา, gap accounting, การสะกด project) — เคยพลาดเรื่องตัดข้อความใน quoted_artifact ทิ้งจน prompt หายและชั่วโมงต่ำกว่าจริง
 
 
