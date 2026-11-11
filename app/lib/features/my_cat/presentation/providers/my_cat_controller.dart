@@ -18,6 +18,7 @@ class MyCatState {
     this.selectedTargetId,
     this.activeTab = MyCatContentTab.photos,
     this.photoComments = const {},
+    this.catIdSkins = const {},
     this.errorMessage,
   });
 
@@ -26,7 +27,11 @@ class MyCatState {
   final String? selectedTargetId;
   final MyCatContentTab activeTab;
   final Map<String, List<CatPhotoComment>> photoComments;
+  final Map<String, CatIdSkin> catIdSkins;
   final String? errorMessage;
+
+  CatIdSkin skinForCat(CatProfile cat) =>
+      catIdSkins[cat.id] ?? cat.idCard.defaultSkin;
 
   bool get isOwnerSelected => selectedTargetId == ownerTargetId;
 
@@ -45,6 +50,7 @@ class MyCatState {
     String? selectedTargetId,
     MyCatContentTab? activeTab,
     Map<String, List<CatPhotoComment>>? photoComments,
+    Map<String, CatIdSkin>? catIdSkins,
     String? errorMessage,
   }) {
     return MyCatState(
@@ -53,6 +59,7 @@ class MyCatState {
       selectedTargetId: selectedTargetId ?? this.selectedTargetId,
       activeTab: activeTab ?? this.activeTab,
       photoComments: photoComments ?? this.photoComments,
+      catIdSkins: catIdSkins ?? this.catIdSkins,
       errorMessage: errorMessage ?? this.errorMessage,
     );
   }
@@ -289,6 +296,11 @@ class MyCatController extends Notifier<MyCatState> {
         repostCount: p.isReposted ? p.repostCount - 1 : p.repostCount + 1,
       ),
     );
+  }
+
+  void setCatIdSkin(String catId, CatIdSkin skin) {
+    if (state.catIdSkins[catId] == skin) return;
+    state = state.copyWith(catIdSkins: {...state.catIdSkins, catId: skin});
   }
 
   void togglePhotoSave(String catId, String photoId) {

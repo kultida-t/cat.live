@@ -1,0 +1,71 @@
+Analyzing app...                                                
+No issues found! (ran in 3.3s)
+00:00 +0: loading /Users/kultida/Desktop/Projects/cat.live/app/test/core/strip_image_metadata_test.dart
+00:00 +0: /Users/kultida/Desktop/Projects/cat.live/app/test/core/retry_interceptor_test.dart: GET ที่ได้ 503 สองครั้งแล้วสำเร็จ — ลองซ้ำและเว้นระยะเพิ่มเป็นสองเท่า
+00:00 +1: /Users/kultida/Desktop/Projects/cat.live/app/test/core/retry_interceptor_test.dart: GET ที่ได้ 503 สองครั้งแล้วสำเร็จ — ลองซ้ำและเว้นระยะเพิ่มเป็นสองเท่า
+00:00 +2: /Users/kultida/Desktop/Projects/cat.live/app/test/core/retry_interceptor_test.dart: GET ที่ได้ 503 สองครั้งแล้วสำเร็จ — ลองซ้ำและเว้นระยะเพิ่มเป็นสองเท่า
+00:00 +3: /Users/kultida/Desktop/Projects/cat.live/app/test/core/retry_interceptor_test.dart: GET ที่ได้ 503 สองครั้งแล้วสำเร็จ — ลองซ้ำและเว้นระยะเพิ่มเป็นสองเท่า
+00:00 +4: /Users/kultida/Desktop/Projects/cat.live/app/test/core/retry_interceptor_test.dart: GET ที่ได้ 503 สองครั้งแล้วสำเร็จ — ลองซ้ำและเว้นระยะเพิ่มเป็นสองเท่า
+00:00 +5: /Users/kultida/Desktop/Projects/cat.live/app/test/core/retry_interceptor_test.dart: GET ที่ได้ 503 สองครั้งแล้วสำเร็จ — ลองซ้ำและเว้นระยะเพิ่มเป็นสองเท่า
+00:00 +6: /Users/kultida/Desktop/Projects/cat.live/app/test/core/retry_interceptor_test.dart: ได้ 5xx ต่อเนื่อง — หยุดที่ 3 ครั้งซ้ำ (รวม 4 คำขอ) แล้วโยน error
+00:00 +7: /Users/kultida/Desktop/Projects/cat.live/app/test/core/retry_interceptor_test.dart: POST ไม่ถูกส่งซ้ำ เพราะอาจทำรายการซ้ำสองครั้ง
+00:00 +8: /Users/kultida/Desktop/Projects/cat.live/app/test/core/retry_interceptor_test.dart: 4xx ไม่ถูกส่งซ้ำ
+00:00 +9: /Users/kultida/Desktop/Projects/cat.live/app/test/core/retry_interceptor_test.dart: mapDioException เน็ตหลุด/หมดเวลา → NetworkFailure
+00:00 +10: /Users/kultida/Desktop/Projects/cat.live/app/test/core/retry_interceptor_test.dart: mapDioException 401/403 → UnauthorizedFailure, 404 → NotFoundFailure, 5xx → ServerFailure
+00:00 +11: /Users/kultida/Desktop/Projects/cat.live/app/test/core/retry_interceptor_test.dart: mapDioException อย่างอื่น → UnknownFailure
+00:00 +12: /Users/kultida/Desktop/Projects/cat.live/app/test/features/shell/nav_icons_test.dart: ไอคอนแมวและฉันมี CustomPaint สำหรับขยับลูกตาซ้าย-ขวา
+00:01 +13: /Users/kultida/Desktop/Projects/cat.live/app/test/features/home/home_page_test.dart: หน้าแรกแสดงหัวหน้าจอ แบนเนอร์ การ์ดทางลัด 3 ใบ และอัปเดตชุมชน 5 โพสต์
+00:01 +14: /Users/kultida/Desktop/Projects/cat.live/app/test/features/home/home_page_test.dart: หน้าแรกแสดงหัวหน้าจอ แบนเนอร์ การ์ดทางลัด 3 ใบ และอัปเดตชุมชน 5 โพสต์
+00:01 +15: /Users/kultida/Desktop/Projects/cat.live/app/test/features/home/home_page_test.dart: หน้าแรกแสดงหัวหน้าจอ แบนเนอร์ การ์ดทางลัด 3 ใบ และอัปเดตชุมชน 5 โพสต์
+00:01 +16: /Users/kultida/Desktop/Projects/cat.live/app/test/features/home/home_page_test.dart: หน้าแรกแสดงหัวหน้าจอ แบนเนอร์ การ์ดทางลัด 3 ใบ และอัปเดตชุมชน 5 โพสต์
+00:01 +17: /Users/kultida/Desktop/Projects/cat.live/app/test/features/home/home_page_test.dart: หน้าแรกแสดงหัวหน้าจอ แบนเนอร์ การ์ดทางลัด 3 ใบ และอัปเดตชุมชน 5 โพสต์
+00:01 +18: /Users/kultida/Desktop/Projects/cat.live/app/test/features/home/home_page_test.dart: หน้าแรกแสดงหัวหน้าจอ แบนเนอร์ การ์ดทางลัด 3 ใบ และอัปเดตชุมชน 5 โพสต์
+00:01 +19: /Users/kultida/Desktop/Projects/cat.live/app/test/features/home/home_page_test.dart: หน้าแรกแสดงหัวหน้าจอ แบนเนอร์ การ์ดทางลัด 3 ใบ และอัปเดตชุมชน 5 โพสต์
+00:01 +20: /Users/kultida/Desktop/Projects/cat.live/app/test/features/home/home_page_test.dart: หน้าแรกแสดงหัวหน้าจอ แบนเนอร์ การ์ดทางลัด 3 ใบ และอัปเดตชุมชน 5 โพสต์
+00:01 +21: /Users/kultida/Desktop/Projects/cat.live/app/test/features/home/home_page_test.dart: หน้าแรกแสดงหัวหน้าจอ แบนเนอร์ การ์ดทางลัด 3 ใบ และอัปเดตชุมชน 5 โพสต์
+00:01 +22: /Users/kultida/Desktop/Projects/cat.live/app/test/features/home/home_page_test.dart: หน้าแรกแสดงหัวหน้าจอ แบนเนอร์ การ์ดทางลัด 3 ใบ และอัปเดตชุมชน 5 โพสต์
+00:01 +23: /Users/kultida/Desktop/Projects/cat.live/app/test/features/home/home_page_test.dart: หน้าแรกแสดงหัวหน้าจอ แบนเนอร์ การ์ดทางลัด 3 ใบ และอัปเดตชุมชน 5 โพสต์
+00:01 +24: /Users/kultida/Desktop/Projects/cat.live/app/test/features/my_cat/cat_id_page_test.dart: แสดง loading skeleton แล้วโหลดบัตร Cat ID ของมะลิครบถ้วน
+00:02 +25: /Users/kultida/Desktop/Projects/cat.live/app/test/features/my_cat/cat_id_page_test.dart: แสดง loading skeleton แล้วโหลดบัตร Cat ID ของมะลิครบถ้วน
+00:02 +26: /Users/kultida/Desktop/Projects/cat.live/app/test/features/my_cat/cat_id_page_test.dart: แสดง loading skeleton แล้วโหลดบัตร Cat ID ของมะลิครบถ้วน
+00:02 +27: /Users/kultida/Desktop/Projects/cat.live/app/test/features/my_cat/cat_id_page_test.dart: แสดง loading skeleton แล้วโหลดบัตร Cat ID ของมะลิครบถ้วน
+00:02 +28: /Users/kultida/Desktop/Projects/cat.live/app/test/features/my_cat/cat_id_page_test.dart: แสดง loading skeleton แล้วโหลดบัตร Cat ID ของมะลิครบถ้วน
+00:02 +29: /Users/kultida/Desktop/Projects/cat.live/app/test/features/my_cat/cat_id_page_test.dart: แสดง loading skeleton แล้วโหลดบัตร Cat ID ของมะลิครบถ้วน
+00:03 +30: /Users/kultida/Desktop/Projects/cat.live/app/test/features/my_cat/my_cat_page_test.dart: แสดง loading skeleton แล้วโหลดหน้าแมวและฉันของมะลิสำเร็จ
+00:03 +31: /Users/kultida/Desktop/Projects/cat.live/app/test/features/home/home_page_test.dart: การ์ดทางลัดและลิงก์ดูทั้งหมดนำทางไปยังแท็บเป้าหมายถูกต้อง
+00:03 +32: /Users/kultida/Desktop/Projects/cat.live/app/test/features/feed/post_card_test.dart: PostCard แสดงยอดแชร์จาก shareCount โดยไม่คำนวณจากยอดถูกใจ
+00:03 +33: /Users/kultida/Desktop/Projects/cat.live/app/test/features/feed/post_card_test.dart: PostCard แสดงยอดแชร์จาก shareCount โดยไม่คำนวณจากยอดถูกใจ
+00:03 +34: /Users/kultida/Desktop/Projects/cat.live/app/test/features/feed/post_card_test.dart: PostCard แสดงยอดแชร์จาก shareCount โดยไม่คำนวณจากยอดถูกใจ
+00:03 +35: /Users/kultida/Desktop/Projects/cat.live/app/test/features/feed/post_card_test.dart: PostCard แสดงยอดแชร์จาก shareCount โดยไม่คำนวณจากยอดถูกใจ
+00:03 +36: /Users/kultida/Desktop/Projects/cat.live/app/test/features/feed/post_card_test.dart: PostCard แสดงยอดแชร์จาก shareCount โดยไม่คำนวณจากยอดถูกใจ
+00:03 +37: /Users/kultida/Desktop/Projects/cat.live/app/test/features/feed/post_card_test.dart: PostCard แสดงยอดแชร์จาก shareCount โดยไม่คำนวณจากยอดถูกใจ
+00:03 +38: /Users/kultida/Desktop/Projects/cat.live/app/test/features/feed/post_card_test.dart: PostCard แสดงยอดแชร์จาก shareCount โดยไม่คำนวณจากยอดถูกใจ
+00:03 +39: /Users/kultida/Desktop/Projects/cat.live/app/test/features/feed/post_card_test.dart: PostCard แสดงยอดแชร์จาก shareCount โดยไม่คำนวณจากยอดถูกใจ
+00:04 +40: /Users/kultida/Desktop/Projects/cat.live/app/test/features/home/home_page_test.dart: ส่งคอมเมนต์จากการ์ดหน้าแรกแล้วจำนวนคอมเมนต์เพิ่มขึ้นทันที
+00:04 +41: /Users/kultida/Desktop/Projects/cat.live/app/test/features/home/home_page_test.dart: ส่งคอมเมนต์จากการ์ดหน้าแรกแล้วจำนวนคอมเมนต์เพิ่มขึ้นทันที
+00:04 +42: /Users/kultida/Desktop/Projects/cat.live/app/test/features/home/home_page_test.dart: ส่งคอมเมนต์จากการ์ดหน้าแรกแล้วจำนวนคอมเมนต์เพิ่มขึ้นทันที
+00:04 +43: /Users/kultida/Desktop/Projects/cat.live/app/test/features/my_cat/cat_id_page_test.dart: กดแชร์ Cat ID แล้วคัดลอกลิงก์ปิดชีตและขึ้น toast สำเร็จ
+00:04 +44: /Users/kultida/Desktop/Projects/cat.live/app/test/features/my_cat/my_cat_page_test.dart: สลับ 4 แท็บ ติ๊กงานดูแลวันนี้แบบ optimistic และย้อนกลับเมื่อ error
+00:04 +45: /Users/kultida/Desktop/Projects/cat.live/app/test/features/my_cat/my_cat_page_test.dart: สลับ 4 แท็บ ติ๊กงานดูแลวันนี้แบบ optimistic และย้อนกลับเมื่อ error
+00:04 +46: /Users/kultida/Desktop/Projects/cat.live/app/test/features/my_cat/my_cat_page_test.dart: สลับ 4 แท็บ ติ๊กงานดูแลวันนี้แบบ optimistic และย้อนกลับเมื่อ error
+00:04 +47: /Users/kultida/Desktop/Projects/cat.live/app/test/features/my_cat/my_cat_page_test.dart: สลับ 4 แท็บ ติ๊กงานดูแลวันนี้แบบ optimistic และย้อนกลับเมื่อ error
+00:04 +48: /Users/kultida/Desktop/Projects/cat.live/app/test/features/my_cat/my_cat_page_test.dart: สลับ 4 แท็บ ติ๊กงานดูแลวันนี้แบบ optimistic และย้อนกลับเมื่อ error
+00:04 +49: /Users/kultida/Desktop/Projects/cat.live/app/test/features/my_cat/my_cat_page_test.dart: สลับ 4 แท็บ ติ๊กงานดูแลวันนี้แบบ optimistic และย้อนกลับเมื่อ error
+00:04 +50: /Users/kultida/Desktop/Projects/cat.live/app/test/features/my_cat/my_cat_page_test.dart: สลับ 4 แท็บ ติ๊กงานดูแลวันนี้แบบ optimistic และย้อนกลับเมื่อ error
+00:04 +51: /Users/kultida/Desktop/Projects/cat.live/app/test/features/my_cat/my_cat_page_test.dart: สลับ 4 แท็บ ติ๊กงานดูแลวันนี้แบบ optimistic และย้อนกลับเมื่อ error
+00:04 +52: /Users/kultida/Desktop/Projects/cat.live/app/test/features/my_cat/my_cat_page_test.dart: สลับ 4 แท็บ ติ๊กงานดูแลวันนี้แบบ optimistic และย้อนกลับเมื่อ error
+00:04 +53: /Users/kultida/Desktop/Projects/cat.live/app/test/features/my_cat/my_cat_page_test.dart: สลับ 4 แท็บ ติ๊กงานดูแลวันนี้แบบ optimistic และย้อนกลับเมื่อ error
+00:04 +54: /Users/kultida/Desktop/Projects/cat.live/app/test/features/my_cat/my_cat_page_test.dart: สลับ 4 แท็บ ติ๊กงานดูแลวันนี้แบบ optimistic และย้อนกลับเมื่อ error
+00:04 +55: /Users/kultida/Desktop/Projects/cat.live/app/test/features/my_cat/my_cat_page_test.dart: สลับ 4 แท็บ ติ๊กงานดูแลวันนี้แบบ optimistic และย้อนกลับเมื่อ error
+00:04 +56: /Users/kultida/Desktop/Projects/cat.live/app/test/features/my_cat/my_cat_page_test.dart: สลับ 4 แท็บ ติ๊กงานดูแลวันนี้แบบ optimistic และย้อนกลับเมื่อ error
+00:04 +57: /Users/kultida/Desktop/Projects/cat.live/app/test/features/my_cat/my_cat_page_test.dart: สลับ 4 แท็บ ติ๊กงานดูแลวันนี้แบบ optimistic และย้อนกลับเมื่อ error
+00:04 +58: /Users/kultida/Desktop/Projects/cat.live/app/test/features/my_cat/my_cat_page_test.dart: สลับ 4 แท็บ ติ๊กงานดูแลวันนี้แบบ optimistic และย้อนกลับเมื่อ error
+00:04 +59: /Users/kultida/Desktop/Projects/cat.live/app/test/features/my_cat/my_cat_page_test.dart: สลับ 4 แท็บ ติ๊กงานดูแลวันนี้แบบ optimistic และย้อนกลับเมื่อ error
+00:05 +60: /Users/kultida/Desktop/Projects/cat.live/app/test/features/my_cat/my_cat_page_test.dart: สลับ 4 แท็บ ติ๊กงานดูแลวันนี้แบบ optimistic และย้อนกลับเมื่อ error
+00:06 +61: /Users/kultida/Desktop/Projects/cat.live/app/test/features/feed/connections_page_test.dart: หน้า Connections แสดง 3 แท็บ ค้นหา เรียง 3 โหมด และวงแหวนสตอรี่ตรงตามเว็บ
+00:06 +62: /Users/kultida/Desktop/Projects/cat.live/app/test/features/my_cat/my_cat_page_test.dart: กด + เพิ่มแมว กรอกฟอร์มแล้วเพิ่มแมวใหม่เข้าแถวบนได้จริง
+00:06 +63: /Users/kultida/Desktop/Projects/cat.live/app/test/features/my_cat/my_cat_page_test.dart: กด + เพิ่มแมว กรอกฟอร์มแล้วเพิ่มแมวใหม่เข้าแถวบนได้จริง
+00:06 +64: /Users/kultida/Desktop/Projects/cat.live/app/test/features/my_cat/my_cat_page_test.dart: แก้ไขโปรไฟล์แมวและโปรไฟล์เจ้าของพร้อมเปิดที่อยู่รับขนมได้
+00:07 +65: /Users/kultida/Desktop/Projects/cat.live/app/test/features/my_cat/my_cat_page_test.dart: หน้าตั้งค่าแสดง toast ทันทีและสลับภาษา ไทย/EN ได้จริง
+00:07 +66: /Users/kultida/Desktop/Projects/cat.live/app/test/features/my_cat/my_cat_page_test.dart: สลับภาษา EN เปลี่ยนแถบเมนูล่างและหน้าย่อยชั่วคราวด้วย
+00:07 +67: All tests passed!

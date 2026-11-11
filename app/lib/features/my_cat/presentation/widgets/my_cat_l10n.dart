@@ -223,4 +223,106 @@ abstract final class MyCatL10n {
     }
     return raw;
   }
+
+  static String skinLabel(CatIdSkin skin, bool isEn) =>
+      isEn ? skin.enLabel : skin.thLabel;
+
+  static String genderShort(CatGender gender, bool isEn) {
+    if (isEn) return gender == CatGender.female ? 'Female' : 'Male';
+    return gender == CatGender.female ? 'เมีย' : 'ผู้';
+  }
+
+  static String neuteredShort(bool neutered, bool isEn) {
+    if (isEn) return neutered ? 'Yes' : 'No';
+    return neutered ? 'แล้ว' : 'ยังไม่ทำ';
+  }
+
+  static String healthStatusBadge(CatHealthBadge badge, bool isEn) {
+    return switch (badge) {
+      CatHealthBadge.good => isEn ? 'Healthy' : 'สุขภาพดี',
+      CatHealthBadge.watch => isEn ? 'Watch' : 'เฝ้าระวัง',
+      CatHealthBadge.poor => isEn ? 'Unwell' : 'สุขภาพไม่ดี',
+    };
+  }
+
+  static String coatColor(String raw, bool isEn) {
+    if (!isEn) return raw;
+    return switch (raw) {
+      'ครีม แต้มน้ำตาล' => 'Cream, seal point',
+      'ส้มลายสลิด' => 'Orange tabby',
+      'ดำปลอด' => 'Solid black',
+      'ไม่ระบุ' => 'Not specified',
+      _ => raw,
+    };
+  }
+
+  static String thaiDate(String raw, bool isEn) {
+    if (!isEn) return raw;
+    return switch (raw) {
+      '14 ส.ค. 2566' => '14 Aug 2023',
+      '3 พ.ค. 2568' => '3 May 2025',
+      '9 ก.พ. 2563' => '9 Feb 2020',
+      '7 พ.ย. 2568' => '7 Nov 2025',
+      '7 พ.ย. 2569' => '7 Nov 2026',
+      '12 ก.ย. 2569' => '12 Sep 2026',
+      '20 พ.ย. 2569' => '20 Nov 2026',
+      '9 ก.พ. 2569' => '9 Feb 2026',
+      '3 พ.ย. 2569' => '3 Nov 2026',
+      '2 ม.ค. 2567' => '2 Jan 2024',
+      '20 ก.ค. 2568' => '20 Jul 2025',
+      '15 มิ.ย. 2563' => '15 Jun 2020',
+      'วันนี้' => 'Today',
+      'ยังไม่มีบันทึก' => 'No records',
+      'ยังไม่มีนัด' => 'None scheduled',
+      _ => raw,
+    };
+  }
+
+  static String nextDueDetail(String raw, bool isEn) {
+    if (!isEn) return raw;
+    return switch (raw) {
+      'FVRCP · อีก 12 วัน' => 'FVRCP · in 12 days',
+      'ถ่ายพยาธิ · อีก 25 วัน' => 'Deworming · in 25 days',
+      'ตรวจค่าไต (สูงวัย) · อีก 8 วัน' => 'Kidney check (senior) · in 8 days',
+      _ => raw,
+    };
+  }
+
+  static String bloodType(String raw, bool isEn) {
+    if (!isEn) return raw;
+    return switch (raw) {
+      'กรุ๊ป A' => 'Type A',
+      'ยังไม่ได้ตรวจ' => 'Not tested',
+      _ => raw,
+    };
+  }
+
+  static String allergy(String raw, bool isEn) {
+    if (!isEn) return raw;
+    return switch (raw) {
+      'ไม่มี' => 'None',
+      'ยังไม่ทราบ' => 'Unknown',
+      _ => raw,
+    };
+  }
+
+  static String chronicConditions(String raw, bool isEn) {
+    if (!isEn) return raw;
+    return switch (raw) {
+      'ไม่มี' => 'None',
+      'เสี่ยงภาวะไตเรื้อรัง (แมวสูงวัย) · โลหิตจางเล็กน้อย' =>
+        'CKD risk (senior) · mild anemia',
+      _ => raw,
+    };
+  }
+
+  static String watchNote(String raw, bool isEn) {
+    if (!isEn) return raw;
+    return switch (raw) {
+      'อาเจียน 2 ครั้ง (26 ต.ค. 2569)' => 'Vomited twice (26 Oct 2026)',
+      'ค่าไตสูงเล็กน้อย (3 ส.ค. 2569)' =>
+        'Slightly elevated kidney values (3 Aug 2026)',
+      _ => raw,
+    };
+  }
 }

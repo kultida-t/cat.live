@@ -5,6 +5,7 @@ import '../../features/feed/presentation/pages/connections_page.dart';
 import '../../features/feed/presentation/pages/guidelines_page.dart';
 import '../../features/feed/presentation/pages/post_link_page.dart';
 import '../../features/home/presentation/pages/home_page.dart';
+import '../../features/my_cat/presentation/pages/cat_id_page.dart';
 import '../../features/my_cat/presentation/pages/my_cat_page.dart';
 import '../../features/shell/presentation/main_shell.dart';
 import '../../features/shell/presentation/placeholder_page.dart';
@@ -117,21 +118,7 @@ GoRouter createAppRouter() {
                 routes: [
                   GoRoute(
                     path: 'profile',
-                    builder: (_, _) => const PlaceholderPage(
-                      title: 'Cat ID — บัตรประจำตัวแมว',
-                      enTitle: 'Cat ID card',
-                      subtitle: 'หน้าย่อยรอบที่ 2 (Slice 2)',
-                      enSubtitle: 'Coming in Slice 2',
-                      showBack: true,
-                      notes: [
-                        'บัตรประจำตัวแมว 7 สี + ข้อมูลสุขภาพย่อ + เลขไมโครชิปซ่อนท้าย',
-                        'QR code สแกนเปิดหน้าสาธารณะที่ไม่แสดงที่อยู่หรือเบอร์จริง',
-                      ],
-                      enNotes: [
-                        '7-theme Cat ID card with summary health & masked microchip',
-                        'Public QR code profile hiding real address and phone number',
-                      ],
-                    ),
+                    builder: (_, _) => const CatIdPage(),
                   ),
                   GoRoute(
                     path: 'health',

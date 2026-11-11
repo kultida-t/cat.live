@@ -293,6 +293,68 @@ class CatPhotoComment extends Equatable {
   ];
 }
 
+/// สีบัตรประจำตัวแมว (Cat ID Card) 7 ธีม ตรงตามเว็บ www.แมว.live
+enum CatIdSkin {
+  honey('น้ำผึ้ง', 'Honey'),
+  peach('พีช', 'Peach'),
+  mint('มิ้นต์', 'Mint'),
+  sky('ฟ้า', 'Sky'),
+  lavender('ลาเวนเดอร์', 'Lavender'),
+  pink('ชมพู', 'Pink'),
+  night('กลางคืน', 'Night');
+
+  const CatIdSkin(this.thLabel, this.enLabel);
+  final String thLabel;
+  final String enLabel;
+}
+
+/// รายละเอียดเพิ่มเติมสำหรับบัตร Cat ID (/my-cat/profile)
+class CatIdCardDetails extends Equatable {
+  const CatIdCardDetails({
+    this.coatColor = 'ไม่ระบุ',
+    this.birthDateLabel = '',
+    this.lastVaccineDate = 'ยังไม่มีบันทึก',
+    this.lastVaccineName = '',
+    this.nextDueDate = 'ยังไม่มีนัด',
+    this.nextDueDetail = '',
+    this.bloodType = 'ยังไม่ได้ตรวจ',
+    this.allergy = 'ไม่มี',
+    this.chronicConditions = 'ไม่มี',
+    this.watchNote = '',
+    this.issuedDateLabel = 'วันนี้',
+    this.defaultSkin = CatIdSkin.honey,
+  });
+
+  final String coatColor;
+  final String birthDateLabel;
+  final String lastVaccineDate;
+  final String lastVaccineName;
+  final String nextDueDate;
+  final String nextDueDetail;
+  final String bloodType;
+  final String allergy;
+  final String chronicConditions;
+  final String watchNote;
+  final String issuedDateLabel;
+  final CatIdSkin defaultSkin;
+
+  @override
+  List<Object?> get props => [
+    coatColor,
+    birthDateLabel,
+    lastVaccineDate,
+    lastVaccineName,
+    nextDueDate,
+    nextDueDetail,
+    bloodType,
+    allergy,
+    chronicConditions,
+    watchNote,
+    issuedDateLabel,
+    defaultSkin,
+  ];
+}
+
 /// ข้อมูลโปรไฟล์แมวหนึ่งตัว
 class CatProfile extends Equatable {
   const CatProfile({
@@ -317,6 +379,7 @@ class CatProfile extends Equatable {
     required this.healthReminderSubtitle,
     required this.healthHighlights,
     required this.caregivers,
+    this.idCard = const CatIdCardDetails(),
   });
 
   final String id;
@@ -340,6 +403,7 @@ class CatProfile extends Equatable {
   final String healthReminderSubtitle;
   final List<CatHealthHighlight> healthHighlights;
   final List<CatCaregiver> caregivers;
+  final CatIdCardDetails idCard;
 
   String get summarySubtitle =>
       '$breed · ${gender.label} · ${neutered ? 'ทำหมันแล้ว' : 'ยังไม่ทำหมัน'}';
@@ -372,6 +436,7 @@ class CatProfile extends Equatable {
     String? healthReminderSubtitle,
     List<CatHealthHighlight>? healthHighlights,
     List<CatCaregiver>? caregivers,
+    CatIdCardDetails? idCard,
   }) {
     return CatProfile(
       id: id ?? this.id,
@@ -396,6 +461,7 @@ class CatProfile extends Equatable {
           healthReminderSubtitle ?? this.healthReminderSubtitle,
       healthHighlights: healthHighlights ?? this.healthHighlights,
       caregivers: caregivers ?? this.caregivers,
+      idCard: idCard ?? this.idCard,
     );
   }
 
@@ -422,6 +488,7 @@ class CatProfile extends Equatable {
     healthReminderSubtitle,
     healthHighlights,
     caregivers,
+    idCard,
   ];
 }
 
