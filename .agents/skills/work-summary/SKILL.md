@@ -12,7 +12,7 @@ Workflow สำหรับจับเวลาและสรุปงาน�
 **ลำดับบังคับต่อ scenario:**
 
 - **เริ่มทำ task:** `get_session_context` → `move_task → in_progress` (ผ่าน confirmation flow) → เริ่มงาน
-- **ทำเสร็จ (ผู้ใช้อนุญาตปิดแล้ว):** Verify → `move_task → done` → อ่าน Final Task + Activity → อ่าน Actual Start/End + Final `hours_spent` → สร้าง Final Summary → รวม Task Evidence Bundle → `save_session_note` → แจ้งปิด task + เวลา (`D.D ชม.`) → handoff prompt งานถัดไป (หรือเสนอทางเลือกถ้าไม่มีงานต่อ) — **ไม่ต้องแสดง Task Block / copy block สรุปหลังปิด task**
+- **ทำเสร็จ (ผู้ใช้อนุญาตปิดแล้ว):** Verify → `move_task → done` → อ่าน Final Task + Activity → อ่าน Actual Start/End + Final `hours_spent` → สร้าง Final Summary → `save_session_note` → แจ้งปิด task + เวลา (`D.D ชม.`) → handoff prompt งานถัดไป (หรือเสนอทางเลือกถ้าไม่มีงานต่อ) — **ไม่ต้องแสดง Task Block / copy block สรุปหลังปิด task และไม่ต้องสร้างไฟล์หลักฐานลง `deliverables/` หรือ `screenshots/`**
 - **Pause ข้าม session (task ยังไม่จบ):** `get_board` → Progress/Handoff Summary (ระบุชัดว่า**ไม่ใช่** Final + เวลายังไม่ใช่ Final Actual Time) → ถามยืนยัน → `save_session_note`
 - **สรุป task เดี่ยว:** อ่าน task + `hours_spent` จริงจาก Kanban → Task Block ราย task
 
@@ -21,8 +21,8 @@ Workflow สำหรับจับเวลาและสรุปงาน�
 1. ⚠️ **Close First** — ห้ามสร้าง Final Work Summary ก่อน `move_task → done`
 2. ⚠️ **เวลาต้องมาจาก Kanban เท่านั้น** — ห้ามเดา, ห้ามใช้ elapsed/snapshot ตอน `in_progress` เป็น Final Actual Time
 3. ⚠️ **ห้าม `log_time` ใน completion workflow** และห้ามแก้ `hours_spent` เอง — ค่าผิดปกติให้แจ้งผู้ใช้ ทำ correction workflow แยกเมื่อผู้ใช้สั่ง
-4. ⚠️ **Task Evidence Bundle บังคับ** ทุก task ที่ปิด (checklist ผลตรวจ / test + raw output / ภาพ / ไฟล์+commit) — ระบุ path ใน Final Session Note
-5. ⚠️ **Manual Review Checklist** — งานที่เปลี่ยนสิ่งที่เห็นบนจอต้องส่ง checklist ให้ผู้ใช้ตรวจ **ก่อน** ขอปิด
+4. ⚠️ **บันทึกเฉพาะ Session Note** — ไม่ต้องสร้างไฟล์หลักฐาน (`deliverables/`, `screenshots/`, แคปภาพ Before/After, checklist/test `.txt`, PNG card) เก็บผลรันเทส รายการไฟล์ และ commit hash ไว้ใน `save_session_note` บน Kanban เท่านั้น
+5. ⚠️ **Manual Review Checklist** — งานที่เปลี่ยนสิ่งที่เห็นบนจอต้องส่ง checklist ให้ผู้ใช้ตรวจในแชท **ก่อน** ขอปิด
 6. ⚠️ ทุก task ที่ปิดต้องมี Final Session Note ใน Kanban (**ไม่ต้องแสดง Task Block / copy block ในแชทหลังปิด task** — แสดงเฉพาะเมื่อผู้ใช้ขอสรุปในสถานการณ์ที่ 3 หรือ 4)
 7. ⚠️ เวลารอผู้ใช้รีวิวหน้าจอ = เวลาทำงานจริง ห้ามตัดออกจาก `hours_spent`
 
@@ -56,7 +56,7 @@ Workflow สำหรับจับเวลาและสรุปงาน�
 
 ## References (อ่าน on-demand ตอนถึงขั้นตอนที่ต้องใช้ — ห้ามข้าม pointer)
 
-- `references/rules-detail.md` — ขั้นตอนดึงข้อมูลจาก kanban + MCP call signatures + ตารางเวลาตามหมวด + validation + over-budget + Manual Review Checklist + Continuous Evidence Capture + Auto Timer + Checklist self-check ละเอียด → **เปิดตอนดึงข้อมูล / ตรวจเวลา / เก็บหลักฐาน**
+- `references/rules-detail.md` — ขั้นตอนดึงข้อมูลจาก kanban + MCP call signatures + ตารางเวลาตามหมวด + validation + over-budget + Manual Review Checklist + Auto Timer + Checklist self-check ละเอียด → **เปิดตอนดึงข้อมูล / ตรวจเวลา**
 - `references/templates.md` — template สรุปรวม + Task Block (unified — Mission Mapping Rule + Case variants) + กฎการเขียนสรุป + Plan vs Actual → **เปิดก่อนสร้าง output ทุกครั้ง ห้ามสร้างจากความจำ**
 - `references/examples.md` — ตัวอย่างผลลัพธ์ + ตัวอย่างแปลงภาษาเทคนิค → เปิดเมื่อต้องการเห็นตัวอย่าง
 
@@ -71,10 +71,8 @@ Workflow สำหรับจับเวลาและสรุปงาน�
 (เริ่มจับเวลาอัตโนมัติ)              (หยุด timer + bank เวลาจริงอัตโนมัติ)
 ↓                                    ↓
 เริ่มทำงานใน task นั้น               อ่าน Final Task + Activity Timeline
-(ผลลัพธ์เห็นบนจอ:                    ↓
- capture Before ก่อนแก้โค้ด)         สร้าง Final Work Summary ชุดเดียว
                                      ↓
-                                     รวมหลักฐานประจำ Task
+                                     สร้าง Final Work Summary ชุดเดียว
                                      ↓
                                      save_session_note (Final Summary)
                                      ↓
@@ -122,7 +120,7 @@ Workflow สำหรับจับเวลาและสรุปงาน�
 - ถ้าผู้ใช้ระบุแค่ชื่อ/คำค้น → เรียก `get_board` หรือ `get_session_context` เพื่อหา task ที่ตรง
 - ถ้าเป็น task ใหม่ที่ยังไม่มีใน kanban → ถามผู้ใช้ว่าต้องการสร้าง task ใหม่หรือไม่ ถ้าใช่ให้ใช้ `create_task` และ Description ต้องมีบรรทัด `Category: <หมวด> | Planned: <X> ชม. (Category Max <Y> ชม.)` เสมอ โดย `Y` เท่ากับเป้าหมายหมวดตามตารางมาตรฐานใน `references/rules-detail.md` ซึ่งเป็นเกณฑ์ Review โดยตรง ไม่ต้องคูณ 1.5; `Planned` คือเวลาประเมินเฉพาะ task ตามงานจริง — ถ้า scope ที่ประเมินเกินเกณฑ์หมวด ให้พิจารณาแบ่ง task โดยห้ามกดเวลา Planned ให้ต่ำกว่าความจริง; ถ้างานเล็กจนแทบไม่ใช้เวลาเลย ควรพิจารณารวมเข้ากับ task ที่เกี่ยวข้องแทนการสร้าง task แยก
 - ถ้า task ที่จะเริ่มไม่มีบรรทัด `Planned` ใน Description → แจ้งผู้ใช้และเสนอเติมผ่าน `update_task` ก่อนเริ่มจับเวลา เพื่อให้ติดตามเวลาเทียบแผนเฉพาะ task ได้; ให้ยึดค่าเป้าหมายหมวดเป็นเกณฑ์ Review โดยตรง และห้ามคำนวณเกณฑ์ใหม่ด้วยการคูณ 1.5
-- ตรวจว่า task map กับ Mission/Objective ใน approved plan แล้ว — ต้องรู้หมายเลข `mission-<N>-objective-<M>` ก่อนเริ่มจับเวลา เพราะใช้ตั้งชื่อโฟลเดอร์หลักฐาน (`screenshots/`, `deliverables/`); ถ้ายังไม่ map ให้ยืนยัน mapping กับผู้ใช้ก่อน; **ถ้าเป็น task ที่ไม่มี mission จริง (standalone/maintenance/ad-hoc — ยืนยันกับผู้ใช้แล้ว) หลักฐานยังต้องเก็บตามปกติทุกขั้น** โดยใช้โฟลเดอร์ `screenshots/task-<TASK-CODE>/` และ `deliverables/task-<TASK-CODE>/` แทน `mission-<N>-objective-<M>` ทุกจุดใน skill นี้
+- ไม่ต้องสร้างโฟลเดอร์หลักฐานหรือแคปภาพ Before (`screenshots/` / `deliverables/`) ให้ใช้การเทียบกับต้นแบบ `www.แมว.live` และบันทึกความคืบหน้าใน Session Note แทน
 
 #### 2. ตรวจสอบ task อื่นที่อยู่ใน `in_progress` (สำคัญ)
 
@@ -143,17 +141,11 @@ Workflow สำหรับจับเวลาและสรุปงาน�
 - แจ้งผู้ใช้ว่า "เริ่มจับเวลา task <ชื่อ task> แล้ว"
 - เริ่มทำงานใน task นั้นตามที่ผู้ใช้สั่ง
 
-#### 4. ถ้า task มีผลลัพธ์ที่เห็นบนหน้าจอ — เก็บภาพ Before ก่อนแตะโค้ด (บังคับ)
-
-ใช้กับ task ที่ผลลัพธ์สะท้อนบนหน้าจอ — ครอบคลุมทั้งการแก้ prototype/UI โดยตรง **และ** การแก้ logic, data, mock data, flow หรือ behavior ที่ผู้ใช้เห็นบนจอ (เช่น แก้เงื่อนไขที่เปลี่ยนสิ่งที่แสดง, mock data ที่เปลี่ยน list, logic ที่เปลี่ยนผลการคำนวณ) — ให้ตรวจสภาพหน้าจอเดิมและแคปภาพ Before เก็บไว้ใน `screenshots/mission-<N>-objective-<M>/before/` ทั้ง Desktop (1440px) และ Mobile (390px) **ก่อนเริ่มแก้โค้ด** เพื่อให้มีภาพเทียบกับ After ตอนปิด task/ส่งตรวจ (รายละเอียดตาม Continuous Evidence Capture ใน `references/rules-detail.md`) — ถ้าไม่มีภาพ Before จะไม่มีหลักฐานเทียบการเปลี่ยนแปลง
-
-> เมื่อไม่แน่ใจว่า task อยู่ในเกณฑ์หรือไม่ ให้ถามว่า "ผู้ตรวจจะเห็นความต่างบนหน้าจอไหม" — ถ้าใช่ ต้อง capture Before; งานเอกสาร/อ่านอย่างเดียวที่ไม่เปลี่ยนสิ่งที่เห็นบนจอไม่ต้อง capture แต่ยังต้องเก็บหลักฐานประเภทอื่นตามขั้น 6 ของสถานการณ์ที่ 2
-
 #### กฎสำคัญ
 - ⚠️ **ควรมี task ใน `in_progress` เพียง 1 task ต่อผู้ใช้ในแต่ละเวลา** — ถ้ามี task เดิมค้างอยู่ ให้ pause ก่อน
 - ห้ามข้ามขั้นตอนการตรวจสอบ task อื่นใน `in_progress`
 - หลังย้ายเข้า `in_progress` แล้ว ให้เริ่มทำงานได้เลย ไม่ต้องรอยืนยันเพิ่ม
-- ⚠️ task ที่ผลลัพธ์เห็นบนหน้าจอ (แก้ UI โดยตรงหรือ logic/data ที่สะท้อนบนจอ) ต้องแคปภาพ Before (Desktop 1440 + Mobile 390) ก่อนแก้โค้ดตามขั้น 4 — ห้ามข้าม เพราะ After ที่ไม่มี Before เทียบไม่ใช่หลักฐานที่สมบูรณ์
+- ไม่ต้องแคปภาพ Before ลงไฟล์ก่อนเริ่มแก้โค้ด (เทียบต้นแบบจริง `www.แมว.live` และส่ง Manual Review Checklist ให้ผู้ใช้ตรวจแทน)
 
 ---
 
@@ -178,10 +170,7 @@ Workflow สำหรับจับเวลาและสรุปงาน�
 - Open item ที่จะส่งต่อได้ต้องเป็นงานใหม่ที่ไม่ทำให้ task ปัจจุบันไม่ผ่าน Acceptance Criteria
 
 #### 2.1 Manual Review Checklist (บังคับเมื่อ task เปลี่ยนสิ่งที่เห็นบนหน้าจอ)
-→ รูปแบบเคส + ข้อมูลทดสอบ + ขั้นกด + ผลที่คาด + กฎบันทึก checklist/ภาพเป็นหลักฐานทันที: `references/rules-detail.md` § Manual Review Checklist — **ต้องส่ง checklist ให้ผู้ใช้ตรวจก่อนขอปิด ห้ามถามแค่ "รีวิวหน้าจอหน่อย"**
-
-#### 2.2 Continuous Evidence Capture (เก็บหลักฐาน real-time ระหว่างทำ Task — บังคับ 6 รูปแบบงาน)
-→ Before/After capture, test output + triage note, checklist card, a11y assertion: `references/rules-detail.md` § Continuous Evidence Capture
+→ รูปแบบเคส + ข้อมูลทดสอบ + ขั้นกด + ผลที่คาด: `references/rules-detail.md` § Manual Review Checklist — **ต้องส่ง checklist ให้ผู้ใช้ตรวจในแชทก่อนขอปิด ห้ามถามแค่ "รีวิวหน้าจอหน่อย"** (ไม่ต้องบันทึกเป็นไฟล์หลักฐานแยก)
 
 #### 3. ย้าย task เข้า `done` ก่อนสร้าง Final Work Summary
 
@@ -212,28 +201,18 @@ Workflow สำหรับจับเวลาและสรุปงาน�
 
 Final Summary ชุดนี้ต้องเป็นแหล่งเดียวสำหรับทั้ง Final Session Note และ Task Block ห้ามร่างคนละชุดจนข้อมูลไม่ตรงกัน
 
-#### 6. รวมและบันทึกหลักฐานประจำ Task (Task Evidence Bundle — บังคับ)
+#### 6. บันทึก Final Session Note ลง Kanban
 
-หลังสร้าง Final Summary แล้ว ต้องรวมหลักฐานของ task นั้นให้ครบและแนบไว้กับ task/note ว่าทำอะไรไปบ้าง เพื่อให้ trace ย้อนกลับได้เสมอ:
-
-- **task ที่ผลลัพธ์เห็นบนหน้าจอ (UI/prototype/logic/data ที่สะท้อนบนจอ):** Manual Review Checklist ที่ผู้ใช้ตรวจจริงพร้อมผลรายเคส (ผ่าน / ไม่ผ่าน / พบอะไร + ผลแก้ไข) บันทึกเป็นไฟล์หลักฐาน + ภาพผลลัพธ์ที่ตรวจ + ภาพ Before/After (1440 + 390) ตาม 2.2
-- **task ที่มี test:** สรุป test list ออกมาเป็นไฟล์ — `.spec.js` ที่รัน, เคสที่เทสอะไรบ้าง, ผ่าน/ไม่ผ่าน, จำนวน passed/failed/skipped ตามผลจริง + raw runner output (`test-results.txt`) + ภาพ HTML report dashboard หรือภาพ/screencast พฤติกรรม UI ที่ test ตรวจ (จาก 2.2) + triage note ของเคส skipped/blocked
-- **task เอกสาร/อื่น ๆ:** รายการไฟล์ที่แก้จริง + commit hash (ถ้ามี)
-- ทุก task ต้อง trace ได้ว่า "ทำอะไรไปบ้าง" — ระบุ path หลักฐานทั้งหมดไว้ใน Final Session Note/Task Block ของ task นั้น และตั้งชื่อไฟล์หลักฐานให้ trace กลับถึง task ได้ (เช่น `<task-code>-checklist.txt`, `<task-code>-test-results.txt`) เพราะหลาย task แชร์โฟลเดอร์ `mission-<N>-objective-<M>/` เดียวกัน
-- ถ้าหลักฐานขาด (เช่น ลืมแคป Before) ให้แจ้งผู้ใช้และบันทึก evidence gap ตรง ๆ ห้ามสร้างหลักฐานย้อนหลังแบบเสแสร้ง
-
-#### 7. บันทึก Final Session Note ลง Kanban
-
-เรียก `save_session_note` หลังสร้าง Final Summary แล้ว แม้ task จะเป็น `done` เพื่อเก็บ Persistent Task History — signature + พารามิเตอร์: `references/rules-detail.md` §10
+เรียก `save_session_note` หลังสร้าง Final Summary แล้ว แม้ task จะเป็น `done` เพื่อเก็บ Persistent Task History (สรุปผลเทส รายการไฟล์ และ commit hash ไว้ใน Session Note โดยไม่ต้องสร้างไฟล์หลักฐานลง `deliverables/` หรือ `screenshots/`) — signature + พารามิเตอร์: `references/rules-detail.md` §10
 
 การบันทึก Final Session Note ไม่ใช่การเพิ่มเวลา และห้ามเรียก `log_time`
 
-#### 8. แจ้งปิด task และเวลาสั้น ๆ (ไม่ต้องแสดง copy block สรุป)
+#### 7. แจ้งปิด task และเวลาสั้น ๆ (ไม่ต้องแสดง copy block สรุป)
 
 - หลัง `save_session_note` สำเร็จ ให้แจ้งผู้ใช้สั้น ๆ ว่า task ถูกปิดแล้ว พร้อมแสดงเวลาในรูปแบบ `D.D ชม.` (ทศนิยม 1 ตำแหน่ง) และหมายเหตุเรื่องเวลา (ถ้ามี เช่น มี dead time หรือไม่ได้เปิด timer ระหว่างทำ)
 - **ไม่ต้องแสดง Task Block / copy block สรุปในแชทหลังปิด task** (หากผู้ใช้ต้องการก๊อปไปลงระบบอื่นภายหลัง ค่อยสั่ง `"สรุป task นี้"` ตามสถานการณ์ที่ 4)
 
-#### 9. ปิดท้ายด้วย Session Handoff + Prompt งานถัดไป หรือข้อเสนอแนะงานต่อไป (บังคับทุกครั้งหลังปิด task)
+#### 8. ปิดท้ายด้วย Session Handoff + Prompt งานถัดไป หรือข้อเสนอแนะงานต่อไป (บังคับทุกครั้งหลังปิด task)
 
 หลังแจ้งปิด task แล้ว ต้องทำขั้นนี้เสมอก่อนจบ turn:
 
@@ -253,11 +232,10 @@ Final Summary ชุดนี้ต้องเป็นแหล่งเดี
 - ⚠️ ห้ามปรับ `hours_spent` เองระหว่าง completion workflow; ถ้าค่าผิดปกติให้รายงานผู้ใช้และแยกเป็น correction workflow ที่ผู้ใช้สั่งชัดเจน
 - ⚠️ **เวลารอผู้ใช้รีวิวหน้าจอ/prototype = เวลาทำงานจริง** — task ที่เปลี่ยนสิ่งที่เห็นบนหน้าจอแล้วรอผู้ใช้ตรวจตาม Manual Review Checklist ต้องนับเวลาต่อเนื่อง เพราะ review gate คือส่วนหนึ่งของงาน ห้ามตัดเวลารอรีวิวออกจาก `hours_spent`
 - ⚠️ **ตัดเวลาหลุดได้เฉพาะงานประเภท run** (เช่น run tests/regression/long-running command) ที่ผลลัพธ์เสร็จสมบูรณ์แล้วแต่ timer ยังเดินต่อเพราะผู้ใช้ไม่ได้อยู่หน้าจอ — ถ้าพบ banked time มีช่วงหลุดแบบนี้หลังปิด task ให้แจ้งผู้ใช้พร้อมตัวเลข banked vs เวลางานจริง และ correct `hours_spent` ด้วย `update_task` (SET) เมื่อผู้ใช้ยืนยันเวลาจริงแล้วเท่านั้น โดยทำเป็น correction workflow แยกหลังปิด task
-- ทุก task ที่ปิดต้องมี Final Session Note ใน Kanban (ไม่ต้องแสดง Task Block / copy block ในแชทหลังปิด task)
-- ⚠️ **Task Evidence Bundle บังคับ:** ทุก task ที่ปิดต้องรวมหลักฐานประจำ task (checklist ผลตรวจ / test list + raw output / ภาพ Before-After / ไฟล์+commit ที่แก้) ทันทีหลังปิด และระบุ path ใน Final Session Note
-- ⚠️ **Manual Review Checklist:** task ที่เปลี่ยนสิ่งที่เห็นบนหน้าจอ (UI/prototype/logic/data ที่สะท้อนบนจอ) ต้องส่ง checklist ทดสอบ manual (เคส + ข้อมูลทดสอบ + ขั้นกด + ผลที่คาด) ให้ผู้ใช้ตรวจก่อนขอปิด — รีวิวต้องเกิดก่อน `move_task → done` ตามกฎการยืนยันผลลัพธ์เดิม
+- ทุก task ที่ปิดต้องมี Final Session Note ใน Kanban (ไม่ต้องแสดง Task Block / copy block ในแชทหลังปิด task และไม่ต้องสร้างไฟล์หลักฐานลง `deliverables/` หรือ `screenshots/`)
+- ⚠️ **Manual Review Checklist:** task ที่เปลี่ยนสิ่งที่เห็นบนหน้าจอ (UI/prototype/logic/data ที่สะท้อนบนจอ) ต้องส่ง checklist ทดสอบ manual (เคส + ข้อมูลทดสอบ + ขั้นกด + ผลที่คาด) ให้ผู้ใช้ตรวจในแชทก่อนขอปิด — รีวิวต้องเกิดก่อน `move_task → done` ตามกฎการยืนยันผลลัพธ์เดิม
 - **ถ้า task ที่ปิดเป็น task สุดท้ายของเป้าหมาย (Objective) ใน Mission** — ทุก task ของเป้าหมายนั้นเป็น done แล้ว → แจ้งผู้ใช้ว่าเป้าหมายครบ
-- ลำดับบังคับ: Verify → `move_task → done` → อ่าน Final Task + Activity → อ่าน Actual Start/End/Final `hours_spent` → สร้าง Final Summary → รวมหลักฐานประจำ Task → `save_session_note` → แจ้งปิด task + เวลาสั้น ๆ → session handoff + prompt งานถัดไป หรือข้อเสนอแนะงานต่อไป (ตามขั้น 9)
+- ลำดับบังคับ: Verify → `move_task → done` → อ่าน Final Task + Activity → อ่าน Actual Start/End/Final `hours_spent` → สร้าง Final Summary → `save_session_note` → แจ้งปิด task + เวลาสั้น ๆ → session handoff + prompt งานถัดไป หรือข้อเสนอแนะงานต่อไป (ตามขั้น 8)
 
 ---
 
@@ -293,8 +271,7 @@ Final Summary ชุดนี้ต้องเป็นแหล่งเดี
 
 **เนื้อหาที่ควรบันทึกใน `note` (กรณี pause):**
 - สิ่งที่ทำเสร็จแล้วใน task นี้
-- **หลักฐานที่เก็บไว้แล้วระหว่างทำ** — path ภาพ Before/After, checklist, test output ที่ capture/บันทึกแล้ว เพื่อให้ session ใหม่ไม่ capture ซ้ำและรู้ว่าหลักฐานยังขาดอะไร
-- Current State
+- Current State (branch / commit / ผลเทสล่าสุด)
 - สิ่งที่ตัดสินใจ (decisions) และเหตุผล (WHY)
 - สิ่งที่ตรวจสอบแล้ว
 - **Open Items — สำคัญ** เพื่อให้ session ใหม่รู้ว่าต้องทำอะไรต่อ

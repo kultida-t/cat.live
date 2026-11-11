@@ -285,48 +285,21 @@ mcp_call_tool(
 
 ---
 
-## Manual Review Checklist + Continuous Evidence Capture (รายละเอียดจากสถานการณ์ที่ 2)
+## Manual Review Checklist (รายละเอียดจากสถานการณ์ที่ 2)
 
 #### 2.1 Manual Review Checklist (บังคับเมื่อ task เปลี่ยนสิ่งที่เห็นบนหน้าจอ)
 
-ถ้า task มีการแก้ prototype/หน้าจอ หรือแก้ logic, data, mock data, flow ที่ผลลัพธ์สะท้อนบนหน้าจอ **ต้องส่งรายการทดสอบ manual ให้ผู้ใช้ตรวจก่อน** ขออนุญาตปิด/commit — ห้ามถามแค่ "รีวิวหน้าจอหน่อย" โดยไม่มีลิสต์ เพราะผู้ใช้ไม่รู้ว่าต้องกดอะไร
+ถ้า task มีการแก้ prototype/หน้าจอ หรือแก้ logic, data, mock data, flow ที่ผลลัพธ์สะท้อนบนหน้าจอ **ต้องส่งรายการทดสอบ manual ให้ผู้ใช้ตรวจในแชทก่อน** ขออนุญาตปิด/commit — ห้ามถามแค่ "รีวิวหน้าจอหน่อย" โดยไม่มีลิสต์ เพราะผู้ใช้ไม่รู้ว่าต้องกดอะไร
 
 รูปแบบ checklist ที่ต้องส่ง (เรียงเป็นเคสละขั้น):
 
-- **เลขเคส + ชื่อเคส** — เช่น "เคส 1: Failed-login lock ที่ seed ไว้ (ADM-007)" แยกเคสตามพฤติกรรมที่เปลี่ยน/เพิ่ม ครบทุกพฤติกรรมใน scope
-- **ข้อมูลทดสอบที่ต้องกรอก/เลือก** — email, account id, scenario option, ค่าที่ต้องพิมพ์ ระบุค่าจริงที่ใช้ได้เลย (เช่น `wichai@tukdaeng.example`, เลือก `Invalid credentials`) ไม่ใช่บอกแค่ "กรอกข้อมูล"
-- **ขั้นตอนกด** — กดปุ่ม/ลิงก์อะไรตามลำดับ (เช่น เปิด Prototype scenario → เลือก X → กด เข้าสู่ระบบ กี่ครั้ง)
-- **ผลที่คาด (✅)** — ระบุสิ่งที่ต้องเห็นต่อเคส: ข้อความที่แสดง, element ที่ต้องมี/ไม่มี (เช่น "ไม่มี countdown"), state ที่ต้องเปลี่ยน (เช่น "เข้าระบบได้")
-- **เคสครบทุกพฤติกรรมใน scope** — รวมทั้ง happy path, blocked/error path, edge cases, fixture ที่เกี่ยวข้อง และเคส regression ที่ควรเช็คว่าของเดิมไม่พัง (เช่น login ปกติ, forgot flow เดิม)
-- แนบ screenshot ของจุดสำคัญได้ถ้าช่วยให้ตรวจเร็ว แต่ checklist ต้องอ่านรู้เรื่องโดยไม่ต้องเปิดภาพ
+- **เลขเคส + ชื่อเคส** — เช่น "เคส 1: เปิดหน้า Cat ID จากแท็บแมวและฉัน" แยกเคสตามพฤติกรรมที่เปลี่ยน/เพิ่ม ครบทุกพฤติกรรมใน scope
+- **ข้อมูลทดสอบที่ต้องกรอก/เลือก** — ชื่อ/ค่า/ตัวเลือกจริงที่ใช้ได้เลย ไม่ใช่บอกแค่ "กรอกข้อมูล"
+- **ขั้นตอนกด** — กดปุ่ม/ลิงก์อะไรตามลำดับ
+- **ผลที่คาด (✅)** — ระบุสิ่งที่ต้องเห็นต่อเคส: ข้อความที่แสดง, element ที่ต้องมี/ไม่มี, state ที่ต้องเปลี่ยน
+- **เคสครบทุกพฤติกรรมใน scope** — รวมทั้ง happy path, blocked/error path, edge cases และเคส regression ที่ควรเช็คว่าของเดิมไม่พัง
 
-เมื่อผู้ใช้ตรวจครบและยืนยันผล จึงค่อยขึ้นขั้น 3 (ปิด task) — ถ้าผู้ใช้พบจุดผิดให้แก้แล้วส่ง checklist ชุดเดิม (หรือเคสที่แก้) ให้ตรวจซ้ำ — และเมื่อตรวจผ่านแล้ว **บันทึก checklist ที่ตรวจจริงพร้อมผลรายเคส (ผ่าน / ไม่ผ่าน / พบอะไร + ผลการแก้ไข) และภาพผลลัพธ์ประกอบ** ลง `deliverables/mission-<N>-objective-<M>/` หรือ `screenshots/mission-<N>-objective-<M>/` เป็นหลักฐานของ task ทันที ห้ามปล่อยให้ checklist มีแค่ข้อความในแชทโดยไม่มีไฟล์หลักฐาน
-
-#### 2.2 Continuous Evidence Capture (เก็บบันทึกหลักฐานระหว่างทำ Task ทันที 6 รูปแบบงาน)
-
-เพื่อไม่ให้เสียเวลารวบรวมหรือรันเทสต์ใหม่ย้อนหลังตอนจบ Mission และเพื่อให้ได้หลักฐานตัวจริงที่สมบูรณ์ที่สุด ให้เก็บหลักฐานแบบ Real-time ระหว่างทำแต่ละ Task ตาม 6 รูปแบบงานดังนี้:
-
-1. **งานแก้ UI / Prototype (Bug Fix / Refactor — รวม logic/data ที่สะท้อนบนจอ):**
-   - **Before Action (ก่อนเริ่มแตะโค้ด):** แคปภาพหน้าจอเดิมเก็บไว้ใน `screenshots/mission-<N>-objective-<M>/before/` ทั้งสองขนาด Viewport: Desktop (1440px) และ Mobile (390px)
-   - **After Action (Auto-Trigger เมื่อผู้ใช้บอกโอเค/สั่งปิด task):** เมื่อผู้ใช้ตรวจผลงานแล้วพูดว่า *"โอเค"*, *"ผ่าน"*, *"ปิด task ได้เลย"*, *"เสร็จแล้ว"* ให้ระบบถือเป็นคำอนุมัติ (Approval) และรันแคปภาพผลลัพธ์ปัจจุบันใน `screenshots/mission-<N>-objective-<M>/after/` (1440px + 390px) อัตโนมัติทันทีก่อนย้าย task เข้า `done` โดยไม่ต้องถามซ้ำซ้อน; หากมีการแก้หลายรอบ ให้แคปเฉพาะสภาพสุดท้ายที่ผู้ใช้คอนเฟิร์มผ่าน
-2. **งานสร้าง UI ใหม่ (New Feature / New Screen):**
-   - แคปภาพหน้าจอทุก State สำคัญ (Empty, Default, Filled, Modal, Result) ทั้ง Desktop (1440px) และ Mobile (390px) เก็บไว้ใน `screenshots/mission-<N>-objective-<M>/` เมื่อสร้างเสร็จและผู้ใช้ตรวจผ่าน
-3. **งานทดสอบ / QA / Regression (Automated Test Verification):**
-   - ในขั้นตอน Verification ให้รันคำสั่งเทสต์จริงและ redirect stdout/stderr ดิบเข้าไฟล์ทันที เช่น:
-     `npx playwright test tests/<target-spec>.spec.js > deliverables/mission-<N>-objective-<M>/test-results.txt 2>&1`
-   - คัดลอกไฟล์ `.spec.js` หรือ bundle spec files เข้าโฟลเดอร์ `deliverables/mission-<N>-objective-<M>/`
-   - **เก็บหลักฐานภาพตอนรันจบทันที (ห้ามปล่อยให้ต้องรันใหม่ตอนส่งตรวจ):** เก็บ `playwright-report/` ไว้ และแคปภาพ HTML report dashboard (`npx playwright show-report` แล้ว capture) ลง `screenshots/mission-<N>-objective-<M>/`; ถ้า test ตรวจพฤติกรรม dynamic (countdown lockout, error live, focus trap, toast) ให้แคปภาพหน้าจอ flow นั้นหรืออัด screencast สั้น ๆ เก็บไว้ในรอบเดียวกัน — auditor เคยหักคะแนนเพราะส่งแค่ text log โดยไม่มีภาพ UI
-   - **เขียน triage note ของเคส skipped/blocked ตอนรันจบทันที** ระบุเหตุผลต่อเคสหรือต่อกลุ่ม (project gating / environment / out of scope) ลง `deliverables/mission-<N>-objective-<M>/<task-code>-triage.txt` — context เหตุผลอยู่ในหัวเฉพาะตอนรัน ทำย้อนหลังตอนส่งตรวจมักไม่ตรงกับผลจริง
-   - **ถ้า scope งานครอบ accessibility** (numerical contrast, focus trap, dialog role/aria-modal) ต้องรัน direct assertion จริงในรอบเดียวกัน (เช่น axe-core/playwright) หรือบันทึกเป็น evidence limitation ใน task note ทันทีพร้อมเหตุผล — ห้ามปล่อยว่างให้ auditor เจอเองตอนตรวจ
-4. **งาน Manual QA / Inspection (งานตรวจที่ไม่มีโค้ดแก้):**
-   - บันทึกรายการเคสและ Viewports ที่ตรวจรับผ่านเป็น checklist text file ใน `deliverables/mission-<N>-objective-<M>/checklist-objective-<M>.txt`
-   - เรนเดอร์เป็นภาพ Checklist Card PNG เก็บไว้ใน `screenshots/mission-<N>-objective-<M>/` ด้วย `scripts/render-checklist-card.js`
-5. **งานเอกสาร / Spec Sync / Baseline Lock:**
-   - บันทึก Git Commit Hash และรายการไฟล์ Markdown ที่แก้จริงลงใน `deliverables/mission-<N>-objective-<M>/` และ Task Session Note ทันทีหลัง commit
-   - เรนเดอร์ Checklist Card PNG สรุปรายการไฟล์และเกณฑ์ที่ sync
-6. **งาน Final Acceptance / Mission Closure:**
-   - บันทึกรายงานสรุปผลการตรวจรับ `deliverables/mission-<N>-objective-<M>/final-acceptance-review.txt`
-   - เรนเดอร์ภาพ Checklist Card PNG สรุป Traceability, Verification Gates และ Verdict PASS
+เมื่อผู้ใช้ตรวจครบและยืนยันผล จึงค่อยขึ้นขั้น 3 (ปิด task) — ถ้าผู้ใช้พบจุดผิดให้แก้แล้วส่ง checklist ชุดเดิม (หรือเคสที่แก้) ให้ตรวจซ้ำ — **ไม่ต้องบันทึกไฟล์หลักฐานลง `deliverables/` หรือ `screenshots/`** ให้สรุปผลตรวจ, ผลเทส, รายการไฟล์ที่แก้ และ commit hash ลงใน **Session Note (`save_session_note`)** ของ Kanban อย่างเดียวพอ
 
 
 ---
@@ -350,8 +323,6 @@ mcp_call_tool(
 - [ ] ตรวจสอบ task ที่จะเริ่ม (ระบุ task_id หรือค้นหาจากชื่อ)
 - [ ] ตรวจว่า task มีบรรทัด `Category | Planned | Category Max` ใน Description — `Category Max` ต้องเท่ากับเป้าหมายหมวดโดยตรง; ห้ามคูณ 1.5; ถ้าสร้าง task ใหม่ต้องใส่เสมอทุกหมวด
 - [ ] เมื่อตรวจเวลาจริง ให้ถือว่า Final `hours_spent` ถึงหรือเกินเป้าหมายหมวดเป็นเกณฑ์ Review; แยกการเทียบ Planned ออกจากเกณฑ์ Review
-- [ ] ตรวจว่า task map กับ Mission/Objective ใน approved plan แล้ว (รู้หมายเลข `mission-<N>-objective-<M>` สำหรับโฟลเดอร์หลักฐาน) — ถ้ายังไม่ map ให้ยืนยัน mapping กับผู้ใช้ก่อนเริ่มจับเวลา; task ที่ไม่มี mission (standalone) ใช้ `task-<TASK-CODE>` เป็นโฟลเดอร์หลักฐานแทน และยังต้อง capture/bundle หลักฐานตามปกติ
-- [ ] ถ้า task มีผลลัพธ์ที่เห็นบนหน้าจอ (UI/prototype/logic/data ที่สะท้อนบนจอ) → capture ภาพ Before (Desktop 1440 + Mobile 390) ลง `screenshots/mission-<N>-objective-<M>/before/` ก่อนแก้โค้ด
 - [ ] เรียก `get_board` เพื่อตรวจสอบ task อื่นที่อยู่ใน `in_progress`
 - [ ] ถ้ามี task อื่นใน `in_progress` → ถามผู้ใช้ว่าจะ pause task เดิมหรือทำต่อ
 - [ ] ถ้าผู้ใช้เลือก pause → ย้าย task เดิมออกจาก `in_progress` ก่อน
@@ -361,14 +332,13 @@ mcp_call_tool(
 ### สถานการณ์ที่ 2: ทำ task เสร็จ
 - [ ] เรียก `get_board` เพื่อตรวจสอบ task ที่อยู่ใน `in_progress`
 - [ ] Verify งานตาม Acceptance Criteria / test / QA ที่เกี่ยวข้อง
-- [ ] ถ้า task เปลี่ยนสิ่งที่เห็นบนหน้าจอ (UI/prototype/logic/data ที่สะท้อนบนจอ) → capture ภาพ Before (1440 + 390) ก่อนแก้โค้ด และส่ง Manual Review Checklist ให้ผู้ใช้ก่อน (เคสครบทุกพฤติกรรมใน scope + ข้อมูลทดสอบที่กรอก/เลือกจริง + ขั้นกด + ผลที่คาดต่อเคส รวม happy/blocked/edge/regression)
+- [ ] ถ้า task เปลี่ยนสิ่งที่เห็นบนหน้าจอ (UI/prototype/logic/data ที่สะท้อนบนจอ) → ส่ง Manual Review Checklist ให้ผู้ใช้ตรวจในแชทก่อน (เคสครบทุกพฤติกรรมใน scope + ข้อมูลทดสอบที่กรอก/เลือกจริง + ขั้นกด + ผลที่คาดต่อเคส รวม happy/blocked/edge/regression)
 - [ ] สำหรับ task ที่แก้ไฟล์ ได้รับคำยืนยันว่าผู้ใช้ยอมรับผลลัพธ์และอนุญาตให้ปิดแล้ว
 - [ ] ย้าย task เข้า `done` ผ่าน `move_task` ก่อนสร้าง Final Work Summary (ระบบ auto-stop timer และ bank เวลาจริง)
 - [ ] เรียก `get_task` หลังปิด เพื่ออ่าน Final Status + Activity Timeline + Actual Start + Actual End + Final `hours_spent`
 - [ ] **ไม่มี floor correction** — ใช้ Final `hours_spent` จากระบบตามจริง แม้จะต่ำกว่า 0.3 ชม. ก็ใช้ค่านั้น ห้ามปรับขึ้นเอง
 - [ ] สร้าง canonical Final Summary จากข้อมูลหลังปิด โดยมี Final Result, Work Completed, Decisions, Verification/Test Result, Actual Start/End, Final Actual Time, Issues/Fixes, Scope Changes, Open Items และ Next Step
-- [ ] รวม Task Evidence Bundle: checklist ผลตรวจรายเคส (ถ้ามี) + ภาพ Before/After / test list + raw output + ภาพ HTML report หรือภาพ/screencast UI + triage note เคส skipped / ไฟล์+commit ที่แก้ — ตั้งชื่อไฟล์ trace ถึง task code และระบุ path ใน Final Session Note (หลักฐานขาด → บันทึก evidence gap ห้ามสร้างย้อนหลัง)
-- [ ] เรียก `save_session_note` ด้วย Final Summary ชุดเดียวกันเพื่อเก็บ Persistent Task History (ไม่ต้องแสดง Task Block / copy block ในแชทหลังปิด task เว้นแต่ผู้ใช้สั่ง `"สรุป task นี้"`)
+- [ ] เรียก `save_session_note` ด้วย Final Summary ชุดเดียวกันเพื่อเก็บ Persistent Task History (สรุปผลเทส ไฟล์ที่แก้ และ commit hash ไว้ใน Session Note โดยไม่ต้องสร้างไฟล์หลักฐานแยกและไม่ต้องแสดง Task Block / copy block ในแชทหลังปิด task เว้นแต่ผู้ใช้สั่ง `"สรุป task นี้"`)
 - [ ] ตรวจว่า canonical Final Summary / Final Session Note ยังคง Actual Start/End และรายละเอียดเต็มทั้งหมด
 - [ ] เช็ค dead time ใน banked `hours_spent` — เฉพาะงานประเภท run (run tests/regression) ที่ผลลัพธ์เสร็จแล้วแต่ timer เดินต่อตอนผู้ใช้ไม่ได้อยู่หน้าจอ → แจ้งผู้ใช้พร้อมเสนอเวลางานจริง ถ้ายืนยันให้ correct ด้วย `update_task` (SET `hours_spent`) เป็น correction workflow แยกหลังปิด; เวลารอผู้ใช้รีวิวหน้าจอ/prototype = เวลาทำงานจริง นับต่อเนื่อง ห้ามตัด
 - [ ] แจ้งผู้ใช้ว่า "ปิด task <ชื่อ> แล้ว ใช้เวลา <D.D ชม.>"
@@ -380,7 +350,7 @@ mcp_call_tool(
 
 ### สถานการณ์ที่ 3: บันทึก session ก่อนขึ้น session ใหม่ (task ยังไม่จบ)
 - [ ] เรียก `get_board` เพื่อตรวจสอบ task ที่อยู่ใน `in_progress`
-- [ ] สร้าง Progress/Handoff Summary: สิ่งที่เสร็จแล้ว, Current State, Decisions, สิ่งที่ตรวจสอบแล้ว, **หลักฐานที่เก็บไว้แล้วระหว่างทำ (path)**, Open Items, Blockers, สิ่งที่ยังไม่ได้ทำ และ Next Step
+- [ ] สร้าง Progress/Handoff Summary: สิ่งที่เสร็จแล้ว, Current State, Decisions, สิ่งที่ตรวจสอบแล้ว, Open Items, Blockers, สิ่งที่ยังไม่ได้ทำ และ Next Step
 - [ ] แสดงเวลาเริ่ม + ปัจจุบัน + เวลาที่ผ่านไป โดยระบุว่าเป็น running/snapshot time และ "ยังจับเวลาอยู่"
 - [ ] แสดง **Task Block ราย task** สำหรับก๊อปไปลงระบบอื่น
 - [ ] ถามผู้ใช้ยืนยัน: พอใจหรือต้องการแก้ไข?

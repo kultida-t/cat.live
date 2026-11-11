@@ -52,7 +52,7 @@
 โปรเจกต์นี้ติดตั้ง Skills มาตรฐานสำหรับบริหารจัดการงานไว้ใน `.agents/skills/` ดังนี้:
 
 1. **`work-summary` (`.agents/skills/work-summary/SKILL.md`):**
-   - ใช้จับเวลาและสรุปงานราย Task (เริ่มทำ Task → เก็บภาพ Before → ส่ง Manual Review Checklist → ปิด Task → สร้าง Final Work Summary และ Session Handoff)
+   - ใช้จับเวลาและสรุปงานราย Task (เริ่มทำ Task → ส่ง Manual Review Checklist ในแชท → ปิด Task → บันทึก Session Note บน Kanban และ Session Handoff — ไม่ต้องสร้างไฟล์หลักฐานหรือแคปภาพ Before/After ลง `deliverables/`/`screenshots/`)
 2. **`ai-conversation-daily-log` (`.agents/skills/ai-conversation-daily-log/SKILL.md`):**
    - ใช้สร้างไฟล์สรุปประวัติการสนทนากับ AI รายวัน (`YYYY-MM-DD_ai-log.json`) โดยดึงข้อมูลจริงจาก IDE Transcript Store
 
