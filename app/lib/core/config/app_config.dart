@@ -4,4 +4,9 @@ abstract final class AppConfig {
   static const webOrigin = 'https://www.xn--y3cm0f.live';
 
   static String postUrl(String postId) => '$webOrigin/p/$postId';
+
+  static String catProfileUrl(String publicId) => '$webOrigin/c/$publicId';
+
+  static String caregiverInviteUrl(String publicId, {String slug = 'carer'}) =>
+      '$webOrigin/join/$slug-$publicId';
 }
