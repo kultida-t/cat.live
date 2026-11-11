@@ -9,7 +9,7 @@ abstract final class AppColors {
   static const muted = Color(0xFF7A6255);
   static const ink = Color(0xFF5A4030);
   static const btn = Color(0xFFFFF1E6);
-  static const btnFollowing = Color(0xFFF8F3E4);
+  static const btnFollowing = Colors.white;
   static const btnBorder = Color(0xFFF2CFB4);
   static const soft = Color(0xFFF6EFE6);
   static const line = Color(0xFFF0E6DA);

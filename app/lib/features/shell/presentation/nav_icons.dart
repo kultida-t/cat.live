@@ -37,11 +37,10 @@ String _shapes(NavIconName name, String fill) {
       return '<path d="M16 28S3.5 20.6 3.5 11.9A6.6 6.6 0 0 1 16 8.4a6.6 6.6 0 0 1 12.5 3.5C28.5 20.6 16 28 16 28Z" fill="$fill"/>'
           '<ellipse cx="9.8" cy="11" rx="2.6" ry="1.7" transform="rotate(-35 9.8 11)" fill="$_hl"/>';
     case NavIconName.myCat:
+      // วาดเฉพาะหัวแมวกับตาขาว ลูกตาและแสงสะท้อนวาดแยกใน _CatEyesPainter เพื่อขยับซ้าย-ขวาได้ลื่น
       return '<path d="M5 5.5 11 10h10l6-4.5V18c0 6.1-4.9 10.5-11 10.5S5 24.1 5 18Z" fill="$fill"/>'
           '<path d="M8 9.5 10.6 11.6M24 9.5l-2.6 2.1" fill="none" stroke="$_hl" stroke-width="1.6" stroke-linecap="round"/>'
           '<ellipse cx="11.6" cy="17" rx="2.6" ry="3" fill="#fff"/><ellipse cx="20.4" cy="17" rx="2.6" ry="3" fill="#fff"/>'
-          '<circle cx="11.6" cy="17.4" r="1.5" fill="#5E4636"/><circle cx="20.4" cy="17.4" r="1.5" fill="#5E4636"/>'
-          '<circle cx="12.1" cy="16.8" r="0.5" fill="#fff"/><circle cx="20.9" cy="16.8" r="0.5" fill="#fff"/>'
           '<path d="M14.8 21.6h2.4L16 22.9Z" fill="#F4A3B4"/>';
   }
 }
@@ -67,6 +66,127 @@ class NavIcon extends StatelessWidget {
         '<defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1">'
         '<stop offset="0" stop-color="${g.from}"/><stop offset="1" stop-color="${g.to}"/>'
         '</linearGradient></defs>${_shapes(name, 'url(#g)')}</svg>';
-    return SvgPicture.string(svg, width: size, height: size);
+    final baseIcon = SvgPicture.string(svg, width: size, height: size);
+    if (name != NavIconName.myCat) return baseIcon;
+
+    return SizedBox(
+      width: size,
+      height: size,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          baseIcon,
+          _AnimatedCatEyes(size: size),
+        ],
+      ),
+    );
   }
+}
+
+/// แอนิเมชันลูกตาแมวเหลือบมองซ้าย-ขวาเหมือนในเว็บ prototype
+class _AnimatedCatEyes extends StatefulWidget {
+  const _AnimatedCatEyes({required this.size});
+
+  final double size;
+
+  @override
+  State<_AnimatedCatEyes> createState() => _AnimatedCatEyesState();
+}
+
+class _AnimatedCatEyesState extends State<_AnimatedCatEyes>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _dx;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 3600),
+    );
+    _dx = TweenSequence<double>([
+      TweenSequenceItem(
+        tween: Tween(
+          begin: 0.0,
+          end: -0.85,
+        ).chain(CurveTween(curve: Curves.easeInOut)),
+        weight: 15,
+      ),
+      TweenSequenceItem(tween: ConstantTween(-0.85), weight: 20),
+      TweenSequenceItem(
+        tween: Tween(
+          begin: -0.85,
+          end: 0.85,
+        ).chain(CurveTween(curve: Curves.easeInOut)),
+        weight: 20,
+      ),
+      TweenSequenceItem(tween: ConstantTween(0.85), weight: 20),
+      TweenSequenceItem(
+        tween: Tween(
+          begin: 0.85,
+          end: 0.0,
+        ).chain(CurveTween(curve: Curves.easeInOut)),
+        weight: 15,
+      ),
+      TweenSequenceItem(tween: ConstantTween(0.0), weight: 10),
+    ]).animate(_controller);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (MediaQuery.disableAnimationsOf(context)) {
+      _controller.stop();
+      _controller.value = 0;
+    } else if (!_controller.isAnimating) {
+      _controller.repeat();
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _dx,
+      builder: (_, _) => CustomPaint(
+        size: Size.square(widget.size),
+        painter: _CatEyesPainter(dx: _dx.value),
+      ),
+    );
+  }
+}
+
+class _CatEyesPainter extends CustomPainter {
+  const _CatEyesPainter({required this.dx});
+
+  final double dx;
+
+  static final _pupilPaint = Paint()..color = const Color(0xFF5E4636);
+  static final _highlightPaint = Paint()..color = Colors.white;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final scale = size.width / 32.0;
+    for (final cx in const [11.6, 20.4]) {
+      canvas.drawCircle(
+        Offset((cx + dx) * scale, 17.4 * scale),
+        1.5 * scale,
+        _pupilPaint,
+      );
+      canvas.drawCircle(
+        Offset((cx + 0.5 + dx) * scale, 16.8 * scale),
+        0.5 * scale,
+        _highlightPaint,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(_CatEyesPainter oldDelegate) => oldDelegate.dx != dx;
 }

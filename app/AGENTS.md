@@ -34,7 +34,7 @@ lib/
 
 ## มาตรฐานหน้าจอ
 
-- ตรงกับเว็บ prototype (www.แมว.live): สี/ฟอนต์/ขนาดอยู่ใน `core/theme/app_colors.dart` ห้าม hardcode สีในหน้าจอ
+- ตรงกับเว็บ prototype จริงที่ `www.แมว.live` (`https://www.xn--y3cm0f.live`) เป็นหลัก ทั้งสี, ฟอนต์, ขนาด, สถานะปุ่ม, ข้อความ และแอนิเมชัน (เทียบหน้าเว็บจริงก่อน `../docs/design-spec.md` เสมอ) — ค่าสีอยู่ใน `core/theme/app_colors.dart` ห้าม hardcode สีในหน้าจอ
 - ปุ่มกดทุกปุ่ม ≥ 44pt และมี `Semantics` label ภาษาไทย
 - ทุกจอที่มีข้อมูลต้องครบ 4 สถานะ: loading (skeleton ไม่ใช้ spinner), empty, error (มีปุ่มลองใหม่), content
 - ลิสต์ยาวใช้ `ListView.builder` + แบ่งหน้า 15-20 รายการ (mock ใช้ 5)
