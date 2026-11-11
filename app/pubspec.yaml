@@ -68,6 +68,7 @@ flutter:
     - assets/brand/
     - assets/images/avatars/
     - assets/images/hero/
+    - assets/images/my_cat/
     - assets/images/posts/
 
   fonts:

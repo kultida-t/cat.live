@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/config/app_config.dart';
 import '../../../../core/theme/app_colors.dart';
-import '../../../../core/widgets/app_image.dart';
+import '../../../../core/widgets/app_avatar.dart';
+import '../../../../core/widgets/social_brand_icons.dart';
 import '../../../../core/widgets/toast_pill.dart';
 import '../../domain/entities/feed_user.dart';
 import '../../domain/entities/post.dart';
@@ -387,32 +387,18 @@ class _ShareSheetState extends ConsumerState<_ShareSheet> with ToastMixin {
                 label: 'LINE',
                 background: const BoxDecoration(
                   shape: BoxShape.circle,
-                  color: Color(0xFF06C755),
+                  color: AppColors.brandLine,
                 ),
-                glyph: const Text(
-                  'LINE',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w900,
-                    color: Colors.white,
-                  ),
-                ),
+                glyph: const LineLogoIcon(size: 30),
                 onTap: () => _openApp('LINE', line),
               ),
               _AppButton(
                 label: 'Facebook',
                 background: const BoxDecoration(
                   shape: BoxShape.circle,
-                  color: Color(0xFF1877F2),
+                  color: AppColors.brandFacebook,
                 ),
-                glyph: const Text(
-                  'f',
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w900,
-                    color: Colors.white,
-                  ),
-                ),
+                glyph: const FacebookLogoIcon(size: 26),
                 onTap: () => _openApp('Facebook', facebook),
               ),
               _AppButton(
@@ -431,16 +417,7 @@ class _ShareSheetState extends ConsumerState<_ShareSheet> with ToastMixin {
                     stops: [0, 0.45, 0.6, 0.9],
                   ),
                 ),
-                glyph: SvgPicture.string(
-                  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" '
-                  'fill="none" stroke="#fff" stroke-width="2" '
-                  'stroke-linecap="round" stroke-linejoin="round">'
-                  '<rect width="20" height="20" x="2" y="2" rx="5" ry="5"/>'
-                  '<path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/>'
-                  '<line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/></svg>',
-                  width: 28,
-                  height: 28,
-                ),
+                glyph: const InstagramLogoIcon(size: 26),
                 onTap: () => _copyThenOpen(
                   'Instagram',
                   Uri.https('www.instagram.com', '/direct/inbox/'),
@@ -452,7 +429,7 @@ class _ShareSheetState extends ConsumerState<_ShareSheet> with ToastMixin {
                   shape: BoxShape.circle,
                   color: Color(0xFF111111),
                 ),
-                glyph: const _TikTokGlyph(),
+                glyph: const TikTokLogoIcon(size: 26),
                 onTap: () => _copyThenOpen(
                   'TikTok',
                   Uri.https('www.tiktok.com', '/messages'),
@@ -704,30 +681,13 @@ class _AccountTile extends StatelessWidget {
             Stack(
               clipBehavior: Clip.none,
               children: [
-                Container(
-                  padding: const EdgeInsets.all(3),
-                  decoration: const BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        AppColors.ringUnseenFrom,
-                        AppColors.ringUnseenTo,
-                      ],
-                    ),
-                  ),
-                  child: Container(
-                    width: 70,
-                    height: 70,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Color(account.avatarBg),
-                      border: Border.all(color: Colors.white, width: 3),
-                    ),
-                    clipBehavior: Clip.antiAlias,
-                    child: AppImage(source: account.avatar),
-                  ),
+                StoryAvatar(
+                  source: account.avatar,
+                  bg: account.avatarBg,
+                  size: 64,
+                  hasUnseenStory: true,
+                  ringWidth: 3,
+                  gapWidth: 3,
                 ),
                 if (selected)
                   Positioned(
@@ -942,26 +902,6 @@ class _AppButton extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-}
-
-/// ไอคอน TikTok สองสี (ฟ้าอมเขียว/แดง) ซ้อนกับสีขาว เหมือนเว็บ
-class _TikTokGlyph extends StatelessWidget {
-  const _TikTokGlyph();
-
-  static const _d =
-      'M16.5 3c.4 2.3 1.9 3.8 4.2 4v3.1c-1.5 0-2.9-.4-4.2-1.2v6.3c0 3.4-2.6 5.8-5.8 5.8S5 18.6 5 15.4s2.7-5.9 6.2-5.6v3.2c-1.5-.3-3 .9-3 2.4 0 1.4 1.1 2.5 2.6 2.5s2.6-1.1 2.6-2.6V3Z';
-
-  @override
-  Widget build(BuildContext context) {
-    return SvgPicture.string(
-      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">'
-      '<path d="$_d" fill="#25F4EE" transform="translate(-1 -1)"/>'
-      '<path d="$_d" fill="#FE2C55" transform="translate(1 1)"/>'
-      '<path d="$_d" fill="#fff"/></svg>',
-      width: 28,
-      height: 28,
     );
   }
 }

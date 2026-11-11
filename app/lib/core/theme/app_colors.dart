@@ -39,4 +39,55 @@ abstract final class AppColors {
   static const quickHelpBorder = Color(0xFFF5BFAF);
   static const quickHelpInk = Color(0xFF963721);
   static const quickHelpIcon = Color(0xFFE58A72);
+
+  // แมวและฉัน (/my-cat)
+  static const statusSafe = Color(0xFF2FA36B);
+  static const addCatDashedBorder = Color(0xFFD7A3B8);
+  static const sheetBarrier = Color(0x594A3428);
+  static const catRingStart = Color(0xFFF2CFB4);
+  static const catRingMid = Color(0xFFF9C98F);
+  static const catRingEnd = Color(0xFFFFF1E6);
+  static const ownerRingStart = Color(0xFF7CCBBB);
+  static const ownerRingMid = Color(0xFFA9DDD2);
+  static const ownerRingEnd = Color(0xFFD5F0EB);
+
+  // ดูแลวันนี้
+  static const careProgressFill = Color(0xFF0F766E);
+  static const careFoodBg = Color(0xFFFFF1E2);
+  static const careFoodIcon = Color(0xFF9A4A0B);
+  static const careFoodCheckBg = Color(0xFFFFE0BF);
+  static const careFoodCheckBorder = Color(0xFFF5B97E);
+  static const careFoodCheckInk = Color(0xFF8A4508);
+  static const careWaterBg = Color(0xFFFFF6D6);
+  static const careWaterIcon = Color(0xFF6E4B00);
+  static const careWaterCheckBg = Color(0xFFFCD3E1);
+  static const careWaterCheckBorder = Color(0xFFEE9BB8);
+  static const careWaterCheckInk = Color(0xFF9C2452);
+  static const careLitterBg = Color(0xFFF1EADF);
+  static const careLitterIcon = Color(0xFF6B4F1D);
+  static const careMedsBg = Color(0xFFEDE4FB);
+  static const careMedsIcon = Color(0xFF5B2DB0);
+  static const careWeightBg = Color(0xFFD5F0EB);
+  static const careWeightIcon = Color(0xFF0F6A62);
+
+  // สุขภาพ
+  static const healthReminderBg = Color(0xFFFFF3C4);
+  static const healthReminderBorder = Color(0xFFF1D98A);
+  static const healthReminderClockInk = Color(0xFF8A5A00);
+  static const healthReminderBtnInk = Color(0xFF5C3D00);
+  static const healthDotVaccine = Color(0xFFE6C24F);
+  static const healthDotAi = Color(0xFFB9A6F2);
+  static const healthDotCheckup = Color(0xFF7CCBBB);
+
+  // ตัวฉัน (Teal/Mint accent) & ตั้งค่า & แชร์
+  static const ownerTeal = Color(0xFF0B5E58);
+  static const ownerPillBg = Color(0xFFD5F0EB);
+  static const ownerTealBorder = Color(0xFFD8E9E6);
+  static const ownerTealRing = Color(0xFF7CCBBB);
+  static const settingsIconBox = Color(0xFFF6ECE3);
+  static const logoutBg = Color(0xFFFFF5F6);
+  static const logoutBorder = Color(0xFFF7B9C0);
+  static const logoutText = Color(0xFF8F1C13);
+  static const brandLine = Color(0xFF06C755);
+  static const brandFacebook = Color(0xFF1877F2);
 }

@@ -13,6 +13,7 @@ import 'package:video_player/video_player.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/app_image.dart';
 import '../../../../core/widgets/app_video.dart';
+import '../../../../core/widgets/social_brand_icons.dart';
 import '../../../../core/widgets/toast_pill.dart';
 import '../../domain/entities/new_post.dart';
 import '../../domain/policies/food_ad_policy.dart';
@@ -907,17 +908,36 @@ class _CreatePostPageState extends ConsumerState<CreatePostPage>
             height: 36,
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: p.color,
+              color: p.id == 'instagram' ? null : p.color,
+              gradient: p.id == 'instagram'
+                  ? const RadialGradient(
+                      center: Alignment(-0.4, 2.1),
+                      radius: 2.2,
+                      colors: [
+                        Color(0xFFFDF497),
+                        Color(0xFFFD5949),
+                        Color(0xFFD6249F),
+                        Color(0xFF285AEB),
+                      ],
+                      stops: [0, 0.45, 0.6, 0.9],
+                    )
+                  : null,
               borderRadius: BorderRadius.circular(10),
             ),
-            child: Text(
-              p.glyph,
-              style: const TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w700,
-                color: Colors.white,
+            child: switch (p.id) {
+              'facebook' => const FacebookLogoIcon(size: 20),
+              'instagram' => const InstagramLogoIcon(size: 20),
+              'line' => const LineLogoIcon(size: 24),
+              'tiktok' => const TikTokLogoIcon(size: 20),
+              _ => Text(
+                p.glyph,
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                ),
               ),
-            ),
+            },
           ),
           const SizedBox(width: 12),
           Expanded(
