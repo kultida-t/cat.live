@@ -26,4 +26,40 @@ void main() {
   test('สีปุ่มติดตามแล้วเป็นสีขาวตรงตามหน้าตัวอย่าง', () {
     expect(AppColors.btnFollowing, Colors.white);
   });
+
+  testWidgets('ไอคอน Cat AI (active) มี CustomPaint ดาววิบวับ และ Help (active) มี ScaleTransition', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Scaffold(
+          body: Row(
+            children: [
+              NavIcon(name: NavIconName.ai, active: true),
+              NavIcon(name: NavIconName.help, active: true),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    expect(
+      find.descendant(
+        of: find.byWidgetPredicate(
+          (w) => w is NavIcon && w.name == NavIconName.ai,
+        ),
+        matching: find.byType(CustomPaint),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: find.byWidgetPredicate(
+          (w) => w is NavIcon && w.name == NavIconName.help,
+        ),
+        matching: find.byType(ScaleTransition),
+      ),
+      findsOneWidget,
+    );
+  });
 }
