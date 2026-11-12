@@ -4,6 +4,7 @@ import '../../features/feed/presentation/pages/community_page.dart';
 import '../../features/feed/presentation/pages/connections_page.dart';
 import '../../features/feed/presentation/pages/guidelines_page.dart';
 import '../../features/feed/presentation/pages/post_link_page.dart';
+import '../../features/help/presentation/pages/help_page.dart';
 import '../../features/home/presentation/pages/home_page.dart';
 import '../../features/my_cat/presentation/pages/cat_health_page.dart';
 import '../../features/my_cat/presentation/pages/cat_id_page.dart';
@@ -80,21 +81,7 @@ GoRouter createAppRouter() {
             routes: [
               GoRoute(
                 path: '/help',
-                builder: (_, _) => const PlaceholderPage(
-                  title: 'ช่วยเหลือ',
-                  enTitle: 'Help',
-                  subtitle: 'ประกาศแมวหาย พบแมว และการระดมทุน',
-                  enSubtitle: 'Lost & found cats and rescue fundraisers',
-                  notes: [
-                    'ประกาศ 5 แบบ: แมวหาย / พบแมว / ขอความช่วยเหลือ / รับเลี้ยง / อุปการะ',
-                    'ปุ่มฉุกเฉิน — อาการเร่งด่วน + รพ.สัตว์ 24 ชม.',
-                    'แมวหายคือหัวใจของแอป — ผูกกับฟีด แท็ก และแชท',
-                  ],
-                  enNotes: [
-                    '5 post types: Lost / Found / Rescue help / Adoption / Foster',
-                    'Emergency triage & 24-hour vet clinic finder',
-                  ],
-                ),
+                builder: (_, _) => const HelpPage(),
               ),
             ],
           ),
