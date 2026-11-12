@@ -67,6 +67,9 @@ class NavIcon extends StatelessWidget {
         '<stop offset="0" stop-color="${g.from}"/><stop offset="1" stop-color="${g.to}"/>'
         '</linearGradient></defs>${_shapes(name, 'url(#g)')}</svg>';
     final baseIcon = SvgPicture.string(svg, width: size, height: size);
+    if (name == NavIconName.help && active) {
+      return _AnimatedHelpHeart(child: baseIcon);
+    }
     if (name != NavIconName.myCat) return baseIcon;
 
     return SizedBox(
@@ -189,4 +192,78 @@ class _CatEyesPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_CatEyesPainter oldDelegate) => oldDelegate.dx != dx;
+}
+
+/// แอนิเมชันหัวใจเต้นเบาๆ บนแท็บ "ช่วยเหลือ" เมื่อถูกเลือกอยู่ (เหมือนเว็บ prototype)
+class _AnimatedHelpHeart extends StatefulWidget {
+  const _AnimatedHelpHeart({required this.child});
+
+  final Widget child;
+
+  @override
+  State<_AnimatedHelpHeart> createState() => _AnimatedHelpHeartState();
+}
+
+class _AnimatedHelpHeartState extends State<_AnimatedHelpHeart>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _scale;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1400),
+    );
+    _scale = TweenSequence<double>([
+      TweenSequenceItem(
+        tween: Tween(begin: 1.0, end: 1.12).chain(
+          CurveTween(curve: Curves.easeOut),
+        ),
+        weight: 18,
+      ),
+      TweenSequenceItem(
+        tween: Tween(begin: 1.12, end: 0.98).chain(
+          CurveTween(curve: Curves.easeInOut),
+        ),
+        weight: 16,
+      ),
+      TweenSequenceItem(
+        tween: Tween(begin: 0.98, end: 1.08).chain(
+          CurveTween(curve: Curves.easeOut),
+        ),
+        weight: 16,
+      ),
+      TweenSequenceItem(
+        tween: Tween(begin: 1.08, end: 1.0).chain(
+          CurveTween(curve: Curves.easeInOut),
+        ),
+        weight: 18,
+      ),
+      TweenSequenceItem(tween: ConstantTween(1.0), weight: 32),
+    ]).animate(_controller);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (MediaQuery.disableAnimationsOf(context)) {
+      _controller.stop();
+      _controller.value = 0;
+    } else if (!_controller.isAnimating) {
+      _controller.repeat();
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ScaleTransition(scale: _scale, child: widget.child);
+  }
 }

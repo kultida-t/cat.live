@@ -90,6 +90,7 @@
 - **Repository:** GitLab `https://git.mrfox.store/Kultida.t/catlive.git` (remote `origin` — ใช้งานหลัก), GitHub `https://github.com/kultida-t/cat.live.git` (remote `github`)
 - **Local Path:** `/Users/kultida/Desktop/Projects/cat.live` (macOS)
 - **สถานะล่าสุด (2026-11-12):**
+  - ตรวจรับและล็อกหน้าช่วยเหลือ (`/help` — UI Mock Baseline, Task `33ee900d`) ลง `PROTECTED_SCREENS.md`, merge `feat/help` เข้า `dev` และ push ขึ้น remote แล้ว (`flutter analyze` ผ่าน, `flutter test` 94 เคสผ่าน บน Android `emulator-5554` และ iOS `iPhone 17`)
   - ตรวจรับและล็อกหน้าใกล้ฉัน (`/nearby` — UI Mock Baseline, Task `adab7a66`) ลง `PROTECTED_SCREENS.md`, merge `feat/nearby` เข้า `dev` และ push ขึ้น remote แล้ว (`flutter analyze` ผ่าน, `flutter test` 87 เคสผ่าน บน Android `emulator-5554` และ iOS `iPhone 17`)
   - ปิด Epic `0bfcb815` (Slice 2 `/my-cat`: `/my-cat/profile`, `/my-cat/tracker`, `/my-cat/health`) เป็น `done` แล้ว
   - ตรวจรับและล็อกหน้าสมุดสุขภาพ (`/my-cat/health` — Slice 2 UI Mock Baseline, Task `b81b2133`) ลง `PROTECTED_SCREENS.md`, merge `feat/my-cat-health` เข้า `dev` และ push ขึ้น remote แล้ว (`flutter analyze` ผ่าน, `flutter test` 82 เคสผ่าน)
@@ -111,4 +112,5 @@
 - **หน้าแมวและฉัน (`/my-cat`, `MyCatPage` — Slice 1)** — ล็อก UI Mock Baseline เมื่อ 2026-11-11
 - **หน้าสมุดสุขภาพ (`/my-cat/health`, `CatHealthPage` — Slice 2)** — ล็อก UI Mock Baseline เมื่อ 2026-11-12
 - **หน้าใกล้ฉัน (`/nearby`, `NearbyPage`)** — ล็อก UI Mock Baseline เมื่อ 2026-11-12
+- **หน้าช่วยเหลือ (`/help`, `HelpPage`)** — ล็อก UI Mock Baseline เมื่อ 2026-11-12
 *(ดูขอบเขตไฟล์และข้อยกเว้นสำหรับเชื่อมหน้าอื่น/API จริงได้ที่ `PROTECTED_SCREENS.md`)*
