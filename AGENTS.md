@@ -90,6 +90,7 @@
 - **Repository:** GitLab `https://git.mrfox.store/Kultida.t/catlive.git` (remote `origin` — ใช้งานหลัก), GitHub `https://github.com/kultida-t/cat.live.git` (remote `github`)
 - **Local Path:** `/Users/kultida/Desktop/Projects/cat.live` (macOS)
 - **สถานะล่าสุด (2026-11-12):**
+  - เพิ่มไล่เฟดขอบซ้าย-ขวาให้แถวแคปซูล `ตัวฉัน` / แมวบนหน้า `/my-cat` (`ProfileSwitcherRow`, Task `39c47fc3`), merge `feat/my-cat-capsule-fade` เข้า `dev` และ push ขึ้น remote แล้ว (`flutter analyze` ผ่าน, `my_cat_page_test` 9/9 เคสผ่าน)
   - ปรับปรุงแอนิเมชัน Bottom Navigation Bar (`main_shell.dart` / `nav_icons.dart`, Task `ecc84bd6`) ตรงตามเว็บจริงทั้ง 6 แท็บ (กดยุบ, Active Pill ขยาย, เด้งสปริง, ดาว Cat AI, หัวใจช่วยเหลือ, ตาแมวและฉันกระพริบ+กลอกตา), merge `feat/nav-animations` เข้า `dev` และ push ขึ้น remote แล้ว (`flutter analyze` ผ่าน, `flutter test` 95 เคสผ่าน)
   - ตรวจรับและล็อกหน้าช่วยเหลือ (`/help` — UI Mock Baseline, Task `33ee900d`) ลง `PROTECTED_SCREENS.md`, merge `feat/help` เข้า `dev` และ push ขึ้น remote แล้ว (`flutter analyze` ผ่าน, `flutter test` 94 เคสผ่าน บน Android `emulator-5554` และ iOS `iPhone 17`)
   - ตรวจรับและล็อกหน้าใกล้ฉัน (`/nearby` — UI Mock Baseline, Task `adab7a66`) ลง `PROTECTED_SCREENS.md`, merge `feat/nearby` เข้า `dev` และ push ขึ้น remote แล้ว (`flutter analyze` ผ่าน, `flutter test` 87 เคสผ่าน บน Android `emulator-5554` และ iOS `iPhone 17`)
