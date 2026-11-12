@@ -9,6 +9,7 @@ import '../../features/my_cat/presentation/pages/cat_health_page.dart';
 import '../../features/my_cat/presentation/pages/cat_id_page.dart';
 import '../../features/my_cat/presentation/pages/cat_tracker_page.dart';
 import '../../features/my_cat/presentation/pages/my_cat_page.dart';
+import '../../features/nearby/presentation/pages/nearby_page.dart';
 import '../../features/shell/presentation/main_shell.dart';
 import '../../features/shell/presentation/placeholder_page.dart';
 
@@ -48,22 +49,7 @@ GoRouter createAppRouter() {
             routes: [
               GoRoute(
                 path: '/nearby',
-                builder: (_, _) => const PlaceholderPage(
-                  title: 'ใกล้ฉัน',
-                  enTitle: 'Nearby',
-                  subtitle: 'ค้นหาคาเฟ่ คลินิก และร้านค้ารอบตัว',
-                  enSubtitle: 'Find cat cafes, clinics, and shops nearby',
-                  notes: [
-                    'แผนที่เต็มจอ + หมวดลอย (คาเฟ่/คลินิก/ร้านค้า/ประกาศ/อาบน้ำตัดขน/รับฝาก)',
-                    'สลับมุมมอง แผนที่ ↔ รายการ',
-                    'หมุดร้านค้าที่มาลงโฆษณา (Business Model จากประชุม)',
-                  ],
-                  enNotes: [
-                    'Full-screen map with floating category filters',
-                    'Switch between Map ↔ List views',
-                    'Sponsored partner shop pins',
-                  ],
-                ),
+                builder: (_, _) => const NearbyPage(),
               ),
             ],
           ),

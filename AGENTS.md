@@ -90,8 +90,9 @@
 - **Repository:** GitLab `https://git.mrfox.store/Kultida.t/catlive.git` (remote `origin` — ใช้งานหลัก), GitHub `https://github.com/kultida-t/cat.live.git` (remote `github`)
 - **Local Path:** `/Users/kultida/Desktop/Projects/cat.live` (macOS)
 - **สถานะล่าสุด (2026-11-12):**
+  - ตรวจรับและล็อกหน้าใกล้ฉัน (`/nearby` — UI Mock Baseline, Task `adab7a66`) ลง `PROTECTED_SCREENS.md`, merge `feat/nearby` เข้า `dev` และ push ขึ้น remote แล้ว (`flutter analyze` ผ่าน, `flutter test` 87 เคสผ่าน บน Android `emulator-5554` และ iOS `iPhone 17`)
+  - ปิด Epic `0bfcb815` (Slice 2 `/my-cat`: `/my-cat/profile`, `/my-cat/tracker`, `/my-cat/health`) เป็น `done` แล้ว
   - ตรวจรับและล็อกหน้าสมุดสุขภาพ (`/my-cat/health` — Slice 2 UI Mock Baseline, Task `b81b2133`) ลง `PROTECTED_SCREENS.md`, merge `feat/my-cat-health` เข้า `dev` และ push ขึ้น remote แล้ว (`flutter analyze` ผ่าน, `flutter test` 82 เคสผ่าน)
-  - Slice 2 หน้าย่อย `/my-cat` ครบทั้ง 3 หน้าแล้ว (`/my-cat/profile`, `/my-cat/tracker`, `/my-cat/health`) — พร้อมตรวจสอบปิด Epic `0bfcb815` หรือเตรียมแผน Backend Integration ในเฟสถัดไป
   - Merge `feat/my-cat-slice-2` (หน้า Cat ID `/my-cat/profile`, หน้าตามหาแมว `/my-cat/tracker` + ชื่อแอป `แมว.live`, Splash Screen แอนิเมชันเปิดแอป, อัปเดต `mcp-server.js` / Schema 2.0 และ `2026-11-11_ai-log.json`) เข้า `dev` และ push ขึ้นทั้ง `origin/dev` และ `github/dev` แล้ว (`flutter analyze` ผ่าน, `flutter test` 77 เคสผ่าน)
   - ตรวจรับและล็อกหน้าแมวและฉัน (`/my-cat` — Slice 1 UI Mock Baseline) บน branch `feat/my-cat` ลง `PROTECTED_SCREENS.md` และ merge เข้า `dev` เรียบร้อยแล้ว (`flutter analyze` ผ่าน, `flutter test` 60 เคสผ่าน บน Android `emulator-5554` และ iOS `iPhone 17`)
   - ปรับมาตรฐานข้ามฟีเจอร์ที่พี่มาเต็มอนุมัติแล้ว: โลโก้โซเชียลจริง (`social_brand_icons.dart`), รูปโปรไฟล์วงกลมเต็มในชีตแชร์ฟีด (`AppAvatar` / `StoryAvatar` / `share_sheet.dart`), ซิงก์ภาษา ไทย/EN ระดับแอป (`appLocaleProvider` + `MainShell` + `PlaceholderPage`), และแอนิเมชันสไลด์ขวา-ซ้าย/ปัดขอบซ้ายกลับ (`CupertinoPageTransitionsBuilder`)
@@ -109,4 +110,5 @@
 - **หน้าแรก (`/`, `HomePage`)** — ล็อก UI Mock Baseline เมื่อ 2026-11-11
 - **หน้าแมวและฉัน (`/my-cat`, `MyCatPage` — Slice 1)** — ล็อก UI Mock Baseline เมื่อ 2026-11-11
 - **หน้าสมุดสุขภาพ (`/my-cat/health`, `CatHealthPage` — Slice 2)** — ล็อก UI Mock Baseline เมื่อ 2026-11-12
+- **หน้าใกล้ฉัน (`/nearby`, `NearbyPage`)** — ล็อก UI Mock Baseline เมื่อ 2026-11-12
 *(ดูขอบเขตไฟล์และข้อยกเว้นสำหรับเชื่อมหน้าอื่น/API จริงได้ที่ `PROTECTED_SCREENS.md`)*

@@ -149,4 +149,22 @@ abstract final class AppColors {
   static const healthDocPdfInk = Color(0xFFBE185D);
   static const healthDocImgBg = Color(0xFFDBEAFE);
   static const healthDocImgInk = Color(0xFF1D4ED8);
+
+  // ใกล้ฉัน (/nearby)
+  static const nearbyUserDot = Color(0xFF4F86C6);
+  static const nearbyOpenDot = Color(0xFF3BA55C);
+  static const nearbyOpenText = Color(0xFF2E7D4F);
+  static const nearbyEmergencySiren = Color(0xFFC2503B);
+  static const nearbyEmergencyCall = Color(0xFFB33A26);
+  static const nearbyStarFill = Color(0xFFFFD95A);
+  static const nearbyStarStroke = Color(0xFFC99A1A);
+  static const nearbyAreaSelectedBg = Color(0xFFE1F1EE);
+  static const nearbyPinClinic = Color(0xFFF5BFAF);
+  static const nearbyPinShop = Color(0xFFF3DC9A);
+  static const nearbyPinGrooming = Color(0xFFCFC8F2);
+  static const nearbyPinBoarding = Color(0xFFB9CBEE);
+  static const nearbyPinCafe = Color(0xFFF2CDB0);
+  static const nearbyPinLostCat = Color(0xFFF0AFA2);
+  static const nearbyPinFoundCat = Color(0xFFA9DCD3);
+  static const nearbyPinCommunityCat = Color(0xFFE8D3B5);
 }
