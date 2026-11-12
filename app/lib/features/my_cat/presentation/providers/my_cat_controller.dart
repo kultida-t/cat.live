@@ -315,6 +315,166 @@ class MyCatController extends Notifier<MyCatState> {
     _replaceCat(cat.copyWith(trackerInfo: updater(cat.trackerInfo)));
   }
 
+  /// เพิ่มบันทึกสุขภาพในสมุดสุขภาพ (/my-cat/health)
+  void addHealthRecord(
+    String catId,
+    HealthRecordEntry entry, {
+    BodyOrganId? targetOrgan,
+  }) {
+    final cat = _findCatById(catId);
+    if (cat == null) return;
+    final book = cat.healthBook;
+    var nextBodyReports = book.bodyReports;
+    if (targetOrgan != null) {
+      final updated = BodyOrganReport(
+        organ: targetOrgan,
+        status: BodyOrganStatus.watch,
+        summaryTh: entry.titleTh,
+        summaryEn: entry.titleEn,
+        sourceTh: 'บันทึกเมื่อ ${entry.dateTh}',
+        sourceEn: 'Logged ${entry.dateEn}',
+      );
+      final idx = nextBodyReports.indexWhere((r) => r.organ == targetOrgan);
+      nextBodyReports = idx >= 0
+          ? [
+              for (var i = 0; i < nextBodyReports.length; i++)
+                i == idx ? updated : nextBodyReports[i],
+            ]
+          : [...nextBodyReports, updated];
+    }
+    _replaceCat(
+      cat.copyWith(
+        recordCount: cat.recordCount + 1,
+        healthBook: book.copyWith(
+          records: [entry, ...book.records],
+          bodyReports: nextBodyReports,
+        ),
+      ),
+    );
+  }
+
+  /// เพิ่มรายการฉีดวัคซีนลงสมุดวัคซีนและไทม์ไลน์ประวัติ
+  void addVaccineRecord(String catId, VaccineRecord vaccine) {
+    final cat = _findCatById(catId);
+    if (cat == null) return;
+    final book = cat.healthBook;
+    final historyEntry = HealthRecordEntry(
+      id: 'rec-${vaccine.id}',
+      category: HealthRecordCategory.vaccine,
+      dateTh: vaccine.dateTh,
+      dateEn: vaccine.dateEn,
+      titleTh: vaccine.nameTh,
+      titleEn: vaccine.nameEn,
+      detailsTh: vaccine.doseTh,
+      detailsEn: vaccine.doseEn,
+      clinicTh: vaccine.clinicTh,
+      clinicEn: vaccine.clinicEn,
+    );
+    _replaceCat(
+      cat.copyWith(
+        recordCount: cat.recordCount + 1,
+        healthBook: book.copyWith(
+          vaccines: [vaccine, ...book.vaccines],
+          records: [historyEntry, ...book.records],
+        ),
+      ),
+    );
+  }
+
+  /// เพิ่มรายการยาในสมุดสุขภาพ
+  void addMedication(String catId, MedicationItem med) {
+    final cat = _findCatById(catId);
+    if (cat == null) return;
+    final book = cat.healthBook;
+    _replaceCat(
+      cat.copyWith(
+        healthBook: book.copyWith(medications: [med, ...book.medications]),
+      ),
+    );
+  }
+
+  /// บันทึกน้ำหนักวันนี้ลงกราฟ 6 เดือน + ไทม์ไลน์ + น้ำหนักบนโปรไฟล์
+  void logWeight(
+    String catId, {
+    required double weightKg,
+    required String dateTh,
+    required String dateEn,
+    String note = '',
+  }) {
+    final cat = _findCatById(catId);
+    if (cat == null) return;
+    final book = cat.healthBook;
+    final currentPoints = List<WeightPoint>.of(book.weightHistory);
+    final newPoint = WeightPoint(monthTh: 'พ.ย.', monthEn: 'Nov', kg: weightKg);
+    if (currentPoints.isNotEmpty && currentPoints.last.monthEn == 'Nov') {
+      currentPoints[currentPoints.length - 1] = newPoint;
+    } else {
+      currentPoints.add(newPoint);
+      if (currentPoints.length > 6) {
+        currentPoints.removeAt(0);
+      }
+    }
+
+    var deltaTh = '';
+    var deltaEn = '';
+    var dropping = false;
+    if (currentPoints.length >= 2) {
+      final baselineIdx = currentPoints.length >= 3
+          ? currentPoints.length - 3
+          : 0;
+      final diff = weightKg - currentPoints[baselineIdx].kg;
+      dropping = diff < -0.05;
+      final sign = diff >= 0 ? '+' : '';
+      final formatted = '$sign${diff.toStringAsFixed(1)}';
+      deltaTh = '$formatted กก. ใน 2 เดือน';
+      deltaEn = '$formatted kg in 2 months';
+    }
+
+    final formattedKg = weightKg.toStringAsFixed(1);
+    final entry = HealthRecordEntry(
+      id: 'w-${DateTime.now().microsecondsSinceEpoch}',
+      category: HealthRecordCategory.weight,
+      dateTh: dateTh,
+      dateEn: dateEn,
+      titleTh: 'บันทึกน้ำหนัก $formattedKg กก.',
+      titleEn: 'Logged weight $formattedKg kg',
+      detailsTh: note,
+      detailsEn: note,
+    );
+
+    _replaceCat(
+      cat.copyWith(
+        weightKg: weightKg,
+        recordCount: cat.recordCount + 1,
+        healthBook: book.copyWith(
+          weightHistory: currentPoints,
+          weightDeltaTh: deltaTh,
+          weightDeltaEn: deltaEn,
+          weightDropping: dropping,
+          records: [entry, ...book.records],
+        ),
+      ),
+    );
+  }
+
+  /// เพิ่มเอกสารแนบในแท็บเอกสาร
+  void addHealthDocument(String catId, HealthDocumentItem doc) {
+    final cat = _findCatById(catId);
+    if (cat == null) return;
+    final book = cat.healthBook;
+    _replaceCat(
+      cat.copyWith(
+        healthBook: book.copyWith(documents: [doc, ...book.documents]),
+      ),
+    );
+  }
+
+  CatProfile? _findCatById(String catId) {
+    final bundle = state.bundle;
+    if (bundle == null) return null;
+    return bundle.cats.where((c) => c.id == catId).firstOrNull;
+  }
+
   void togglePhotoSave(String catId, String photoId) {
     _updatePhoto(catId, photoId, (p) => p.copyWith(isSaved: !p.isSaved));
   }

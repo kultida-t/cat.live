@@ -1,5 +1,8 @@
 import 'package:equatable/equatable.dart';
 
+import 'cat_health_data.dart';
+export 'cat_health_data.dart';
+
 /// เพศของแมวบนโปรไฟล์
 enum CatGender {
   female('เพศเมีย'),
@@ -650,6 +653,7 @@ class CatProfile extends Equatable {
     required this.caregivers,
     this.idCard = const CatIdCardDetails(),
     this.trackerInfo = const CatTrackerInfo(),
+    this.healthBook = const CatHealthBook(),
   });
 
   final String id;
@@ -675,6 +679,7 @@ class CatProfile extends Equatable {
   final List<CatCaregiver> caregivers;
   final CatIdCardDetails idCard;
   final CatTrackerInfo trackerInfo;
+  final CatHealthBook healthBook;
 
   String get summarySubtitle =>
       '$breed · ${gender.label} · ${neutered ? 'ทำหมันแล้ว' : 'ยังไม่ทำหมัน'}';
@@ -709,6 +714,7 @@ class CatProfile extends Equatable {
     List<CatCaregiver>? caregivers,
     CatIdCardDetails? idCard,
     CatTrackerInfo? trackerInfo,
+    CatHealthBook? healthBook,
   }) {
     return CatProfile(
       id: id ?? this.id,
@@ -735,6 +741,7 @@ class CatProfile extends Equatable {
       caregivers: caregivers ?? this.caregivers,
       idCard: idCard ?? this.idCard,
       trackerInfo: trackerInfo ?? this.trackerInfo,
+      healthBook: healthBook ?? this.healthBook,
     );
   }
 
@@ -763,6 +770,7 @@ class CatProfile extends Equatable {
     caregivers,
     idCard,
     trackerInfo,
+    healthBook,
   ];
 }
 

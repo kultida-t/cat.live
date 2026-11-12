@@ -1,5 +1,6 @@
 import '../../domain/entities/my_cat_data.dart';
 import '../models/my_cat_models.dart';
+import 'mock_health_books.dart';
 import 'my_cat_remote_data_source.dart';
 
 /// ข้อมูลจำลองหน้าแมวและฉัน — ตรงตามหน้าเว็บจริง www.แมว.live
@@ -389,6 +390,7 @@ class MockMyCatDataSource implements MyCatRemoteDataSource {
               serialCode: 'MLG-24A-0123',
             ),
           ),
+          healthBook: MockHealthBooks.mali,
         ),
         CatProfile(
           id: 'cat-somjeed',
@@ -472,6 +474,7 @@ class MockMyCatDataSource implements MyCatRemoteDataSource {
               serialCode: 'MLG-24A-0124',
             ),
           ),
+          healthBook: MockHealthBooks.somjeed,
         ),
         CatProfile(
           id: 'cat-thuadam',
@@ -510,6 +513,7 @@ class MockMyCatDataSource implements MyCatRemoteDataSource {
             issuedDateLabel: '15 มิ.ย. 2563',
             defaultSkin: CatIdSkin.night,
           ),
+          healthBook: MockHealthBooks.thuaDam,
         ),
       ],
     );

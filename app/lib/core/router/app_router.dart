@@ -5,6 +5,7 @@ import '../../features/feed/presentation/pages/connections_page.dart';
 import '../../features/feed/presentation/pages/guidelines_page.dart';
 import '../../features/feed/presentation/pages/post_link_page.dart';
 import '../../features/home/presentation/pages/home_page.dart';
+import '../../features/my_cat/presentation/pages/cat_health_page.dart';
 import '../../features/my_cat/presentation/pages/cat_id_page.dart';
 import '../../features/my_cat/presentation/pages/cat_tracker_page.dart';
 import '../../features/my_cat/presentation/pages/my_cat_page.dart';
@@ -123,21 +124,7 @@ GoRouter createAppRouter() {
                   ),
                   GoRoute(
                     path: 'health',
-                    builder: (_, _) => const PlaceholderPage(
-                      title: 'สมุดสุขภาพ',
-                      enTitle: 'Health book',
-                      subtitle: 'หน้าย่อยรอบที่ 2 (Slice 2)',
-                      enSubtitle: 'Coming in Slice 2',
-                      showBack: true,
-                      notes: [
-                        '7 แท็บ: ประวัติ, ร่างกาย, สมุดวัคซีน, ยา, ปฏิทิน, น้ำหนัก, เอกสาร',
-                        'การ์ดนัดถัดไป + บันทึกจาก Cat AI และเพิ่มบันทึกสุขภาพ',
-                      ],
-                      enNotes: [
-                        '7 tabs: History, Body, Vaccine book, Medicine, Calendar, Weight, Documents',
-                        'Next appointment reminder + Cat AI notes & add record',
-                      ],
-                    ),
+                    builder: (_, _) => const CatHealthPage(),
                   ),
                   GoRoute(
                     path: 'tracker',

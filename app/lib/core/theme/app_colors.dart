@@ -120,4 +120,33 @@ abstract final class AppColors {
   static const splashCatStripe = Color(0xFFE29A4E);
   static const splashHeartGold = Color(0xFFF6DC8E);
   static const splashHint = Color(0xFF9C8A79);
+
+  // สมุดสุขภาพ (/my-cat/health)
+  static const healthNormalStroke = Color(0xFF4DB8A4);
+  static const healthNormalInk = Color(0xFF0B5E58);
+  static const healthWatchBg = Color(0xFFFFF3CC);
+  static const healthWatchStroke = Color(0xFFE6B83A);
+  static const healthWatchInk = Color(0xFF7A5200);
+  static const healthAbnormalBg = Color(0xFFFFE4E6);
+  static const healthAbnormalStroke = Color(0xFFF43F5E);
+  static const healthAbnormalInk = Color(0xFFE11D48);
+  static const healthEmptyStroke = Color(0xFFC9BDB3);
+  static const healthDeltaGainBg = Color(0xFFE6F4EA);
+  static const healthDeltaGainInk = Color(0xFF0F766E);
+  static const healthDeltaDropBg = Color(0xFFFFF1F2);
+  static const healthDeltaDropInk = Color(0xFFE11D48);
+  static const healthWeightAlertBg = Color(0xFFFEF9C3);
+  static const healthWeightAlertBorder = Color(0xFFFDE047);
+  static const healthWeightAlertInk = Color(0xFF854D0E);
+  static const healthVaccineBlue = Color(0xFF3B82F6);
+  static const healthVaccineBlueBg = Color(0xFFEFF6FF);
+  static const healthIllnessOrange = Color(0xFFE07A5F);
+  static const healthIllnessOrangeBg = Color(0xFFFFF1EC);
+  static const healthMedPurple = Color(0xFF7C3AED);
+  static const healthMedPurpleBg = Color(0xFFF3E8FF);
+  static const healthDewormTeal = Color(0xFF0D9488);
+  static const healthDocPdfBg = Color(0xFFFCE7F3);
+  static const healthDocPdfInk = Color(0xFFBE185D);
+  static const healthDocImgBg = Color(0xFFDBEAFE);
+  static const healthDocImgInk = Color(0xFF1D4ED8);
 }

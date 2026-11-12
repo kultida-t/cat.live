@@ -532,6 +532,7 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
     expect(find.text('Health book'), findsOneWidget);
-    expect(find.text('Coming in Slice 2'), findsOneWidget);
+    expect(find.text('History'), findsOneWidget);
+    expect(find.text('Next appointment'), findsOneWidget);
   });
 }
