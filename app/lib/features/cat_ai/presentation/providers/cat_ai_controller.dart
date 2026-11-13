@@ -1,5 +1,8 @@
+import 'dart:typed_data';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/media/strip_image_metadata.dart';
 import '../../domain/entities/cat_ai_data.dart';
 import '../../domain/repositories/cat_ai_repository.dart';
 import 'cat_ai_providers.dart';
@@ -103,22 +106,68 @@ class CatAiController extends Notifier<CatAiState> {
     state = state.copyWith(threads: {...state.threads, id: const []});
   }
 
-  /// ส่งคำถามให้แมวที่เลือกอยู่ ตอบกลับเข้าประวัติของแมวตัวนั้น คืน false เมื่อส่งไม่สำเร็จ
-  Future<bool> send(String text) async {
+  /// ส่งข้อความและ/หรือรูปที่แนบให้แมวที่เลือกอยู่ ตอบกลับเข้าประวัติของแมวตัวนั้น
+  /// รูปจะถูกลบข้อมูลแฝง (GPS/EXIF) ก่อนเก็บและส่งทุกครั้ง คืน false เมื่อส่งไม่สำเร็จ
+  Future<bool> send(String text, {Uint8List? image}) async {
     final question = text.trim();
+    if (question.isEmpty && image == null) return false;
     final cat = state.selectedCat;
-    if (question.isEmpty || state.isSending || cat == null) return false;
-    _appendMessage(cat.id, CatAiMessage(text: question, isFromUser: true));
+    if (cat == null || state.isSending) return false;
     state = state.copyWith(isSending: true);
     try {
-      final reply = await _repo.ask(question, detailed: state.detailedAnswers);
-      _appendMessage(cat.id, CatAiMessage(text: reply, isFromUser: false));
+      final clean = image == null ? null : await stripImageMetadata(image);
+      final prompt = question.isEmpty ? 'ส่งรูปแมวให้ดูอาการ' : question;
+      _appendMessage(
+        cat.id,
+        CatAiMessage(text: question, isFromUser: true, imageBytes: clean),
+      );
+      final reply = clean == null
+          ? CatAiMessage(
+              text: await _repo.ask(prompt, detailed: state.detailedAnswers),
+              isFromUser: false,
+            )
+          : await _imageReply(clean, prompt);
+      _appendMessage(cat.id, reply);
       state = state.copyWith(isSending: false);
       return true;
     } catch (_) {
       state = state.copyWith(isSending: false);
       return false;
     }
+  }
+
+  Future<CatAiMessage> _imageReply(Uint8List bytes, String question) async {
+    final r = await _repo.analyzeImage(bytes, question);
+    return CatAiMessage(
+      text: r.text,
+      isFromUser: false,
+      level: r.level,
+      record: r.record,
+    );
+  }
+
+  /// ยืนยันการ์ดสรุปเข้าประวัติ (ตอนนี้บันทึกในแชทเท่านั้น ยังไม่เขียนลงสมุดสุขภาพจริง)
+  void confirmRecord(String catId, CatAiMessage target) {
+    _updateRecord(catId, target, (r) => r.copyWith(saved: true));
+  }
+
+  /// แก้รายละเอียดในการ์ดก่อนยืนยัน ใช้ได้เฉพาะการ์ดที่ยังไม่ได้บันทึก
+  void editRecordDetails(String catId, CatAiMessage target, String details) {
+    _updateRecord(catId, target, (r) => r.copyWith(details: details));
+  }
+
+  void _updateRecord(
+    String catId,
+    CatAiMessage target,
+    CatAiRecordSummary Function(CatAiRecordSummary) update,
+  ) {
+    final record = target.record;
+    if (record == null || record.saved) return;
+    final list = [...(state.threads[catId] ?? const <CatAiMessage>[])];
+    final i = list.indexOf(target);
+    if (i < 0) return;
+    list[i] = target.copyWith(record: update(record));
+    state = state.copyWith(threads: {...state.threads, catId: list});
   }
 
   void _appendMessage(String catId, CatAiMessage message) {

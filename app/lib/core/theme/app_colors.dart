@@ -183,4 +183,7 @@ abstract final class AppColors {
   static const catAiHaloGlow = Color(0x293E8F8A);
   static const catAiSettingsDangerInk = Color(0xFF8F1C13);
   static const catAiClearBg = Color(0xFFFFFCF3);
+  static const catAiLevelSafeBg = Color(0xFFE6F7F3);
+  static const catAiLevelSafeBorder = Color(0xFF7CCBBB);
+  static const catAiLevelSafeInk = Color(0xFF0B5E58);
 }

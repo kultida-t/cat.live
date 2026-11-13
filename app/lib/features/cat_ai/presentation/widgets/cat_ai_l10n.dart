@@ -1,3 +1,5 @@
+import '../../domain/entities/cat_ai_data.dart';
+
 /// ข้อความของหน้า Cat AI ทั้งไทยและอังกฤษ
 abstract final class CatAiL10n {
   static String tapToSpeak(bool isEn) =>
@@ -75,4 +77,103 @@ abstract final class CatAiL10n {
   static String cannotDiagnoseNote(bool isEn) => isEn
       ? 'Cat AI is not a vet. If symptoms are serious, see a vet.'
       : 'Cat AI ไม่ใช่สัตวแพทย์ คำแนะนำเป็นข้อมูลเบื้องต้น หากอาการรุนแรงควรพาไปพบสัตวแพทย์';
+
+  static String addMenuAttachSection(bool isEn) =>
+      isEn ? 'Attach photo' : 'แนบรูป';
+
+  static String addMenuFaqSection(bool isEn) =>
+      isEn ? 'Common questions' : 'เรื่องที่ถามบ่อย';
+
+  static String takePhotoTitle(bool isEn) => isEn ? 'Take photo' : 'ถ่ายรูป';
+
+  static String takePhotoHint(bool isEn) =>
+      isEn ? 'Let AI look at the photo' : 'ให้ AI ดูอาการจากรูป';
+
+  static String pickGalleryTitle(bool isEn) =>
+      isEn ? 'Choose from gallery' : 'เลือกจากคลังรูป';
+
+  static String samplePhotosLabel(bool isEn) =>
+      isEn ? 'Try sample photos' : 'ลองรูปตัวอย่าง';
+
+  static String faceCheckHint(bool isEn) => isEn
+      ? 'Check pain signs from a face photo'
+      : 'เช็กสัญญาณเจ็บปวดจากรูปหน้า';
+
+  static String imagePickFailed(bool isEn) => isEn
+      ? 'Could not open the camera or gallery'
+      : 'ไม่สามารถเปิดกล้องหรือคลังรูปได้';
+
+  static String faqSymptomTitle(bool isEn) => isEn ? 'Symptoms' : 'ถามอาการ';
+
+  static String faqSymptomQuestion(bool isEn) => isEn
+      ? 'She vomited twice today but is still eating.'
+      : 'น้องอาเจียน 2 ครั้งวันนี้ ยังกินข้าวได้อยู่';
+
+  static String faqSummaryTitle(bool isEn) =>
+      isEn ? 'Health summary' : 'สรุปสุขภาพ';
+
+  static String faqSummaryQuestion(bool isEn) => isEn
+      ? 'Please summarize her health this month.'
+      : 'สรุปสุขภาพเดือนนี้ให้หน่อย';
+
+  static String faqWeightTitle(bool isEn) =>
+      isEn ? 'Log weight' : 'บันทึกน้ำหนัก';
+
+  static String faqWeightQuestion(bool isEn) =>
+      isEn ? 'Weighed 4.2 kg today.' : 'วันนี้ชั่งน้ำหนักได้ 4.2 กก.';
+
+  static String faqVaccineTitle(bool isEn) =>
+      isEn ? 'Vaccines' : 'เรื่องวัคซีน';
+
+  static String faqVaccineQuestion(bool isEn) => isEn
+      ? 'How should I prepare for the next vaccine?'
+      : 'วัคซีนรอบถัดไปต้องเตรียมตัวยังไง';
+
+  static String closeMenuLabel(bool isEn) => isEn ? 'Close menu' : 'ปิดเมนู';
+
+  static String sendLabel(bool isEn) => isEn ? 'Send' : 'ส่ง';
+
+  static String attachmentHint(bool isEn) => isEn
+      ? 'Tell me which part to look at, like eyes, skin, teeth or stool, or just send.'
+      : 'พิมพ์บอกจุดที่อยากให้ดู เช่น ตา ผิวหนัง ฟัน อุจจาระ หรือกดส่งได้เลย';
+
+  static String removeAttachmentLabel(bool isEn) =>
+      isEn ? 'Remove photo' : 'ลบรูปที่แนบ';
+
+  static String levelLabel(CatAiLevel level, bool isEn) => switch (level) {
+    CatAiLevel.watchAtHome =>
+      isEn ? 'Level: watch at home' : 'ระดับ: เฝ้าดูอาการที่บ้าน',
+    CatAiLevel.seeVetSoon =>
+      isEn ? 'Level: see a vet soon' : 'ระดับ: ควรพบสัตวแพทย์เร็ว ๆ นี้',
+    CatAiLevel.seeVetNow =>
+      isEn ? 'Level: see a vet now' : 'ระดับ: ควรพบสัตวแพทย์ทันที',
+  };
+
+  static String recordTitle(bool isEn) =>
+      isEn ? 'Summary to save to history' : 'สรุปเพื่อบันทึกเข้าประวัติ';
+
+  static String recordType(bool isEn) => isEn ? 'Type' : 'ประเภท';
+
+  static String recordTopic(bool isEn) => isEn ? 'Topic' : 'หัวข้อ';
+
+  static String recordDate(bool isEn) => isEn ? 'Date' : 'วันที่';
+
+  static String recordDetails(bool isEn) => isEn ? 'Details' : 'รายละเอียด';
+
+  static String recordEdit(bool isEn) => isEn ? 'Edit' : 'แก้ไข';
+
+  static String recordConfirm(bool isEn) =>
+      isEn ? 'Confirm & save' : 'ยืนยันและบันทึก';
+
+  static String recordSaved(bool isEn) =>
+      isEn ? 'Saved to timeline' : 'บันทึกเข้าไทม์ไลน์แล้ว';
+
+  static String recordViewHistory(bool isEn) =>
+      isEn ? 'View history' : 'ดูประวัติ';
+
+  static String recordEditTitle(bool isEn) =>
+      isEn ? 'Edit details' : 'แก้ไขรายละเอียด';
+
+  static String recordSaveEdit(bool isEn) =>
+      isEn ? 'Save changes' : 'บันทึกการแก้ไข';
 }
