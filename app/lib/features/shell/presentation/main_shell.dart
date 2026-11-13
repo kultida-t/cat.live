@@ -24,6 +24,33 @@ const _tabs = [
   _TabMeta('แมวและฉัน', 'My Cat', NavIconName.myCat, Color(0xFFFFF1E6)),
 ];
 
+/// แท็บที่ถูกสลับจากปุ่มในหน้า (เช่น กดอุ้งเท้าจาก Cat AI) เพื่อให้ปุ่มกลับพากลับแท็บเดิมได้
+final shellTabHistoryProvider =
+    NotifierProvider<ShellTabHistory, List<int>>(ShellTabHistory.new);
+
+class ShellTabHistory extends Notifier<List<int>> {
+  @override
+  List<int> build() => const [];
+
+  void push(int index) => state = [...state, index];
+
+  int pop() {
+    final last = state.last;
+    state = state.sublist(0, state.length - 1);
+    return last;
+  }
+
+  void clear() => state = const [];
+}
+
+/// สลับไปแท็บที่ [index] จากหน้าที่อยู่ในแถบล่าง และจำแท็บเดิมไว้ให้ปุ่มกลับ
+void goToShellTab(BuildContext context, WidgetRef ref, int index) {
+  final shell = StatefulNavigationShell.of(context);
+  if (index == shell.currentIndex) return;
+  ref.read(shellTabHistoryProvider.notifier).push(shell.currentIndex);
+  shell.goBranch(index, initialLocation: true);
+}
+
 class MainShell extends ConsumerWidget {
   const MainShell({super.key, required this.navigationShell});
 
@@ -32,14 +59,26 @@ class MainShell extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isEn = ref.watch(appLocaleProvider) == 'en';
-    return Scaffold(
-      body: navigationShell,
-      bottomNavigationBar: _BottomBar(
-        currentIndex: navigationShell.currentIndex,
-        isEn: isEn,
-        onSelected: (i) => navigationShell.goBranch(
-          i,
-          initialLocation: i == navigationShell.currentIndex,
+    final history = ref.watch(shellTabHistoryProvider);
+    return PopScope(
+      canPop: history.isEmpty,
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop) return;
+        final previous = ref.read(shellTabHistoryProvider.notifier).pop();
+        navigationShell.goBranch(previous);
+      },
+      child: Scaffold(
+        body: navigationShell,
+        bottomNavigationBar: _BottomBar(
+          currentIndex: navigationShell.currentIndex,
+          isEn: isEn,
+          onSelected: (i) {
+            ref.read(shellTabHistoryProvider.notifier).clear();
+            navigationShell.goBranch(
+              i,
+              initialLocation: i == navigationShell.currentIndex,
+            );
+          },
         ),
       ),
     );
