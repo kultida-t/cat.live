@@ -12,12 +12,14 @@ class FeedHeader extends StatelessWidget {
     required this.onTabChanged,
     required this.onComingSoon,
     required this.onCreatePost,
+    this.onOpenMenu,
   });
 
   final FeedTab tab;
   final ValueChanged<FeedTab> onTabChanged;
   final ValueChanged<String> onComingSoon;
   final VoidCallback onCreatePost;
+  final VoidCallback? onOpenMenu;
 
   static const _labels = {
     FeedTab.all: 'ทั้งหมด',
@@ -36,7 +38,7 @@ class FeedHeader extends StatelessWidget {
               _HeaderButton(
                 label: 'เปิดเมนู',
                 icon: LucideIcons.menu,
-                onTap: () => onComingSoon('เมนู'),
+                onTap: onOpenMenu ?? () => onComingSoon('เมนู'),
               ),
               _HeaderButton(
                 label: 'สร้างโพสต์ รูปหรือวิดีโอ',

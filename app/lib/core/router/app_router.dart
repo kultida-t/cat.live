@@ -8,6 +8,7 @@ import '../../features/feed/presentation/pages/guidelines_page.dart';
 import '../../features/feed/presentation/pages/post_link_page.dart';
 import '../../features/help/presentation/pages/help_page.dart';
 import '../../features/home/presentation/pages/home_page.dart';
+import '../../features/menu/presentation/pages/menu_page.dart';
 import '../../features/my_cat/presentation/pages/cat_health_page.dart';
 import '../../features/my_cat/presentation/pages/cat_id_page.dart';
 import '../../features/my_cat/presentation/pages/cat_tracker_page.dart';
@@ -25,6 +26,7 @@ GoRouter createAppRouter() {
         builder: (_, state) =>
             PostLinkPage(postId: state.pathParameters['id']!),
       ),
+      GoRoute(path: '/menu', builder: (_, _) => const MenuPage()),
       GoRoute(path: '/cat-profile', builder: (_, _) => const CatIdPage()),
       GoRoute(
         path: '/cat-ai/face-check',
