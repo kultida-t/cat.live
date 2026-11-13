@@ -167,4 +167,20 @@ abstract final class AppColors {
   static const nearbyPinLostCat = Color(0xFFF0AFA2);
   static const nearbyPinFoundCat = Color(0xFFA9DCD3);
   static const nearbyPinCommunityCat = Color(0xFFE8D3B5);
+
+  // Cat AI (/cat-ai)
+  static const catAiGradientMid = Color(0xFFE1F1EE);
+  static const catAiGradientEnd = Color(0xFFD3E0F7);
+  static const catAiMicLight = Color(0xFF7CC4BC);
+  static const catAiMicMid = Color(0xFF4A9E97);
+  static const catAiMicDark = Color(0xFF2F6B67);
+  static const catAiMicRing = Color(0x1F3E8F8A);
+  static const catAiSparkStart = Color(0xFF8FD3CB);
+  static const catAiSparkEnd = Color(0xFF2F6F6B);
+  static const catAiScanBg = Color(0xFFEFE8FB);
+  static const catAiStethoscopeBg = Color(0xFFDCEFEC);
+  static const catAiScanInk = Color(0xFF5B3FA8);
+  static const catAiHaloGlow = Color(0x293E8F8A);
+  static const catAiSettingsDangerInk = Color(0xFF8F1C13);
+  static const catAiClearBg = Color(0xFFFFFCF3);
 }

@@ -1,5 +1,6 @@
 import 'package:go_router/go_router.dart';
 
+import '../../features/cat_ai/presentation/pages/cat_ai_page.dart';
 import '../../features/feed/presentation/pages/community_page.dart';
 import '../../features/feed/presentation/pages/connections_page.dart';
 import '../../features/feed/presentation/pages/guidelines_page.dart';
@@ -12,7 +13,6 @@ import '../../features/my_cat/presentation/pages/cat_tracker_page.dart';
 import '../../features/my_cat/presentation/pages/my_cat_page.dart';
 import '../../features/nearby/presentation/pages/nearby_page.dart';
 import '../../features/shell/presentation/main_shell.dart';
-import '../../features/shell/presentation/placeholder_page.dart';
 
 /// เส้นทางหลัก — แท็บล่าง 6 อัน แต่ละอันเก็บสถานะของตัวเอง (เลื่อนค้างไว้เมื่อสลับแท็บ)
 GoRouter createAppRouter() {
@@ -24,6 +24,7 @@ GoRouter createAppRouter() {
         builder: (_, state) =>
             PostLinkPage(postId: state.pathParameters['id']!),
       ),
+      GoRoute(path: '/cat-profile', builder: (_, _) => const CatIdPage()),
       StatefulShellRoute.indexedStack(
         builder: (context, state, shell) => MainShell(navigationShell: shell),
         branches: [
@@ -56,25 +57,7 @@ GoRouter createAppRouter() {
           ),
           StatefulShellBranch(
             routes: [
-              GoRoute(
-                path: '/cat-ai',
-                builder: (_, _) => const PlaceholderPage(
-                  title: 'Cat AI',
-                  enTitle: 'Cat AI',
-                  subtitle: 'ผู้ช่วยเรื่องแมว — ถามอาการและการดูแล',
-                  enSubtitle:
-                      'Cat care assistant — ask about symptoms & daily care',
-                  notes: [
-                    'แชทถาม-ตอบเรื่องแมว (พิมพ์ + เสียง)',
-                    'โทรคุยสัตวแพทย์ AI และตรวจใบหน้าแมว (เฟสถัดไป)',
-                    'Embedded AI เป็นชั้นบังคับตามมาตรฐาน UNIVERZA',
-                  ],
-                  enNotes: [
-                    'Chat Q&A for cat health & behavior (text + voice)',
-                    'AI vet call & cat facial checkup (upcoming phase)',
-                  ],
-                ),
-              ),
+              GoRoute(path: '/cat-ai', builder: (_, _) => const CatAiPage()),
             ],
           ),
           StatefulShellBranch(

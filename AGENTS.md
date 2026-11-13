@@ -89,8 +89,9 @@
 
 - **Repository:** GitLab `https://git.mrfox.store/Kultida.t/catlive.git` (remote `origin` — ใช้งานหลัก), GitHub `https://github.com/kultida-t/cat.live.git` (remote `github`)
 - **Local Path:** `/Users/kultida/Desktop/Projects/cat.live` (macOS)
-- **สถานะล่าสุด (2026-11-12):**
-  - เพิ่มไล่เฟดขอบซ้าย-ขวาให้แถวแคปซูล `ตัวฉัน` / แมวบนหน้า `/my-cat` (`ProfileSwitcherRow`, Task `39c47fc3`), merge `feat/my-cat-capsule-fade` เข้า `dev` และ push ขึ้น remote แล้ว (`flutter analyze` ผ่าน, `my_cat_page_test` 9/9 เคสผ่าน)
+- **สถานะล่าสุด (2026-11-13):**
+  - ทำหน้า Cat AI (`/cat-ai`) ให้ตรงเว็บจริงระดับ UI Mock (แยกประวัติแชทตามแมว, แผ่นตั้งค่า, ไมค์และวงแสง, ปุ่มลัด, การนำทางอุ้งเท้า/ดินสอ) บน branch `feat/cat-ai` ยังค้าง: เมนู +, หน้าดูสีหน้า, หน้าคุยกับหมอ, และ AI จริงรอ Backend/API Key
+  - (สถานะ 2026-11-12) เพิ่มไล่เฟดขอบซ้าย-ขวาให้แถวแคปซูล `ตัวฉัน` / แมวบนหน้า `/my-cat` (`ProfileSwitcherRow`, Task `39c47fc3`), merge `feat/my-cat-capsule-fade` เข้า `dev` และ push ขึ้น remote แล้ว (`flutter analyze` ผ่าน, `my_cat_page_test` 9/9 เคสผ่าน)
   - ปรับปรุงแอนิเมชัน Bottom Navigation Bar (`main_shell.dart` / `nav_icons.dart`, Task `ecc84bd6`) ตรงตามเว็บจริงทั้ง 6 แท็บ (กดยุบ, Active Pill ขยาย, เด้งสปริง, ดาว Cat AI, หัวใจช่วยเหลือ, ตาแมวและฉันกระพริบ+กลอกตา), merge `feat/nav-animations` เข้า `dev` และ push ขึ้น remote แล้ว (`flutter analyze` ผ่าน, `flutter test` 95 เคสผ่าน)
   - ตรวจรับและล็อกหน้าช่วยเหลือ (`/help` — UI Mock Baseline, Task `33ee900d`) ลง `PROTECTED_SCREENS.md`, merge `feat/help` เข้า `dev` และ push ขึ้น remote แล้ว (`flutter analyze` ผ่าน, `flutter test` 94 เคสผ่าน บน Android `emulator-5554` และ iOS `iPhone 17`)
   - ตรวจรับและล็อกหน้าใกล้ฉัน (`/nearby` — UI Mock Baseline, Task `adab7a66`) ลง `PROTECTED_SCREENS.md`, merge `feat/nearby` เข้า `dev` และ push ขึ้น remote แล้ว (`flutter analyze` ผ่าน, `flutter test` 87 เคสผ่าน บน Android `emulator-5554` และ iOS `iPhone 17`)
@@ -115,4 +116,5 @@
 - **หน้าสมุดสุขภาพ (`/my-cat/health`, `CatHealthPage` — Slice 2)** — ล็อก UI Mock Baseline เมื่อ 2026-11-12
 - **หน้าใกล้ฉัน (`/nearby`, `NearbyPage`)** — ล็อก UI Mock Baseline เมื่อ 2026-11-12
 - **หน้าช่วยเหลือ (`/help`, `HelpPage`)** — ล็อก UI Mock Baseline เมื่อ 2026-11-12
+- **หน้า Cat AI (`/cat-ai`, `CatAiPage`)** — ล็อก UI Mock Baseline เมื่อ 2026-11-13 (รวมการแก้แถบล่างเรื่องจำแท็บก่อนหน้า)
 *(ดูขอบเขตไฟล์และข้อยกเว้นสำหรับเชื่อมหน้าอื่น/API จริงได้ที่ `PROTECTED_SCREENS.md`)*

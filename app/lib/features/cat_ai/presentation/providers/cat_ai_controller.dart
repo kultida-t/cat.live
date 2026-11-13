@@ -1,0 +1,133 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../domain/entities/cat_ai_data.dart';
+import '../../domain/repositories/cat_ai_repository.dart';
+import 'cat_ai_providers.dart';
+
+/// สถานะทั้งหมดของหน้า Cat AI (/cat-ai)
+/// ประวัติแชทแยกตามแมวแต่ละตัว เพื่อไม่ให้คำตอบปนข้อมูลของแมวคนละตัว
+class CatAiState {
+  const CatAiState({
+    this.isLoading = true,
+    this.errorMessage,
+    this.snapshot,
+    this.selectedIndex = 0,
+    this.threads = const {},
+    this.isSending = false,
+    this.detailedAnswers = true,
+  });
+
+  final bool isLoading;
+  final String? errorMessage;
+  final CatAiSnapshot? snapshot;
+  final int selectedIndex;
+
+  /// ประวัติแชทของแต่ละแมว ใช้ id ของแมวเป็นคีย์
+  final Map<String, List<CatAiMessage>> threads;
+  final bool isSending;
+  final bool detailedAnswers;
+
+  /// แมวที่กำลังเลือกอยู่ (null เมื่อยังไม่มีแมวในโปรไฟล์)
+  CatAiCat? get selectedCat {
+    final cats = snapshot?.cats ?? const <CatAiCat>[];
+    if (cats.isEmpty) return null;
+    return cats[selectedIndex % cats.length];
+  }
+
+  /// ประวัติแชทของแมวที่เลือกอยู่เท่านั้น
+  List<CatAiMessage> get messages {
+    final id = selectedCat?.id;
+    return id == null ? const [] : (threads[id] ?? const []);
+  }
+
+  CatAiState copyWith({
+    bool? isLoading,
+    String? errorMessage,
+    bool clearError = false,
+    CatAiSnapshot? snapshot,
+    int? selectedIndex,
+    Map<String, List<CatAiMessage>>? threads,
+    bool? isSending,
+    bool? detailedAnswers,
+  }) {
+    return CatAiState(
+      isLoading: isLoading ?? this.isLoading,
+      errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
+      snapshot: snapshot ?? this.snapshot,
+      selectedIndex: selectedIndex ?? this.selectedIndex,
+      threads: threads ?? this.threads,
+      isSending: isSending ?? this.isSending,
+      detailedAnswers: detailedAnswers ?? this.detailedAnswers,
+    );
+  }
+}
+
+final catAiControllerProvider = NotifierProvider<CatAiController, CatAiState>(
+  CatAiController.new,
+);
+
+class CatAiController extends Notifier<CatAiState> {
+  CatAiRepository get _repo => ref.read(catAiRepositoryProvider);
+
+  @override
+  CatAiState build() {
+    Future.microtask(load);
+    return const CatAiState();
+  }
+
+  Future<void> load() async {
+    state = state.copyWith(isLoading: true, clearError: true);
+    try {
+      final data = await _repo.fetchSnapshot();
+      state = state.copyWith(isLoading: false, snapshot: data);
+    } catch (e) {
+      state = state.copyWith(isLoading: false, errorMessage: e.toString());
+    }
+  }
+
+  /// สลับไปแมวตัวถัดไปเมื่อกดชื่อ ประวัติของแต่ละตัวยังอยู่ครบ
+  void nextCat() {
+    final count = state.snapshot?.cats.length ?? 0;
+    if (count < 2) return;
+    state = state.copyWith(selectedIndex: (state.selectedIndex + 1) % count);
+  }
+
+  void setDetailedAnswers(bool detailed) {
+    state = state.copyWith(detailedAnswers: detailed);
+  }
+
+  /// ล้างเฉพาะประวัติของแมวที่เลือกอยู่
+  void clearMessages() {
+    final id = state.selectedCat?.id;
+    if (id == null) return;
+    state = state.copyWith(threads: {...state.threads, id: const []});
+  }
+
+  /// ส่งคำถามให้แมวที่เลือกอยู่ ตอบกลับเข้าประวัติของแมวตัวนั้น คืน false เมื่อส่งไม่สำเร็จ
+  Future<bool> send(String text) async {
+    final question = text.trim();
+    final cat = state.selectedCat;
+    if (question.isEmpty || state.isSending || cat == null) return false;
+    _appendMessage(cat.id, CatAiMessage(text: question, isFromUser: true));
+    state = state.copyWith(isSending: true);
+    try {
+      final reply = await _repo.ask(question, detailed: state.detailedAnswers);
+      _appendMessage(cat.id, CatAiMessage(text: reply, isFromUser: false));
+      state = state.copyWith(isSending: false);
+      return true;
+    } catch (_) {
+      state = state.copyWith(isSending: false);
+      return false;
+    }
+  }
+
+  void _appendMessage(String catId, CatAiMessage message) {
+    final current = state.threads[catId] ?? const <CatAiMessage>[];
+    state = state.copyWith(
+      threads: {
+        ...state.threads,
+        catId: [...current, message],
+      },
+    );
+  }
+}
