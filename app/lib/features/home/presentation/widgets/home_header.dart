@@ -5,9 +5,10 @@ import '../../../../core/theme/app_colors.dart';
 
 /// หัวหน้าแรก: เมนู + ค้นหา + โลโก้ + แจ้งเตือน + ข้อความ (พื้น #FFFBF5 ไม่มีขอบล่าง)
 class HomeHeader extends StatelessWidget {
-  const HomeHeader({super.key, required this.onComingSoon});
+  const HomeHeader({super.key, required this.onComingSoon, this.onOpenMenu});
 
   final ValueChanged<String> onComingSoon;
+  final VoidCallback? onOpenMenu;
 
   @override
   Widget build(BuildContext context) {
@@ -20,7 +21,7 @@ class HomeHeader extends StatelessWidget {
             _HeaderButton(
               label: 'เปิดเมนู',
               icon: LucideIcons.menu,
-              onTap: () => onComingSoon('เมนู'),
+              onTap: onOpenMenu ?? () => onComingSoon('เมนู'),
             ),
             _HeaderButton(
               label: 'ค้นหา',

@@ -152,7 +152,12 @@ class _HomePageState extends ConsumerState<HomePage> with ToastMixin {
           child: CustomScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
             slivers: [
-              SliverToBoxAdapter(child: HomeHeader(onComingSoon: _comingSoon)),
+              SliverToBoxAdapter(
+                child: HomeHeader(
+                  onComingSoon: _comingSoon,
+                  onOpenMenu: () => context.push('/menu'),
+                ),
+              ),
               SliverToBoxAdapter(
                 child: HomeHeroBanner(
                   photo: state.activeHeroPhoto,

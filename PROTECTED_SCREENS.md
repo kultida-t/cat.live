@@ -140,3 +140,17 @@
 - **ขอบเขตที่ยังไม่ทำ (ต้องไม่กระทบดีไซน์/พฤติกรรมเดิมที่ล็อกไว้):**
   - การพูดด้วยไมค์จริงและเสียงพูดตอบกลับจริงในหน้าแชท/คุยกับหมอ
   - เชื่อม AI จริง (Backend + API Key) แทนข้อความตัวอย่าง, บันทึกชอบ/ไม่ชอบ, และบันทึกลงสมุดสุขภาพ (`/my-cat/health`) จริง
+
+### 9. หน้าเมนูหลัก (`/menu` — UI Mock Baseline) — ล็อกเมื่อ 2026-11-13
+- **ตรวจรับบน:** Android (`emulator-5554`), iOS (`iPhone 17`) และเทียบภาพหน้าเว็บจริง `www.แมว.live` แล้ว (`flutter analyze` ผ่าน, `flutter test` 113 เคสผ่าน บน `feat/menu-page`)
+- **หน้าจอที่ล็อก:**
+  - `/menu` (`MenuPage` — เปิดเต็มจอทับแถบเมนูล่างจากปุ่ม `≡` บนหัวหน้าแรก `/` และหน้าฟีด `/community`, ครบ 4 สถานะ `loading` skeleton / `empty` / `error` + ลองใหม่ / `content` พร้อมสลับภาษา ไทย/EN ผ่าน `appLocaleProvider`)
+  - **โครงสร้างหน้าจอ:** พื้นหลังสีขาวล้วน, โลโก้ `แมว.live` + ปุ่มปิด `×`, หมวด `บริการเสริม` 8 รายการเรียงตรงเว็บ (`แมว.live Tag`, `เลี้ยงอาหารน้อง ๆ`, `บริการรำลึก`, `ฌาปนกิจแมว`, `เว็บไซต์รำลึก`, `สั่งพิมพ์ Cat ID / ป้าย QR`, `ใบเพ็ดดีกรี` [เร็ว ๆ นี้], `ประกันสุขภาพแมว` [เร็ว ๆ นี้]) กดแล้วแสดงแถบแจ้งเตือนกำลังพัฒนา/เร็ว ๆ นี้
+- **ไฟล์หลัก:**
+  - `app/lib/features/menu/` (domain / data / presentation)
+  - `app/test/features/menu/menu_page_test.dart`
+  - `app/lib/core/router/app_router.dart` (route `/menu`)
+  - `app/lib/features/home/presentation/widgets/home_header.dart`, `app/lib/features/home/presentation/pages/home_page.dart` (เชื่อมปุ่ม `≡` → `/menu` ตามข้อยกเว้นข้อ 3)
+  - `app/lib/features/feed/presentation/widgets/feed_header.dart`, `app/lib/features/feed/presentation/pages/community_page.dart` (เชื่อมปุ่ม `≡` → `/menu` ตามข้อยกเว้นข้อ 2)
+- **ขอบเขตที่ยังอนุญาตให้เชื่อมเพิ่มในเฟสถัดไป (ต้องไม่กระทบดีไซน์/พฤติกรรมเดิมที่ล็อกไว้):**
+  - เชื่อมรายการบริการเสริมแต่ละตัวไปยังหน้าจริงเมื่อสร้างโมดูลนั้นเสร็จ (`/tag`, `/treats`, บริการรำลึก/ฌาปนกิจ/เว็บไซต์รำลึก, สั่งพิมพ์ Cat ID)

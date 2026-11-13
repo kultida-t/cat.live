@@ -117,4 +117,5 @@
 - **หน้าใกล้ฉัน (`/nearby`, `NearbyPage`)** — ล็อก UI Mock Baseline เมื่อ 2026-11-12
 - **หน้าช่วยเหลือ (`/help`, `HelpPage`)** — ล็อก UI Mock Baseline เมื่อ 2026-11-12
 - **หน้า Cat AI (`/cat-ai`, `CatAiPage`)** — ล็อก UI Mock Baseline เมื่อ 2026-11-13 (รวมการแก้แถบล่างเรื่องจำแท็บก่อนหน้า)
+- **หน้าเมนูหลัก (`/menu`, `MenuPage`)** — ล็อก UI Mock Baseline เมื่อ 2026-11-13
 *(ดูขอบเขตไฟล์และข้อยกเว้นสำหรับเชื่อมหน้าอื่น/API จริงได้ที่ `PROTECTED_SCREENS.md`)*
