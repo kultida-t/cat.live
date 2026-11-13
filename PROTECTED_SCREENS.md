@@ -170,3 +170,18 @@
   - `app/lib/features/feed/presentation/widgets/feed_header.dart`, `app/lib/features/feed/presentation/pages/community_page.dart`, `app/lib/features/feed/presentation/pages/connections_page.dart` (เชื่อมปุ่ม 💬 / `ส่งข้อความ` → `/messages` ตามข้อยกเว้นข้อ 2)
 - **ขอบเขตที่ยังอนุญาตให้เชื่อมเพิ่มในเฟสถัดไป (ต้องไม่กระทบดีไซน์/พฤติกรรมเดิมที่ล็อกไว้):**
   - เชื่อมรับ-ส่งข้อความ, อัปโหลดรูป, แจ้งเตือนเรียลไทม์, และโทรคุยผ่าน Backend API / WebSocket จริงใน Phase 2
+
+### 11. หน้าค้นหา (`/search` — UI Mock Baseline) — ล็อกเมื่อ 2026-11-13
+- **ตรวจรับบน:** Android (`emulator-5554`), iOS (`iPhone 17`) และเทียบหน้าเว็บจริง `www.แมว.live/search` แล้ว (`flutter analyze` ผ่าน, `flutter test` 126 เคสผ่าน บน `feat/search`)
+- **หน้าจอที่ล็อก:**
+  - `/search` (`SearchPage` — ครบ 4 สถานะ `loading` skeleton / `empty` (2 บรรทัด + ลิงก์ `ถาม Cat AI` → `/cat-ai`) / `error` + ลองใหม่ / `content` พร้อมสลับภาษา ไทย/EN ผ่าน `SearchL10n` + `appLocaleProvider`)
+  - **ส่วนหัวและพฤติกรรม:** ปุ่ม `<` ย้อนกลับ, ช่องค้นหา (`ค้นหาแมว คน หรือเรื่องที่สงสัย`, ไม่โฟกัสอัตโนมัติ, ปุ่ม `×` ล้างคำค้น), ล้างค่ากลับหน้าเริ่มต้นอัตโนมัติเมื่อออกจาก `/search` (`NotifierProvider.autoDispose`) แต่จำค่าไว้เมื่อเปิดดูโพสต์แล้วกดกลับ
+  - **หมวดหมู่และผลลัพธ์:** แถบ 6 หมวดหมู่ (`ทั้งหมด`, `ชีวิตแมว`, `สุขภาพ`, `ความรู้`, `ใกล้ฉัน`, `ช่วยแมว`) พร้อมเฟดขอบซ้าย-ขวา, ส่วน `"คำค้นยอดนิยม"` 5 ชิป (`กินน้ำ`, `ลูกแมว`, `คาเฟ่`, `แมวสูงวัย`, `หาบ้าน`) ซ่อนเมื่อค้นหา/เลือกหมวด, ส่วน `"บัญชี"` พร้อมรูปโปรไฟล์จริง, ส่วน `"โพสต์แนะนำ"` / `"โพสต์ (N)"` (5 การ์ด แตะเปิด `/p/:id`)
+- **ไฟล์หลัก:**
+  - `app/lib/features/search/` (domain / data / presentation)
+  - `app/test/features/search/search_page_test.dart`
+  - `app/lib/core/router/app_router.dart` (route `/search` ใต้แท็บ `หน้าแรก`)
+  - `app/lib/features/home/presentation/widgets/home_header.dart`, `app/lib/features/home/presentation/pages/home_page.dart` (เชื่อมปุ่ม 🔍 → `/search` ตามข้อยกเว้นข้อ 3)
+  - `app/lib/features/feed/presentation/pages/post_link_page.dart` (เพิ่มปุ่ม `<` มุมซ้ายบนเฉพาะเมื่อ `context.canPop()` เพื่อกดกลับหน้าค้นหาได้)
+- **ขอบเขตที่ยังอนุญาตให้เชื่อมเพิ่มในเฟสถัดไป (ต้องไม่กระทบดีไซน์/พฤติกรรมเดิมที่ล็อกไว้):**
+  - สลับแหล่งข้อมูลค้นหาบัญชี/โพสต์/คำค้นยอดนิยมเป็น Backend API จริงใน Phase 2
