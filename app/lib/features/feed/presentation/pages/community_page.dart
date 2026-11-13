@@ -164,6 +164,7 @@ class _CommunityPageState extends ConsumerState<CommunityPage> with ToastMixin {
             onComingSoon: _comingSoon,
             onCreatePost: _createPost,
             onOpenMenu: () => context.push('/menu'),
+            onOpenMessages: () => context.push('/messages'),
           ),
           Expanded(
             child: switch (state.status) {

@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/app_avatar.dart';
 import '../../../../core/widgets/toast_pill.dart';
+import '../../../messages/domain/entities/messages_data.dart';
+import '../../../messages/presentation/providers/messages_controller.dart';
 import '../../domain/entities/feed_user.dart';
 import '../providers/feed_controller.dart';
 
@@ -44,6 +47,21 @@ class _ConnectionsPageState extends ConsumerState<ConnectionsPage>
         .toggleFollowUser(user);
     if (!mounted || failure == null) return;
     showToast(failure.message);
+  }
+
+  Future<void> _openMessage(FeedUser user) async {
+    final peer = ChatUser(
+      id: user.id,
+      handle: user.handle,
+      name: user.displayName,
+      avatarSource: user.avatar,
+      avatarBg: user.avatarBg,
+    );
+    final thread = await ref
+        .read(messagesControllerProvider.notifier)
+        .openOrCreateForPeer(peer);
+    if (!mounted) return;
+    context.push('/messages/${thread.id}');
   }
 
   void _cycleSort() {
@@ -162,9 +180,7 @@ class _ConnectionsPageState extends ConsumerState<ConnectionsPage>
                             tab: _tab,
                             user: user,
                             onToggleFollow: () => _toggleFollow(user),
-                            onMessage: () => showToast(
-                              'ส่งข้อความ — กำลังพัฒนา จะมาในเฟสถัดไป',
-                            ),
+                            onMessage: () => _openMessage(user),
                             onRemoveFollower: () => ref
                                 .read(feedControllerProvider.notifier)
                                 .removeFollower(user),

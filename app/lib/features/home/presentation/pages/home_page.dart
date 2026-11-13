@@ -156,6 +156,7 @@ class _HomePageState extends ConsumerState<HomePage> with ToastMixin {
                 child: HomeHeader(
                   onComingSoon: _comingSoon,
                   onOpenMenu: () => context.push('/menu'),
+                  onOpenMessages: () => context.push('/messages'),
                 ),
               ),
               SliverToBoxAdapter(

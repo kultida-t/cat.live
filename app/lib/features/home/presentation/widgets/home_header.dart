@@ -5,10 +5,16 @@ import '../../../../core/theme/app_colors.dart';
 
 /// หัวหน้าแรก: เมนู + ค้นหา + โลโก้ + แจ้งเตือน + ข้อความ (พื้น #FFFBF5 ไม่มีขอบล่าง)
 class HomeHeader extends StatelessWidget {
-  const HomeHeader({super.key, required this.onComingSoon, this.onOpenMenu});
+  const HomeHeader({
+    super.key,
+    required this.onComingSoon,
+    this.onOpenMenu,
+    this.onOpenMessages,
+  });
 
   final ValueChanged<String> onComingSoon;
   final VoidCallback? onOpenMenu;
+  final VoidCallback? onOpenMessages;
 
   @override
   Widget build(BuildContext context) {
@@ -48,7 +54,7 @@ class HomeHeader extends StatelessWidget {
               label: 'ข้อความ 3 รายการยังไม่อ่าน',
               icon: LucideIcons.messageCircleHeart,
               dotRight: 8,
-              onTap: () => onComingSoon('ข้อความ'),
+              onTap: onOpenMessages ?? () => onComingSoon('ข้อความ'),
             ),
           ],
         ),

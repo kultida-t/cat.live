@@ -13,6 +13,7 @@ class FeedHeader extends StatelessWidget {
     required this.onComingSoon,
     required this.onCreatePost,
     this.onOpenMenu,
+    this.onOpenMessages,
   });
 
   final FeedTab tab;
@@ -20,6 +21,7 @@ class FeedHeader extends StatelessWidget {
   final ValueChanged<String> onComingSoon;
   final VoidCallback onCreatePost;
   final VoidCallback? onOpenMenu;
+  final VoidCallback? onOpenMessages;
 
   static const _labels = {
     FeedTab.all: 'ทั้งหมด',
@@ -65,7 +67,7 @@ class FeedHeader extends StatelessWidget {
                 label: 'ข้อความ 3 รายการยังไม่อ่าน',
                 icon: LucideIcons.messageCircleHeart,
                 dotRight: 8,
-                onTap: () => onComingSoon('ข้อความ'),
+                onTap: onOpenMessages ?? () => onComingSoon('ข้อความ'),
               ),
             ],
           ),
