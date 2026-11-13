@@ -18,6 +18,7 @@ extract_devin_sessions.py — เพิ่มบทสนทนา Devin Desktop
 import argparse
 import datetime as dt
 import glob
+import html
 import json
 import os
 import re
@@ -34,6 +35,9 @@ DEDUP_SEC = 120
 
 SECRET_RE = re.compile(r"(sk_[A-Za-z0-9_\-]{8,}|Bearer\s+[A-Za-z0-9._\-]{8,}|(?i:(api[_-]?key|token|secret|password)[\"']?\s*[:=]\s*[\"']?)[^\s\"',}]{6,})")
 IMG_RE = re.compile(r"\[Image \d+: ([^\]]+)\]")
+IMG_PLACEHOLDER_RE = re.compile(r"\[Image \d+: [^\]]*\]\n?")
+TEMP_PATH_RE = re.compile(r"/var/folders/")
+QUOTED_RE = re.compile(r"<quoted_artifact\b[^>]*>\s*(?:<caption>.*?</caption>\s*)?<content>\s*(.*?)\s*</content>\s*</quoted_artifact>", re.DOTALL)
 MEDIA_DIR = os.path.join(os.environ.get("TMPDIR", "/tmp"), "devin-pasted-images")
 SKIP_MEDIA = {"1794563689194685000-6563-1-pasted.png", "1794563689198844000-6563-2-pasted.png"}  # ภาพที่มี API Key ห้ามส่ง
 
@@ -168,10 +172,12 @@ def merge(date, summaries_path, output):
         msgs = []
         for i, t in enumerate(ts_list):
             tid = tid_of(sid, i)
-            content = redact(t["content"])
+            media = [p.rsplit("/", 1)[-1] for p in IMG_RE.findall(t["content"])]
+            content = redact(html.unescape(QUOTED_RE.sub(lambda x: x.group(1), IMG_PLACEHOLDER_RE.sub("", t["content"]))).strip())
             redactions += content.count("[REDACTED]")
+            if TEMP_PATH_RE.search(content):
+                sys.exit(f"ยังพบ path ในเครื่องในข้อความ {tid} หยุดก่อนบันทึก")
             u = {"role": "user", "timestamp": iso(t["ts"]), "content": content}
-            media = [p.rsplit("/", 1)[-1] for p in IMG_RE.findall(content)]
             if media:
                 u["media"] = media
             msgs.append(u)
@@ -217,6 +223,16 @@ def merge(date, summaries_path, output):
     print(f"รวมเข้า {output}: session Devin {len(new_sessions)} (ข้อความ {sum(len(s['messages']) for s in new_sessions)}), session ทั้งหมด {len(doc['sessions'])}")
 
 
+def audit(output):
+    """ตรวจไฟล์ log แบบอ่านอย่างเดียว: path ในเครื่อง, รูปที่หาไม่เจอ, รูปที่ต้องข้าม, จำนวนรูปที่จะส่ง"""
+    doc = json.load(open(output, encoding="utf-8"))
+    leaks = [m["timestamp"] for s in doc["sessions"] for m in s["messages"] if TEMP_PATH_RE.search(m.get("content") or m.get("summary") or "")]
+    paths, skipped, missing = media_plan(output)
+    print(f"path ในเครื่องที่หลงในข้อความ: {len(leaks)} จุด")
+    print(f"รูปที่จะส่ง: {len(paths)} ไฟล์ | ข้ามเพราะมี key: {len(skipped)} | หาไม่เจอ: {len(missing)}")
+    return not leaks and not missing
+
+
 def media_plan(output):
     """รายการรูปของ Devin ใน log: คืน (ไฟล์ที่จะส่ง, ชื่อที่ข้ามเพราะมี key, ชื่อที่หาไฟล์ไม่เจอ)"""
     doc = json.load(open(output, encoding="utf-8"))
@@ -253,6 +269,7 @@ def main():
     p.add_argument("--dump", help="ขั้น 1: เขียนรายการรอบสนทนาไปไฟล์ JSON")
     p.add_argument("--summaries", help="ขั้น 3: ไฟล์สรุป {tid: สรุป}")
     p.add_argument("--output", help="ไฟล์ ai-log ปลายทาง (ค่าเริ่มต้น deliverables/<date>_ai-log.json)")
+    p.add_argument("--audit", action="store_true", help="ตรวจไฟล์ log อย่างเดียว ไม่แก้ไขและไม่ส่งอะไร")
     p.add_argument("--upload-media", action="store_true", help="แสดงรายการรูป Devin ใน log (ยังไม่ส่ง ถ้าไม่ใส่ --send-media)")
     p.add_argument("--send-media", action="store_true", help="ส่งรูปจริงไปยัง PERSONA_SERVER_URL ด้วย PERSONA_API_KEY")
     a = p.parse_args()
@@ -261,10 +278,12 @@ def main():
         dump(a.date, a.dump)
     if a.summaries:
         merge(a.date, a.summaries, output)
+    if a.audit:
+        audit(output)
     if a.upload_media or a.send_media:
         upload_media(output, a.send_media)
-    if not (a.dump or a.summaries or a.upload_media or a.send_media):
-        p.error("ต้องระบุ --dump, --summaries หรือ --upload-media")
+    if not (a.dump or a.summaries or a.audit or a.upload_media or a.send_media):
+        p.error("ต้องระบุ --dump, --summaries, --audit หรือ --upload-media")
 
 
 if __name__ == "__main__":
