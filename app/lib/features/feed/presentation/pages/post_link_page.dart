@@ -79,12 +79,40 @@ class _Content extends StatelessWidget {
           children: [
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 4),
-              child: Center(
-                child: Image.asset(
-                  'assets/brand/maew-logo.png',
-                  width: 123,
-                  height: 36,
-                  semanticLabel: 'แมว.live',
+              child: SizedBox(
+                height: 44,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    if (context.canPop())
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: Semantics(
+                          button: true,
+                          label: 'ย้อนกลับ',
+                          excludeSemantics: true,
+                          child: InkWell(
+                            onTap: () => context.pop(),
+                            borderRadius: BorderRadius.circular(12),
+                            child: const SizedBox(
+                              width: 44,
+                              height: 44,
+                              child: Icon(
+                                LucideIcons.chevronLeft,
+                                size: 24,
+                                color: AppColors.text,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    Image.asset(
+                      'assets/brand/maew-logo.png',
+                      width: 123,
+                      height: 36,
+                      semanticLabel: 'แมว.live',
+                    ),
+                  ],
                 ),
               ),
             ),

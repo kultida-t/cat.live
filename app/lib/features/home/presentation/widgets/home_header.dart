@@ -9,11 +9,13 @@ class HomeHeader extends StatelessWidget {
     super.key,
     required this.onComingSoon,
     this.onOpenMenu,
+    this.onOpenSearch,
     this.onOpenMessages,
   });
 
   final ValueChanged<String> onComingSoon;
   final VoidCallback? onOpenMenu;
+  final VoidCallback? onOpenSearch;
   final VoidCallback? onOpenMessages;
 
   @override
@@ -32,7 +34,7 @@ class HomeHeader extends StatelessWidget {
             _HeaderButton(
               label: 'ค้นหา',
               icon: LucideIcons.search,
-              onTap: () => onComingSoon('ค้นหา'),
+              onTap: onOpenSearch ?? () => onComingSoon('ค้นหา'),
             ),
             Expanded(
               child: Center(
