@@ -202,4 +202,23 @@ abstract final class AppColors {
   // คุยกับหมอด้วยเสียงเต็มจอ
   static const catAiVoiceBgStart = Color(0xFFF3FAF8);
   static const catAiVoiceEndCall = Color(0xFFE5484D);
+
+  // เลี้ยงขนมแมว (/treats)
+  static const treatsInk = Color(0xFF9A4A12);
+  static const treatsOrange = Color(0xFFC2410C);
+  static const treatsSelectedBorder = Color(0xFFCE946E);
+  static const treatsSelectedBg = Color(0xFFFCE7D7);
+  static const treatsStageStart = Color(0xFFFFFAF2);
+  static const treatsStageEnd = Color(0xFFFCE7D7);
+  static const treatsWarmSoft = Color(0xFFFFF6EE);
+  static const treatsWarmRule = Color(0xFFEFDCCB);
+  static const treatsQrErrorBg = Color(0xFFFDECEA);
+  static const treatsPackCream = Color(0xFFFFF9EB);
+  static const treatsPackFace = Color(0xFFFFF6E5);
+  static const treatsPackStroke = Color(0xFF644736);
+  static const treatsPackNose = Color(0xFFCC8F82);
+  static const treatsPackTuna = Color(0xFF76B9C8);
+  static const treatsPackCrunch = Color(0xFFE7AB72);
+  static const treatsPackFreeze = Color(0xFFA5C7B5);
+  static const treatsPackBox = Color(0xFFD7A0A2);
 }

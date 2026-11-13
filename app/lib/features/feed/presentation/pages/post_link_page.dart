@@ -58,14 +58,8 @@ class _Content extends StatelessWidget {
   final Post post;
 
   void _treat(BuildContext context) {
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        const SnackBar(
-          content: Text('เลี้ยงขนม — กำลังพัฒนา จะมาในเฟสถัดไป'),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+    final to = Uri.encodeQueryComponent(post.author.id);
+    context.push('/treats?to=$to');
   }
 
   @override

@@ -29,6 +29,10 @@ class _MenuPageState extends ConsumerState<MenuPage> with ToastMixin {
   }
 
   void _handleServiceTap(MenuExtraService service, bool isEn) {
+    if (service.action == MenuServiceAction.treats) {
+      context.push('/treats');
+      return;
+    }
     final title = MenuL10n.serviceTitle(service.action, isEn);
     if (service.isComingSoon) {
       showToast(

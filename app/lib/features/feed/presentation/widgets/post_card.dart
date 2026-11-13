@@ -21,6 +21,7 @@ class PostCard extends StatefulWidget {
     required this.onOpenComments,
     required this.onShare,
     required this.onComingSoon,
+    this.onOpenTreats,
   });
 
   final Post post;
@@ -31,6 +32,7 @@ class PostCard extends StatefulWidget {
   final ValueChanged<Post> onOpenComments;
   final ValueChanged<Post> onShare;
   final ValueChanged<String> onComingSoon;
+  final ValueChanged<Post>? onOpenTreats;
 
   @override
   State<PostCard> createState() => _PostCardState();
@@ -90,6 +92,9 @@ class _PostCardState extends State<PostCard> {
             onOpenComments: () => widget.onOpenComments(post),
             onShare: () => widget.onShare(post),
             onComingSoon: widget.onComingSoon,
+            onOpenTreats: widget.onOpenTreats == null
+                ? null
+                : () => widget.onOpenTreats!(post),
           ),
           _Body(post: post, onOpenComments: () => widget.onOpenComments(post)),
         ],
@@ -382,6 +387,7 @@ class _Actions extends StatelessWidget {
     required this.onOpenComments,
     required this.onShare,
     required this.onComingSoon,
+    this.onOpenTreats,
   });
 
   final Post post;
@@ -390,6 +396,7 @@ class _Actions extends StatelessWidget {
   final VoidCallback onOpenComments;
   final VoidCallback onShare;
   final ValueChanged<String> onComingSoon;
+  final VoidCallback? onOpenTreats;
 
   @override
   Widget build(BuildContext context) {
@@ -437,7 +444,7 @@ class _Actions extends StatelessWidget {
           if (!post.isOwn)
             _ActionButton(
               label: 'เลี้ยงขนม ${post.author.displayName}',
-              onTap: () => onComingSoon('เลี้ยงขนม'),
+              onTap: onOpenTreats ?? () => onComingSoon('เลี้ยงขนม'),
               icon: const Icon(
                 LucideIcons.gift,
                 size: 24,

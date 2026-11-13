@@ -21,6 +21,7 @@ class HomePostPreviewCard extends StatelessWidget {
     required this.onShare,
     required this.onOpenMenu,
     required this.onComingSoon,
+    this.onOpenTreats,
   });
 
   final Post post;
@@ -31,6 +32,7 @@ class HomePostPreviewCard extends StatelessWidget {
   final ValueChanged<Post> onShare;
   final ValueChanged<Post> onOpenMenu;
   final ValueChanged<String> onComingSoon;
+  final ValueChanged<Post>? onOpenTreats;
 
   @override
   Widget build(BuildContext context) {
@@ -75,6 +77,9 @@ class HomePostPreviewCard extends StatelessWidget {
             onOpenComments: () => onOpenComments(post),
             onShare: () => onShare(post),
             onComingSoon: onComingSoon,
+            onOpenTreats: onOpenTreats == null
+                ? null
+                : () => onOpenTreats!(post),
           ),
         ],
       ),
@@ -215,6 +220,7 @@ class _PreviewActions extends StatelessWidget {
     required this.onOpenComments,
     required this.onShare,
     required this.onComingSoon,
+    this.onOpenTreats,
   });
 
   final Post post;
@@ -223,6 +229,7 @@ class _PreviewActions extends StatelessWidget {
   final VoidCallback onOpenComments;
   final VoidCallback onShare;
   final ValueChanged<String> onComingSoon;
+  final VoidCallback? onOpenTreats;
 
   @override
   Widget build(BuildContext context) {
@@ -253,7 +260,7 @@ class _PreviewActions extends StatelessWidget {
         if (!post.isOwn)
           _ActionButton(
             label: 'เลี้ยงขนม ${post.author.displayName}',
-            onTap: () => onComingSoon('เลี้ยงขนม'),
+            onTap: onOpenTreats ?? () => onComingSoon('เลี้ยงขนม'),
             icon: const Icon(LucideIcons.gift, size: 22, color: AppColors.text),
           ),
         _ActionButton(

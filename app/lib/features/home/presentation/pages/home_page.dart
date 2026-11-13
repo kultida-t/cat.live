@@ -278,6 +278,9 @@ class _HomePageState extends ConsumerState<HomePage> with ToastMixin {
                   onShare: _openShare,
                   onOpenMenu: _openMenu,
                   onComingSoon: _comingSoon,
+                  onOpenTreats: (p) => context.push(
+                    '/treats?to=${Uri.encodeQueryComponent(p.author.id)}',
+                  ),
                 );
               },
             ),
