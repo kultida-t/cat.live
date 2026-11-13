@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import '../../domain/entities/cat_ai_data.dart';
 import 'cat_ai_remote_data_source.dart';
 
@@ -66,6 +68,42 @@ class MockCatAiDataSource implements CatAiRemoteDataSource {
       ],
     );
   }
+
+  @override
+  Future<CatAiImageReply> analyzeImage(Uint8List bytes, String question) async {
+    await Future<void>.delayed(const Duration(milliseconds: 900));
+    final now = DateTime.now();
+    return CatAiImageReply(
+      level: CatAiLevel.watchAtHome,
+      text:
+          'จากรูป ดูเหมือนมีขี้ตาเล็กน้อย ยังไม่เห็นรอยแดงหรือตาบวม น่าจะเป็นปกติครับ '
+          'ถ้าขี้ตาเปลี่ยนเป็นสีเหลืองเขียว หรือตาบวมแดง ควรพาไปพบสัตวแพทย์',
+      record: CatAiRecordSummary(
+        type: 'อาการป่วย',
+        topic: 'ขี้ตา (จากรูป)',
+        date: _thaiDate(now),
+        details: 'ขี้ตาสีน้ำตาลเล็กน้อย ไม่มีรอยแดง',
+      ),
+    );
+  }
+
+  static const _thaiMonths = [
+    'ม.ค.',
+    'ก.พ.',
+    'มี.ค.',
+    'เม.ย.',
+    'พ.ค.',
+    'มิ.ย.',
+    'ก.ค.',
+    'ส.ค.',
+    'ก.ย.',
+    'ต.ค.',
+    'พ.ย.',
+    'ธ.ค.',
+  ];
+
+  String _thaiDate(DateTime d) =>
+      '${d.day} ${_thaiMonths[d.month - 1]} ${d.year + 543}';
 
   @override
   Future<String> ask(String question, {required bool detailed}) async {
