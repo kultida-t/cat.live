@@ -200,6 +200,9 @@ class _CommunityPageState extends ConsumerState<CommunityPage> with ToastMixin {
                   onOpenComments: (p) => showCommentsSheet(context, p),
                   onShare: (p) => showShareSheet(context, p),
                   onComingSoon: _comingSoon,
+                  onOpenTreats: (p) => context.push(
+                    '/treats?to=${Uri.encodeQueryComponent(p.author.id)}',
+                  ),
                 ),
               ),
             },
@@ -241,6 +244,7 @@ class _FeedList extends ConsumerWidget {
     required this.onOpenComments,
     required this.onShare,
     required this.onComingSoon,
+    required this.onOpenTreats,
   });
 
   final FeedState state;
@@ -257,6 +261,7 @@ class _FeedList extends ConsumerWidget {
   final ValueChanged<Post> onOpenComments;
   final ValueChanged<Post> onShare;
   final ValueChanged<String> onComingSoon;
+  final ValueChanged<Post> onOpenTreats;
 
   PostCard _card(Post post) => PostCard(
     key: ValueKey(post.id),
@@ -268,6 +273,7 @@ class _FeedList extends ConsumerWidget {
     onOpenComments: onOpenComments,
     onShare: onShare,
     onComingSoon: onComingSoon,
+    onOpenTreats: onOpenTreats,
   );
 
   @override

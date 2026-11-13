@@ -91,6 +91,7 @@
 - **Repository:** GitLab `https://git.mrfox.store/Kultida.t/catlive.git` (remote `origin` — ใช้งานหลัก), GitHub `https://github.com/kultida-t/cat.live.git` (remote `github`)
 - **Local Path:** `/Users/kultida/Desktop/Projects/cat.live` (macOS)
 - **สถานะล่าสุด (2026-11-13):**
+  - ทำหน้าเลี้ยงขนมแมว (`/treats`, `/treats?to=<id>` — UI Mock Baseline) ตรงเว็บจริง ทั้งเลือกผู้รับ, พรีวิวแพ็ก 360°, ตะกร้า, ชำระเงิน QR, หน้าสำเร็จ และเชื่อมปุ่มเลี้ยงขนมจากหน้าแรก/ฟีด/ลิงก์โพสต์/เมนู (`flutter analyze` ผ่าน, `flutter test` 133 เคสผ่าน บน Android `emulator-5554` และ iOS `iPhone 17`) ล็อกลง `PROTECTED_SCREENS.md` (ข้อ 12) แล้ว พี่มาเต็มทดสอบผ่านครบ
   - ทำหน้าค้นหา (`/search` — UI Mock Baseline) ตรงเว็บจริง พร้อมเชื่อมปุ่ม 🔍 จากหน้าแรก และปุ่ม `<` ย้อนกลับใน `/p/:id` (`flutter analyze` ผ่าน, `flutter test` 126 เคสผ่าน บน Android `emulator-5554` และ iOS `iPhone 17`) ล็อกลง `PROTECTED_SCREENS.md` (ข้อ 11) แล้ว พร้อมอัปเดตกฎเช็กเว็บจริงก่อนลงมือทำและบิลด์ขึ้นเครื่องจำลองทุกรอบลง `AGENTS.md` และ `work-summary/SKILL.md`
   - ทำระบบข้อความแชท (`/messages`, `/messages/:id` — UI Mock Baseline) ตรงเว็บจริง พร้อมเชื่อมปุ่มข้อความจากหน้าแรก หน้าฟีด และหน้าผู้ติดตาม (`flutter analyze` ผ่าน, `flutter test` 117 เคสผ่าน บน Android `emulator-5554` และ iOS `iPhone 17`) ล็อกลง `PROTECTED_SCREENS.md` (ข้อ 10) แล้ว
   - ทำหน้าเมนูหลัก (`/menu` — UI Mock Baseline) ล็อกลง `PROTECTED_SCREENS.md` (ข้อ 9) แล้ว
@@ -124,4 +125,5 @@
 - **หน้าเมนูหลัก (`/menu`, `MenuPage`)** — ล็อก UI Mock Baseline เมื่อ 2026-11-13
 - **ระบบข้อความแชท (`/messages`, `/messages/:id`, `MessagesPage`, `ChatRoomPage`)** — ล็อก UI Mock Baseline เมื่อ 2026-11-13
 - **หน้าค้นหา (`/search`, `SearchPage`)** — ล็อก UI Mock Baseline เมื่อ 2026-11-13
+- **หน้าเลี้ยงขนมแมว (`/treats`, `TreatsPage`)** — ล็อก UI Mock Baseline เมื่อ 2026-11-13 (ข้อ 12)
 *(ดูขอบเขตไฟล์และข้อยกเว้นสำหรับเชื่อมหน้าอื่น/API จริงได้ที่ `PROTECTED_SCREENS.md`)*

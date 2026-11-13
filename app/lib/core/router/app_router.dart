@@ -18,6 +18,7 @@ import '../../features/my_cat/presentation/pages/my_cat_page.dart';
 import '../../features/nearby/presentation/pages/nearby_page.dart';
 import '../../features/search/presentation/pages/search_page.dart';
 import '../../features/shell/presentation/main_shell.dart';
+import '../../features/treats/presentation/pages/treats_page.dart';
 
 /// เส้นทางหลัก — แท็บล่าง 6 อัน แต่ละอันเก็บสถานะของตัวเอง (เลื่อนค้างไว้เมื่อสลับแท็บ)
 GoRouter createAppRouter() {
@@ -30,6 +31,11 @@ GoRouter createAppRouter() {
             PostLinkPage(postId: state.pathParameters['id']!),
       ),
       GoRoute(path: '/menu', builder: (_, _) => const MenuPage()),
+      GoRoute(
+        path: '/treats',
+        builder: (_, state) =>
+            TreatsPage(initialRecipientId: state.uri.queryParameters['to']),
+      ),
       GoRoute(path: '/messages', builder: (_, _) => const MessagesPage()),
       GoRoute(
         path: '/messages/:id',
