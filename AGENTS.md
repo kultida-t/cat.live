@@ -55,7 +55,8 @@
 1. **`work-summary` (`.agents/skills/work-summary/SKILL.md`):**
    - ใช้จับเวลาและสรุปงานราย Task (เริ่มทำ Task → ส่ง Manual Review Checklist ในแชท → ปิด Task → บันทึก Session Note บน Kanban และ Session Handoff — ไม่ต้องสร้างไฟล์หลักฐานหรือแคปภาพ Before/After ลง `deliverables/`/`screenshots/`)
 2. **`ai-conversation-daily-log` (`.agents/skills/ai-conversation-daily-log/SKILL.md`):**
-   - ใช้สร้างไฟล์สรุปประวัติการสนทนากับ AI รายวัน (`YYYY-MM-DD_ai-log.json`) โดยดึงข้อมูลจริงจาก IDE Transcript Store
+   - ใช้สร้างไฟล์สรุปประวัติการสนทนากับ AI รายวัน (`YYYY-MM-DD_ai-log.json`) โดยดึงข้อมูลจริงจาก IDE Transcript Store ทุกแหล่ง (Antigravity, Devin Desktop/CLI, Claude Code) ไม่ใช่แค่แหล่งเดียว
+   - ก่อนปิดไฟล์ต้องรายงานจำนวน session ที่พบในแต่ละแหล่ง และบอกถ้าแหล่งไหนไม่พบข้อมูล
 
 *(ถอด `mission-planning` และ `submission-evidence` ออกแล้วตั้งแต่ 2026-11-10 — ระบบส่งงานยกเลิกการทำ Mission; ถ้าวันไหนต้องใช้อีกเรียกคืนได้จาก Git history)*
 
@@ -63,7 +64,7 @@
 - **ห้ามสร้าง worklog ด้วยมือผ่าน `submit_logs` เด็ดขาด** — เคยเกิดเคสส่งเองแล้วเสียเหรียญ + ได้รายการซ้ำกับของระบบ การทำผิดจะเสียเหรียญอีกและต้องไปนั่งลบทีหลัง
 - วิธีที่ถูกต้องเพียงวิธีเดียว: สร้าง/อัปเดต `YYYY-MM-DD_ai-log.json` ด้วยสคริปต์ `.agents/skills/ai-conversation-daily-log/scripts/sync_prompt_log.py` (รองรับการเก็บชื่อรูปภาพแนบ `media` และอัปโหลดรูปแยกผ่าน `--upload-media`) แล้วอัปโหลดเข้า Portal ผ่าน **Remote MCP** `upload_prompt_log` (ส่ง `jsonContent` โดยตรง — ไม่ต้องใช้ `mcp-server.js` แล้ว)
 - **ค่าเริ่มต้นของโปรเจกต์ `cat.live` คือไม่สร้าง worklog อัตโนมัติ:** ให้รัน `sync_prompt_log.py` พร้อม `--no-auto-worklog` และส่ง `autoCreateWorklog: false` ตอนอัปโหลดเสมอ (ส่ง `true` เฉพาะเมื่อพี่มาเต็มสั่งให้สร้าง worklog อัตโนมัติ)
-- ก่อนอัปโหลดต้องผ่านกติกาของ skill: รวมครบทุกห้องแชทของวันนั้น (อ่าน `transcript_full.jsonl`), ลำดับเวลาถูกต้อง, gap accounting (อธิบายช่วงว่าง > 30 นาทีใน `limitations`), ชื่อ `project` ตรงกับ `list_my_apps`, และไม่ตัดข้อความ prompt ทิ้ง
+- ก่อนอัปโหลดต้องผ่านกติกาของ skill: รวมครบทุกห้องแชทของวันนั้นจากทุกแหล่ง (Antigravity อ่าน `transcript_full.jsonl` ส่วน Devin อ่านด้วย `scripts/extract_devin_sessions.py`), ลำดับเวลาถูกต้อง, gap accounting (อธิบายช่วงว่าง > 30 นาทีใน `limitations`), ชื่อ `project` ตรงกับ `list_my_apps`, และไม่ตัดข้อความ prompt ทิ้ง
 
 
 ### โครงสร้างโฟลเดอร์หลักฐานและสคริปต์ช่วยงาน
