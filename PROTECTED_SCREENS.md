@@ -154,3 +154,19 @@
   - `app/lib/features/feed/presentation/widgets/feed_header.dart`, `app/lib/features/feed/presentation/pages/community_page.dart` (เชื่อมปุ่ม `≡` → `/menu` ตามข้อยกเว้นข้อ 2)
 - **ขอบเขตที่ยังอนุญาตให้เชื่อมเพิ่มในเฟสถัดไป (ต้องไม่กระทบดีไซน์/พฤติกรรมเดิมที่ล็อกไว้):**
   - เชื่อมรายการบริการเสริมแต่ละตัวไปยังหน้าจริงเมื่อสร้างโมดูลนั้นเสร็จ (`/tag`, `/treats`, บริการรำลึก/ฌาปนกิจ/เว็บไซต์รำลึก, สั่งพิมพ์ Cat ID)
+
+### 10. ระบบข้อความแชท (`/messages`, `/messages/:id` — UI Mock Baseline) — ล็อกเมื่อ 2026-11-13
+- **ตรวจรับบน:** Android (`emulator-5554`), iOS (`iPhone 17`) และเทียบหน้าเว็บจริง `www.แมว.live/messages` และ `/messages/t-noon` แล้ว (`flutter analyze` ผ่าน, `flutter test` 117 เคสผ่าน บน `feat/messages`)
+- **หน้าจอที่ล็อก:**
+  - `/messages` (`MessagesPage` — ครบ 4 สถานะ `loading` skeleton / `empty` / `error` + ลองใหม่ / `content` พร้อมสลับภาษา ไทย/EN ผ่าน `MessagesL10n` + `appLocaleProvider`)
+  - **ส่วนหัวและแท็บ:** ปุ่ม `<`, หัวข้อ `ข้อความ`, ปุ่ม `จัดการข้อความ` (แผ่นล่างตัวกรอง `ยังไม่อ่าน`/`ยังไม่ตอบ`/`ปักหมุด`/`ปิดเสียง` + สวิตช์ตั้งค่า 3 ตัว), ปุ่ม `ข้อความใหม่` (แผ่นเลือกเพื่อนเปิดห้องแชท), 3 แท็บ (`หลัก`, `ทั่วไป`, `คำขอ (1)`), ช่องค้นหา
+  - **แถวโน้ตและรายการแชท:** แถวโน้ต 5 ใบ (`โน้ตของคุณ` แตะแก้ไขโน้ตได้), รายการแชท (จุดทึบบอกยังไม่อ่าน, แชทที่อ่านแล้วไม่แสดงจุด/ไอคอนกล้อง), ปุ่ม `···` เปิดแผ่นตัวเลือก (`ปักหมุดไว้บนสุด`, `ทำเครื่องหมายว่าอ่านแล้ว/ยังไม่อ่าน`, `ปิด/เปิดการแจ้งเตือน`, `ย้ายไปกล่องทั่วไป/หลัก`, `บล็อก` พร้อมแผ่นยืนยัน `บล็อก <ชื่อ>?`, `ลบแชท` พร้อมแผ่นยืนยัน `ลบแชทนี้?`)
+  - `/messages/:id` (`ChatRoomPage` — หัวห้องแชท + ปุ่มโทร 📞, แนะนำคู่สนทนากลางจอ, บับเบิ้ลสีพีชฝั่งเรา/สีขาวฝั่งคู่สนทนา, แถบพิมพ์ + อีโมจิ + ปุ่มส่งรูปจากคลังรูป/กล้องผ่าน `stripImageMetadata` และรูปตัวอย่าง)
+- **ไฟล์หลัก:**
+  - `app/lib/features/messages/` (domain / data / presentation)
+  - `app/test/features/messages/messages_page_test.dart`
+  - `app/lib/core/router/app_router.dart` (route `/messages`, `/messages/:id`)
+  - `app/lib/features/home/presentation/widgets/home_header.dart`, `app/lib/features/home/presentation/pages/home_page.dart` (เชื่อมปุ่ม 💬 → `/messages` ตามข้อยกเว้นข้อ 3)
+  - `app/lib/features/feed/presentation/widgets/feed_header.dart`, `app/lib/features/feed/presentation/pages/community_page.dart`, `app/lib/features/feed/presentation/pages/connections_page.dart` (เชื่อมปุ่ม 💬 / `ส่งข้อความ` → `/messages` ตามข้อยกเว้นข้อ 2)
+- **ขอบเขตที่ยังอนุญาตให้เชื่อมเพิ่มในเฟสถัดไป (ต้องไม่กระทบดีไซน์/พฤติกรรมเดิมที่ล็อกไว้):**
+  - เชื่อมรับ-ส่งข้อความ, อัปโหลดรูป, แจ้งเตือนเรียลไทม์, และโทรคุยผ่าน Backend API / WebSocket จริงใน Phase 2
