@@ -34,6 +34,8 @@ DEDUP_SEC = 120
 
 SECRET_RE = re.compile(r"(sk_[A-Za-z0-9_\-]{8,}|Bearer\s+[A-Za-z0-9._\-]{8,}|(?i:(api[_-]?key|token|secret|password)[\"']?\s*[:=]\s*[\"']?)[^\s\"',}]{6,})")
 IMG_RE = re.compile(r"\[Image \d+: ([^\]]+)\]")
+MEDIA_DIR = os.path.join(os.environ.get("TMPDIR", "/tmp"), "devin-pasted-images")
+SKIP_MEDIA = {"1794563689194685000-6563-1-pasted.png", "1794563689198844000-6563-2-pasted.png"}  # ภาพที่มี API Key ห้ามส่ง
 
 
 def day_window(date):
@@ -215,19 +217,54 @@ def merge(date, summaries_path, output):
     print(f"รวมเข้า {output}: session Devin {len(new_sessions)} (ข้อความ {sum(len(s['messages']) for s in new_sessions)}), session ทั้งหมด {len(doc['sessions'])}")
 
 
+def media_plan(output):
+    """รายการรูปของ Devin ใน log: คืน (ไฟล์ที่จะส่ง, ชื่อที่ข้ามเพราะมี key, ชื่อที่หาไฟล์ไม่เจอ)"""
+    doc = json.load(open(output, encoding="utf-8"))
+    names = sorted({n for s in doc["sessions"] if s["tool"] == TOOL for m in s["messages"] for n in m.get("media", [])})
+    skipped = [n for n in names if n in SKIP_MEDIA]
+    paths, missing = [], []
+    for n in names:
+        if n in SKIP_MEDIA:
+            continue
+        p = os.path.join(MEDIA_DIR, n)
+        (paths if os.path.exists(p) else missing).append(p)
+    return paths, skipped, missing
+
+
+def upload_media(output, send):
+    paths, skipped, missing = media_plan(output)
+    print(f"รูป Devin ที่จะส่ง {len(paths)} ไฟล์ ข้าม {len(skipped)} ไฟล์ (มี key ในภาพ) หาไม่เจอ {len(missing)} ไฟล์")
+    for p in paths:
+        print("  -", os.path.basename(p))
+    if not send:
+        print("ยังไม่ได้ส่ง (ทดสอบแบบแห้ง) ใช้ --send-media เพื่อส่งจริง")
+        return
+    server_url, api_key = os.environ.get("PERSONA_SERVER_URL"), os.environ.get("PERSONA_API_KEY")
+    if not (server_url and api_key):
+        sys.exit("ต้องตั้งค่าตัวแปร PERSONA_SERVER_URL และ PERSONA_API_KEY ในเครื่องก่อน")
+    from sync_prompt_log import upload_media_batches
+    res = upload_media_batches(server_url, api_key, paths)
+    print(f"ส่งรูปสำเร็จ {res['uploaded_count']} ไฟล์")
+
+
 def main():
     p = argparse.ArgumentParser(description="เพิ่มบทสนทนา Devin Desktop/CLI เข้า ai-log รายวัน")
     p.add_argument("--date", default=dt.datetime.now(BKK).strftime("%Y-%m-%d"))
     p.add_argument("--dump", help="ขั้น 1: เขียนรายการรอบสนทนาไปไฟล์ JSON")
     p.add_argument("--summaries", help="ขั้น 3: ไฟล์สรุป {tid: สรุป}")
     p.add_argument("--output", help="ไฟล์ ai-log ปลายทาง (ค่าเริ่มต้น deliverables/<date>_ai-log.json)")
+    p.add_argument("--upload-media", action="store_true", help="แสดงรายการรูป Devin ใน log (ยังไม่ส่ง ถ้าไม่ใส่ --send-media)")
+    p.add_argument("--send-media", action="store_true", help="ส่งรูปจริงไปยัง PERSONA_SERVER_URL ด้วย PERSONA_API_KEY")
     a = p.parse_args()
+    output = a.output or f"deliverables/{a.date}_ai-log.json"
     if a.dump:
         dump(a.date, a.dump)
     if a.summaries:
-        merge(a.date, a.summaries, a.output or f"deliverables/{a.date}_ai-log.json")
-    if not (a.dump or a.summaries):
-        p.error("ต้องระบุ --dump หรือ --summaries")
+        merge(a.date, a.summaries, output)
+    if a.upload_media or a.send_media:
+        upload_media(output, a.send_media)
+    if not (a.dump or a.summaries or a.upload_media or a.send_media):
+        p.error("ต้องระบุ --dump, --summaries หรือ --upload-media")
 
 
 if __name__ == "__main__":
