@@ -5,14 +5,6 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../../core/theme/app_colors.dart';
 import 'cat_ai_l10n.dart';
 
-/// รูปตัวอย่างที่ใช้ในเมนู + (ตัดจาก assets ของโปรเจกต์)
-const catAiSamplePhotoAssets = [
-  'assets/images/my_cat/mali-2.jpg',
-  'assets/images/my_cat/som-6.jpg',
-  'assets/images/my_cat/thua-3.jpg',
-  'assets/images/my_cat/thua-4.jpg',
-];
-
 /// เมนู + แบบป๊อปอัปลอยเหนือแถบพิมพ์ตามเว็บจริง: แนบรูป / ดูสีหน้า / เรื่องที่ถามบ่อย
 /// ฝั่งที่เรียกใช้เป็นคนซ่อนเมนูเองหลังผู้ใช้เลือกรายการ
 class CatAiAddMenu extends StatelessWidget {
@@ -20,14 +12,12 @@ class CatAiAddMenu extends StatelessWidget {
     super.key,
     required this.isEn,
     required this.onPickImage,
-    required this.onSampleImage,
     required this.onFaceCheck,
     required this.onQuestion,
   });
 
   final bool isEn;
   final ValueChanged<ImageSource> onPickImage;
-  final ValueChanged<String> onSampleImage;
   final VoidCallback onFaceCheck;
   final ValueChanged<String> onQuestion;
 
@@ -65,7 +55,6 @@ class CatAiAddMenu extends StatelessWidget {
                 title: CatAiL10n.pickGalleryTitle(isEn),
                 onTap: () => onPickImage(ImageSource.gallery),
               ),
-              _SamplePhotos(isEn: isEn, onSelect: onSampleImage),
               _MenuRow(
                 icon: LucideIcons.scanFace,
                 iconColor: AppColors.catAiScanInk,
@@ -181,49 +170,6 @@ class _MenuRow extends StatelessWidget {
             ),
           ),
         ),
-      ),
-    );
-  }
-}
-
-class _SamplePhotos extends StatelessWidget {
-  const _SamplePhotos({required this.isEn, required this.onSelect});
-
-  final bool isEn;
-  final ValueChanged<String> onSelect;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(10, 4, 10, 8),
-      child: Wrap(
-        crossAxisAlignment: WrapCrossAlignment.center,
-        spacing: 10,
-        runSpacing: 6,
-        children: [
-          Text(
-            CatAiL10n.samplePhotosLabel(isEn),
-            style: const TextStyle(fontSize: 12.5, color: AppColors.muted),
-          ),
-          for (final asset in catAiSamplePhotoAssets)
-            Semantics(
-              button: true,
-              label: CatAiL10n.samplePhotosLabel(isEn),
-              child: InkWell(
-                onTap: () => onSelect(asset),
-                borderRadius: BorderRadius.circular(10),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(10),
-                  child: Image.asset(
-                    asset,
-                    width: 34,
-                    height: 34,
-                    fit: BoxFit.cover,
-                  ),
-                ),
-              ),
-            ),
-        ],
       ),
     );
   }

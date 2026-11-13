@@ -1,5 +1,7 @@
+import 'dart:math' as math;
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
@@ -19,6 +21,7 @@ import '../widgets/cat_ai_input_bar.dart';
 import '../widgets/cat_ai_l10n.dart';
 import '../widgets/cat_ai_record_card.dart';
 import '../widgets/cat_ai_settings_sheet.dart';
+import 'cat_voice_call_page.dart';
 
 /// หน้า Cat AI (/cat-ai) — ถามอาการและการดูแลแมว (ตอนนี้เป็นข้อมูลตัวอย่าง)
 class CatAiPage extends ConsumerStatefulWidget {
@@ -96,13 +99,10 @@ class _CatAiPageState extends ConsumerState<CatAiPage> with ToastMixin {
     }
   }
 
-  Future<void> _attachSampleImage(String asset) async {
-    final data = await rootBundle.load(asset);
-    if (!mounted) return;
-    _attach(data.buffer.asUint8List());
+  void _toggleMenu() {
+    FocusManager.instance.primaryFocus?.unfocus();
+    setState(() => _menuOpen = !_menuOpen);
   }
-
-  void _toggleMenu() => setState(() => _menuOpen = !_menuOpen);
 
   void _closeMenu() {
     if (_menuOpen) setState(() => _menuOpen = false);
@@ -129,163 +129,170 @@ class _CatAiPageState extends ConsumerState<CatAiPage> with ToastMixin {
         state.messages.isEmpty &&
         !state.isSending;
 
-    return DecoratedBox(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          stops: [0, 0.38, 0.72, 1],
-          colors: [
-            AppColors.page,
-            AppColors.page,
-            AppColors.catAiGradientMid,
-            AppColors.catAiGradientEnd,
-          ],
+    return GestureDetector(
+      behavior: HitTestBehavior.translucent,
+      onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+      child: DecoratedBox(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            stops: [0, 0.38, 0.72, 1],
+            colors: [
+              AppColors.page,
+              AppColors.page,
+              AppColors.catAiGradientMid,
+              AppColors.catAiGradientEnd,
+            ],
+          ),
         ),
-      ),
-      child: SafeArea(
-        bottom: false,
-        child: Stack(
-          children: [
-            Column(
-              children: [
-                CatAiHeader(
-                  cat: hasCat ? cat : null,
-                  isEn: isEn,
-                  onOpenSettings: () => showCatAiSettingsSheet(context, isEn),
-                  onCycleCat: ctrl.nextCat,
-                  onEditCat: () => context.push('/cat-profile'),
-                  onOpenMyCat: () => goToShellTab(context, ref, 5),
-                ),
-                Expanded(
-                  child: Stack(
-                    children: [
-                      AnimatedSwitcher(
-                        duration: _kFade,
-                        layoutBuilder: (current, previous) => Stack(
-                          fit: StackFit.expand,
-                          children: [...previous, ?current],
-                        ),
-                        child: KeyedSubtree(
-                          key: ValueKey(_bodyKind(state, idle)),
-                          child: _buildBody(state, ctrl, isEn, idle),
-                        ),
-                      ),
-                      if (_menuOpen)
-                        Positioned.fill(
-                          child: GestureDetector(
-                            behavior: HitTestBehavior.opaque,
-                            onTap: _closeMenu,
+        child: SafeArea(
+          bottom: false,
+          child: Stack(
+            children: [
+              Column(
+                children: [
+                  CatAiHeader(
+                    cat: hasCat ? cat : null,
+                    isEn: isEn,
+                    onOpenSettings: () => showCatAiSettingsSheet(context, isEn),
+                    onCycleCat: ctrl.nextCat,
+                    onEditCat: () => context.push('/cat-profile'),
+                    onOpenMyCat: () => goToShellTab(context, ref, 5),
+                  ),
+                  Expanded(
+                    child: Stack(
+                      children: [
+                        AnimatedSwitcher(
+                          duration: _kFade,
+                          layoutBuilder: (current, previous) => Stack(
+                            fit: StackFit.expand,
+                            children: [...previous, ?current],
+                          ),
+                          child: KeyedSubtree(
+                            key: ValueKey(_bodyKind(state, idle)),
+                            child: _buildBody(state, ctrl, isEn, idle),
                           ),
                         ),
-                      Positioned(
-                        left: 16,
-                        right: 16,
-                        bottom: 10,
-                        child: IgnorePointer(
-                          ignoring: !_menuOpen,
-                          child: _Reveal(
-                            show: _menuOpen,
-                            animateSize: false,
-                            child: CatAiAddMenu(
-                              isEn: isEn,
-                              onPickImage: (source) {
-                                _closeMenu();
-                                _pickImage(source, isEn);
-                              },
-                              onSampleImage: (asset) {
-                                _closeMenu();
-                                _attachSampleImage(asset);
-                              },
-                              onFaceCheck: () {
-                                _closeMenu();
-                                showToast(CatAiL10n.comingSoon(isEn));
-                              },
-                              onQuestion: (q) {
-                                _closeMenu();
-                                _sendQuestion(q, isEn);
-                              },
+                        if (_menuOpen)
+                          Positioned.fill(
+                            child: GestureDetector(
+                              behavior: HitTestBehavior.opaque,
+                              onTap: _closeMenu,
+                            ),
+                          ),
+                        Positioned(
+                          left: 16,
+                          right: 16,
+                          bottom: 10,
+                          child: IgnorePointer(
+                            ignoring: !_menuOpen,
+                            child: _Reveal(
+                              show: _menuOpen,
+                              animateSize: false,
+                              child: CatAiAddMenu(
+                                isEn: isEn,
+                                onPickImage: (source) {
+                                  _closeMenu();
+                                  _pickImage(source, isEn);
+                                },
+                                onFaceCheck: () {
+                                  _closeMenu();
+                                  context.push('/cat-ai/face-check');
+                                },
+                                onQuestion: (q) {
+                                  _closeMenu();
+                                  _sendQuestion(q, isEn);
+                                },
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                ),
-                _Reveal(
-                  show: hasCat && showQuickQuestions,
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
-                    child: CatAiQuickQuestions(
-                      questions: cat?.quickQuestions ?? const [],
-                      isEn: isEn,
-                      onSelect: (q) => _sendQuestion(
-                        isEn ? q.questionEn : q.questionTh,
-                        isEn,
-                      ),
+                      ],
                     ),
                   ),
-                ),
-                _Reveal(
-                  show: hasCat && _pendingImage != null,
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
-                    child: _pendingImage == null
-                        ? const SizedBox.shrink()
-                        : CatAiAttachmentPreview(
-                            bytes: _pendingImage!,
-                            hint: CatAiL10n.attachmentHint(isEn),
-                            removeLabel: CatAiL10n.removeAttachmentLabel(isEn),
-                            onRemove: () =>
-                                setState(() => _pendingImage = null),
-                          ),
-                  ),
-                ),
-                if (hasCat)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: CatAiInputBar(
-                      controller: _input,
-                      catName: cat.name,
-                      isEn: isEn,
-                      isSending: state.isSending,
-                      hasMessages: state.messages.isNotEmpty,
-                      hasAttachment: _pendingImage != null,
-                      isMenuOpen: _menuOpen,
-                      onSubmit: () => _submitInput(isEn),
-                      onAdd: _toggleMenu,
-                      onFaceCheck: () => showToast(CatAiL10n.comingSoon(isEn)),
-                      onVoiceInput: () =>
-                          showToast(CatAiL10n.voiceNotReady(isEn)),
-                      onVetCall: () => showToast(CatAiL10n.comingSoon(isEn)),
-                    ),
-                  ),
-                // ซ่อนข้อความแต่ยังกินพื้นที่เดิม เพื่อให้ระยะห่างกับเมนูล่างไม่เปลี่ยน
-                AnimatedOpacity(
-                  opacity: idle ? 1 : 0,
-                  duration: _kFade,
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-                    child: Text(
-                      CatAiL10n.disclaimer(isEn),
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        fontSize: 11,
-                        color: AppColors.muted,
+                  _Reveal(
+                    show: hasCat && showQuickQuestions,
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+                      child: CatAiQuickQuestions(
+                        questions: cat?.quickQuestions ?? const [],
+                        isEn: isEn,
+                        onSelect: (q) => _sendQuestion(
+                          isEn ? q.questionEn : q.questionTh,
+                          isEn,
+                        ),
                       ),
                     ),
                   ),
-                ),
-              ],
-            ),
-            if (toastMessage != null)
-              Positioned(
-                left: 0,
-                right: 0,
-                bottom: 78,
-                child: Center(child: ToastPill(message: toastMessage!)),
+                  _Reveal(
+                    show: hasCat && _pendingImage != null,
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+                      child: _pendingImage == null
+                          ? const SizedBox.shrink()
+                          : CatAiAttachmentPreview(
+                              bytes: _pendingImage!,
+                              hint: CatAiL10n.attachmentHint(isEn),
+                              removeLabel: CatAiL10n.removeAttachmentLabel(
+                                isEn,
+                              ),
+                              onRemove: () =>
+                                  setState(() => _pendingImage = null),
+                            ),
+                    ),
+                  ),
+                  if (hasCat)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: CatAiInputBar(
+                        controller: _input,
+                        catName: cat.name,
+                        isEn: isEn,
+                        isSending: state.isSending,
+                        hasMessages: state.messages.isNotEmpty,
+                        hasAttachment: _pendingImage != null,
+                        isMenuOpen: _menuOpen,
+                        onSubmit: () => _submitInput(isEn),
+                        onAdd: _toggleMenu,
+                        onFaceCheck: () => context.push('/cat-ai/face-check'),
+                        onVoiceInput: () =>
+                            showToast(CatAiL10n.voiceNotReady(isEn)),
+                        onVetCall: () => showCatVoiceCallPage(
+                          context,
+                          catName: cat.name,
+                          catPhoto: cat.avatarAsset,
+                          isEn: isEn,
+                        ),
+                      ),
+                    ),
+                  // ซ่อนข้อความแต่ยังกินพื้นที่เดิม เพื่อให้ระยะห่างกับเมนูล่างไม่เปลี่ยน
+                  AnimatedOpacity(
+                    opacity: idle ? 1 : 0,
+                    duration: _kFade,
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                      child: Text(
+                        CatAiL10n.disclaimer(isEn),
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: AppColors.muted,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-          ],
+              if (toastMessage != null)
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: 78,
+                  child: Center(child: ToastPill(message: toastMessage!)),
+                ),
+            ],
+          ),
         ),
       ),
     );
@@ -418,10 +425,7 @@ class _ChatList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // ข้อความล่าสุดอยู่ล่างสุด จึงจัดลำดับกลับด้านแล้วใช้ reverse
-    final items = [
-      if (isSending) const CatAiMessage(text: '…', isFromUser: false),
-      ...messages.reversed,
-    ];
+    final count = messages.length + (isSending ? 1 : 0);
     // การ์ดคำเตือนอยู่บนสุดของแชทเสมอ (ไม่เลื่อนตามข้อความ) เหมือนเว็บจริง
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -450,20 +454,117 @@ class _ChatList extends StatelessWidget {
             },
             child: ListView.builder(
               reverse: true,
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
               padding: const EdgeInsets.fromLTRB(16, 20, 16, 28),
-              itemCount: items.length,
-              itemBuilder: (_, i) => _Bubble(
-                message: items[i],
-                isEn: isEn,
-                animateIn: i < 2,
-                onFeedback: onFeedback,
-                onConfirmRecord: onConfirmRecord,
-                onEditRecord: onEditRecord,
-              ),
+              itemCount: count,
+              itemBuilder: (_, i) {
+                if (isSending && i == 0) {
+                  return const _TypingBubble();
+                }
+                final msg =
+                    messages[messages.length - 1 - (isSending ? i - 1 : i)];
+                return _Bubble(
+                  message: msg,
+                  isEn: isEn,
+                  animateIn: i < 2,
+                  onFeedback: onFeedback,
+                  onConfirmRecord: onConfirmRecord,
+                  onEditRecord: onEditRecord,
+                );
+              },
             ),
           ),
         ),
       ],
+    );
+  }
+}
+
+/// แถบจุด 3 จุดเด้งสลับจังหวะระหว่างรอ Cat AI ตอบ (ตรงกับเว็บจริง)
+class _TypingBubble extends StatefulWidget {
+  const _TypingBubble();
+
+  @override
+  State<_TypingBubble> createState() => _TypingBubbleState();
+}
+
+class _TypingBubbleState extends State<_TypingBubble>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 900),
+  )..repeat();
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final reduce = MediaQuery.maybeDisableAnimationsOf(context) ?? false;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Row(
+        children: [
+          Container(
+            width: 32,
+            height: 32,
+            decoration: const BoxDecoration(
+              color: AppColors.btn,
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              LucideIcons.sparkles,
+              size: 16,
+              color: AppColors.ink,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+            decoration: BoxDecoration(
+              color: AppColors.card,
+              borderRadius: BorderRadius.circular(999),
+              border: Border.all(color: AppColors.line),
+            ),
+            child: AnimatedBuilder(
+              animation: _ctrl,
+              builder: (_, _) => Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  for (var i = 0; i < 3; i++) ...[
+                    if (i > 0) const SizedBox(width: 4),
+                    Transform.translate(
+                      offset: Offset(
+                        0,
+                        reduce
+                            ? 0
+                            : -3.5 *
+                                  math.max(
+                                    0.0,
+                                    math.sin(
+                                      (_ctrl.value * 2 * math.pi) - (i * 0.8),
+                                    ),
+                                  ),
+                      ),
+                      child: Container(
+                        width: 6,
+                        height: 6,
+                        decoration: const BoxDecoration(
+                          color: AppColors.ink,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -692,21 +793,19 @@ class _Bubble extends StatelessWidget {
                           color: AppColors.text,
                         ),
                       ),
-                      if (message.text != '…') ...[
-                        const SizedBox(height: 6),
-                        Row(
-                          children: [
-                            _FeedbackButton(
-                              icon: LucideIcons.thumbsUp,
-                              onTap: onFeedback,
-                            ),
-                            _FeedbackButton(
-                              icon: LucideIcons.thumbsDown,
-                              onTap: onFeedback,
-                            ),
-                          ],
-                        ),
-                      ],
+                      const SizedBox(height: 6),
+                      Row(
+                        children: [
+                          _FeedbackButton(
+                            icon: LucideIcons.thumbsUp,
+                            onTap: onFeedback,
+                          ),
+                          _FeedbackButton(
+                            icon: LucideIcons.thumbsDown,
+                            onTap: onFeedback,
+                          ),
+                        ],
+                      ),
                     ],
                   ),
                 ),

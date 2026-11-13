@@ -1,6 +1,7 @@
 import 'package:go_router/go_router.dart';
 
 import '../../features/cat_ai/presentation/pages/cat_ai_page.dart';
+import '../../features/cat_ai/presentation/pages/cat_face_check_page.dart';
 import '../../features/feed/presentation/pages/community_page.dart';
 import '../../features/feed/presentation/pages/connections_page.dart';
 import '../../features/feed/presentation/pages/guidelines_page.dart';
@@ -25,6 +26,10 @@ GoRouter createAppRouter() {
             PostLinkPage(postId: state.pathParameters['id']!),
       ),
       GoRoute(path: '/cat-profile', builder: (_, _) => const CatIdPage()),
+      GoRoute(
+        path: '/cat-ai/face-check',
+        builder: (_, _) => const CatFaceCheckPage(),
+      ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, shell) => MainShell(navigationShell: shell),
         branches: [
@@ -49,10 +54,7 @@ GoRouter createAppRouter() {
           ),
           StatefulShellBranch(
             routes: [
-              GoRoute(
-                path: '/nearby',
-                builder: (_, _) => const NearbyPage(),
-              ),
+              GoRoute(path: '/nearby', builder: (_, _) => const NearbyPage()),
             ],
           ),
           StatefulShellBranch(
@@ -62,10 +64,7 @@ GoRouter createAppRouter() {
           ),
           StatefulShellBranch(
             routes: [
-              GoRoute(
-                path: '/help',
-                builder: (_, _) => const HelpPage(),
-              ),
+              GoRoute(path: '/help', builder: (_, _) => const HelpPage()),
             ],
           ),
           StatefulShellBranch(

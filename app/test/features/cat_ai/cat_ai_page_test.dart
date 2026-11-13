@@ -1,12 +1,13 @@
-import 'dart:typed_data';
-
 import 'package:catlive/core/config/app_locale.dart';
+import 'package:catlive/core/router/app_router.dart';
 import 'package:catlive/features/cat_ai/data/datasources/cat_ai_remote_data_source.dart';
 import 'package:catlive/features/cat_ai/data/datasources/mock_cat_ai_data_source.dart';
 import 'package:catlive/features/cat_ai/domain/entities/cat_ai_data.dart';
 import 'package:catlive/features/cat_ai/presentation/pages/cat_ai_page.dart';
+import 'package:catlive/features/cat_ai/presentation/pages/cat_face_check_page.dart';
 import 'package:catlive/features/cat_ai/presentation/providers/cat_ai_providers.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -48,6 +49,18 @@ Widget _wrap(CatAiRemoteDataSource dataSource) {
       appLocaleProvider.overrideWith(() => _TestLocaleNotifier()),
     ],
     child: const MaterialApp(home: Scaffold(body: CatAiPage())),
+  );
+}
+
+Widget _wrapRouter(CatAiRemoteDataSource dataSource) {
+  final router = createAppRouter();
+  router.go('/cat-ai');
+  return ProviderScope(
+    overrides: [
+      catAiDataSourceProvider.overrideWithValue(dataSource),
+      appLocaleProvider.overrideWith(() => _TestLocaleNotifier()),
+    ],
+    child: MaterialApp.router(routerConfig: router),
   );
 }
 
@@ -199,19 +212,106 @@ void main() {
     expect(find.textContaining('ข้อมูลตัวอย่าง'), findsOneWidget);
   });
 
-  testWidgets('เมนู + ปุ่มดูสีหน้ายังขึ้นข้อความกำลังพัฒนา', (tester) async {
+  testWidgets('เมนู + ปุ่มดูสีหน้าเปิดหน้า /cat-ai/face-check ได้', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(390, 844));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await tester.pumpWidget(_wrapRouter(_FakeCatAiDataSource()));
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pump(const Duration(milliseconds: 300));
+
+    await _openAddMenu(tester);
+    await tester.tap(find.text('ดูสีหน้า'));
+    for (var i = 0; i < 6; i++) {
+      await tester.pump(const Duration(milliseconds: 150));
+    }
+
+    expect(find.text('เจ็บตรงไหน ดูจากสีหน้าได้'), findsOneWidget);
+    expect(find.text('ลองด้วยรูปตัวอย่าง'), findsNothing);
+    expect(find.text('เลือกจากคลังรูป'), findsOneWidget);
+  });
+
+  testWidgets('หน้าดูสีหน้า: ยืนยันรูป → สแกน → ผล 5 จุด → บันทึกผล', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(390, 844));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final sampleBytes = (await rootBundle.load(
+      'assets/images/my_cat/thua-4.jpg',
+    )).buffer.asUint8List();
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          catAiDataSourceProvider.overrideWithValue(_FakeCatAiDataSource()),
+          appLocaleProvider.overrideWith(() => _TestLocaleNotifier()),
+        ],
+        child: MaterialApp(
+          home: CatFaceCheckPage(initialImageBytes: sampleBytes),
+        ),
+      ),
+    );
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(find.text('ใช้รูปนี้ตรวจไหม?'), findsOneWidget);
+
+    await tester.tap(find.text('เริ่มตรวจด้วยรูปนี้'));
+    await tester.pump(const Duration(milliseconds: 200));
+    expect(find.textContaining('Cat AI กำลังดูสีหน้า'), findsOneWidget);
+
+    for (var i = 0; i < 12; i++) {
+      await tester.pump(const Duration(milliseconds: 400));
+    }
+    expect(find.text('5 จุดบนใบหน้า'), findsOneWidget);
+    expect(find.text('มีจุดที่ควรสังเกตเล็กน้อย'), findsOneWidget);
+    expect(find.text('ควรสังเกต'), findsOneWidget);
+
+    await tester.tap(find.text('บันทึกผล'));
+    await tester.pump(const Duration(milliseconds: 200));
+    expect(find.text('บันทึกแล้ว'), findsOneWidget);
+  });
+
+  testWidgets('หน้าคุยกับหมอเสียงเต็มจอ: ปิด/เปิดไมค์ ส่งตัวอย่าง และวางสาย', (
+    tester,
+  ) async {
     await tester.binding.setSurfaceSize(const Size(390, 844));
     addTearDown(() => tester.binding.setSurfaceSize(null));
     await tester.pumpWidget(_wrap(_FakeCatAiDataSource()));
     await tester.pump(const Duration(milliseconds: 500));
     await tester.pump(const Duration(milliseconds: 300));
 
-    await _openAddMenu(tester);
-    await tester.tap(find.text('ดูสีหน้า'));
-    await tester.pump(const Duration(milliseconds: 500));
-    await tester.pump(const Duration(milliseconds: 300));
+    await tester.tap(find.bySemanticsLabel('คุยกับหมอด้วยเสียง'));
+    for (var i = 0; i < 5; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
 
-    expect(find.text('ฟีเจอร์นี้กำลังพัฒนา'), findsOneWidget);
+    expect(find.text('คุยกับหมอ Cat AI'), findsOneWidget);
+    expect(find.text('หมอกำลังตอบ'), findsOneWidget);
+
+    // รอจนจบคำทักทายแล้วเข้าสู่โหมดกำลังฟัง
+    await tester.pump(const Duration(milliseconds: 2300));
+    expect(find.text('กำลังฟัง… เล่าอาการได้เลย'), findsOneWidget);
+
+    await tester.tap(find.bySemanticsLabel('ปิดไมค์'));
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(find.text('ปิดไมค์อยู่'), findsOneWidget);
+
+    await tester.tap(find.bySemanticsLabel('เปิดไมค์'));
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(find.text('กำลังฟัง… เล่าอาการได้เลย'), findsOneWidget);
+
+    await tester.tap(find.bySemanticsLabel('ส่ง'));
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(find.text('กำลังคิด…'), findsOneWidget);
+
+    await tester.pump(const Duration(milliseconds: 1000));
+    expect(find.text('หมอกำลังตอบ'), findsOneWidget);
+    expect(find.textContaining('ไขมันพอกตับ'), findsOneWidget);
+
+    await tester.tap(find.bySemanticsLabel('วางสาย'));
+    for (var i = 0; i < 5; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    expect(find.text('คุยกับหมอ Cat AI'), findsNothing);
   });
 
   testWidgets('แผ่นตั้งค่าเปลี่ยนรูปแบบคำตอบและล้างการสนทนาได้', (

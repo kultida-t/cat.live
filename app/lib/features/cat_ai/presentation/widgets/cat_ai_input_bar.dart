@@ -207,11 +207,14 @@ class CatAiInputBar extends StatelessWidget {
                 iconColor: AppColors.text,
                 onTap: onAdd,
               ),
+              const SizedBox(width: 10),
               Expanded(
                 child: TextField(
                   controller: controller,
                   enabled: !isSending,
                   textInputAction: TextInputAction.send,
+                  onTapOutside: (_) =>
+                      FocusManager.instance.primaryFocus?.unfocus(),
                   onSubmitted: (_) {
                     if (canSend) onSubmit();
                   },

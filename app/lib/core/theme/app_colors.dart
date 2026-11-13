@@ -186,4 +186,20 @@ abstract final class AppColors {
   static const catAiLevelSafeBg = Color(0xFFE6F7F3);
   static const catAiLevelSafeBorder = Color(0xFF7CCBBB);
   static const catAiLevelSafeInk = Color(0xFF0B5E58);
+
+  // ดูสีหน้า (/cat-ai/face-check)
+  static const catAiFaceBgEnd = Color(0xFFF3EEFC);
+  static const catAiFacePurple = Color(0xFF8B6FD6);
+  static const catAiFaceTrack = Color(0xFFEAE2F7);
+  static const catAiFaceRingActive = Color(0xFFC9B8F0);
+  static const catAiFaceGreen = Color(0xFF2F8F5B);
+  static const catAiFaceOkBg = Color(0xFFE4F4E8);
+  static const catAiFaceOkInk = Color(0xFF2F7A4A);
+  static const catAiFaceWatchBg = Color(0xFFFFF1D6);
+  static const catAiFaceWatchDot = Color(0xFFE8920C);
+  static const catAiFaceWatchInk = Color(0xFFA15C07);
+
+  // คุยกับหมอด้วยเสียงเต็มจอ
+  static const catAiVoiceBgStart = Color(0xFFF3FAF8);
+  static const catAiVoiceEndCall = Color(0xFFE5484D);
 }
