@@ -7,6 +7,8 @@ import '../../../../core/config/app_locale.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/error_view.dart';
 import '../../../../core/widgets/toast_pill.dart';
+import '../../../feature_flags/domain/entities/feature_flags_data.dart';
+import '../../../feature_flags/presentation/providers/feature_flags_controller.dart';
 import '../../domain/entities/menu_data.dart';
 import '../providers/menu_controller.dart';
 import '../widgets/menu_l10n.dart';
@@ -35,6 +37,18 @@ class _MenuPageState extends ConsumerState<MenuPage> with ToastMixin {
       return;
     }
     if (service.action == MenuServiceAction.treats) {
+      final treatsEnabled = ref.read(
+        isFeatureEnabledProvider(AppFeatureFlag.treatsGifting),
+      );
+      if (!treatsEnabled) {
+        final title = MenuL10n.serviceTitle(service.action, isEn);
+        showToast(
+          isEn
+              ? '$title — Disabled in Phase 1 (toggle in Settings > Feature Flags)'
+              : '$title — ปิดไว้ใน Phase 1 (เปิดทดสอบได้ที่ ตั้งค่า > Feature Flags)',
+        );
+        return;
+      }
       context.push('/treats');
       return;
     }
