@@ -564,10 +564,10 @@ class _GuestMyCatView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(28),
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(22, 16, 22, 28),
         child: Container(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.all(22),
           decoration: BoxDecoration(
             color: AppColors.card,
             borderRadius: BorderRadius.circular(24),
@@ -592,11 +592,11 @@ class _GuestMyCatView extends StatelessWidget {
               const SizedBox(height: 16),
               Text(
                 isEn
-                    ? 'Sign in to manage your ${species.petNoun(true).toLowerCase()} profiles'
-                    : 'เข้าสู่ระบบเพื่อดูแลโปรไฟล์${species.petNoun(false)}ของคุณ',
+                    ? 'Manage your ${species.petNoun(true).toLowerCase()} profiles'
+                    : 'ดูแลโปรไฟล์${species.petNoun(false)}ของคุณ',
                 textAlign: TextAlign.center,
                 style: const TextStyle(
-                  fontSize: 17,
+                  fontSize: 18,
                   fontWeight: FontWeight.w800,
                   color: AppColors.text,
                 ),
@@ -604,13 +604,46 @@ class _GuestMyCatView extends StatelessWidget {
               const SizedBox(height: 8),
               Text(
                 isEn
-                    ? 'Save daily care logs, vaccine records, weight charts, and your Cat ID QR.'
-                    : 'บันทึกการดูแลประจำวัน สมุดวัคซีน กราฟน้ำหนัก และสร้าง Cat ID QR ประจำตัว',
+                    ? 'Sign in to track daily care, vaccine records,\nweight charts, and your Cat ID QR.'
+                    : 'บันทึกดูแลประจำวัน สมุดวัคซีน กราฟน้ำหนัก\nและสร้าง Cat ID QR ประจำตัวได้ครบในที่เดียว',
                 textAlign: TextAlign.center,
                 style: const TextStyle(
-                  fontSize: 13.5,
+                  fontSize: 13,
                   color: AppColors.muted,
                   height: 1.45,
+                ),
+              ),
+              const SizedBox(height: 18),
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: AppColors.page,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppColors.line),
+                ),
+                child: Column(
+                  children: [
+                    _GuestFeatureBullet(
+                      icon: LucideIcons.clipboardCheck,
+                      title: isEn
+                          ? 'Daily care checklist'
+                          : 'เช็กลิสต์ดูแลประจำวัน (อาหาร/น้ำ/ยา)',
+                    ),
+                    const SizedBox(height: 10),
+                    _GuestFeatureBullet(
+                      icon: LucideIcons.bookHeart,
+                      title: isEn
+                          ? 'Digital vaccine & health book'
+                          : 'สมุดสุขภาพ วัคซีน และกราฟน้ำหนัก',
+                    ),
+                    const SizedBox(height: 10),
+                    _GuestFeatureBullet(
+                      icon: LucideIcons.qrCode,
+                      title: isEn
+                          ? 'Cat ID QR for lost-pet safety'
+                          : 'สร้าง Cat ID QR สำหรับสแกนเมื่อพลัดหลง',
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(height: 20),
@@ -627,7 +660,7 @@ class _GuestMyCatView extends StatelessWidget {
                   child: Text(
                     isEn ? 'Sign in / Register' : 'เข้าสู่ระบบ / สมัครสมาชิก',
                     style: const TextStyle(
-                      fontSize: 14.5,
+                      fontSize: 15,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
@@ -637,6 +670,33 @@ class _GuestMyCatView extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _GuestFeatureBullet extends StatelessWidget {
+  const _GuestFeatureBullet({required this.icon, required this.title});
+
+  final IconData icon;
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(icon, size: 17, color: AppColors.ownerTeal),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text(
+            title,
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: AppColors.text,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

@@ -6,9 +6,12 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/config/app_locale.dart';
+import '../../../../core/config/pet_species_config.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/error_view.dart';
 import '../../../../core/widgets/toast_pill.dart';
+import '../../../auth/presentation/providers/auth_controller.dart';
+import '../../../auth/presentation/widgets/guest_auth_sheet.dart';
 import '../../domain/entities/help_data.dart';
 import '../providers/help_controller.dart';
 import '../widgets/help_category_chips.dart';
@@ -56,13 +59,27 @@ class _HelpPageState extends ConsumerState<HelpPage> with ToastMixin {
     }
   }
 
+  bool _guardGuest(String actionTh, String actionEn) {
+    if (!ref.read(authControllerProvider).isGuest) return false;
+    final isEn = ref.read(appLocaleProvider) == 'en';
+    showGuestAuthSheet(
+      context,
+      species: ref.read(petSpeciesConfigProvider),
+      isEn: isEn,
+      actionName: isEn ? actionEn : actionTh,
+    );
+    return true;
+  }
+
   Future<void> _handleSendClue(HelpPost post, bool isEn) async {
+    if (_guardGuest('แจ้งเบาะแส', 'Send a clue')) return;
     final ok = await ref.read(helpControllerProvider.notifier).sendClue(post.id);
     if (!mounted || !ok) return;
     showToast(HelpL10n.clueSentToast(post.title(isEn), isEn));
   }
 
   void _handlePrimaryAction(HelpPost post, bool isEn) {
+    if (_guardGuest('ติดต่อหรือส่งคำขอ', 'Contact or request')) return;
     final msg = switch (post.category) {
       HelpCategory.found => isEn
           ? 'Opened chat with ${post.ownerName(isEn)} to verify cat'
@@ -109,7 +126,13 @@ class _HelpPageState extends ConsumerState<HelpPage> with ToastMixin {
                 _HelpMainTabs(
                   activeTab: state.mainTab,
                   isEn: isEn,
-                  onSelect: ctrl.selectMainTab,
+                  onSelect: (tab) {
+                    if (tab == HelpMainTab.myPosts &&
+                        _guardGuest('ประกาศของฉัน', 'My posts')) {
+                      return;
+                    }
+                    ctrl.selectMainTab(tab);
+                  },
                 ),
                 Expanded(
                   child: _buildBody(
@@ -157,12 +180,17 @@ class _HelpPageState extends ConsumerState<HelpPage> with ToastMixin {
                   const Spacer(),
                   _CreatePostFab(
                     label: HelpL10n.createPostButton(isEn),
-                    onTap: () => showCreateHelpPostFlow(
-                      context: context,
-                      isEn: isEn,
-                      onSubmit: ctrl.createPost,
-                      onToast: showToast,
-                    ),
+                    onTap: () {
+                      if (_guardGuest('สร้างประกาศ', 'Create announcement')) {
+                        return;
+                      }
+                      showCreateHelpPostFlow(
+                        context: context,
+                        isEn: isEn,
+                        onSubmit: ctrl.createPost,
+                        onToast: showToast,
+                      );
+                    },
                   ),
                 ],
               ),

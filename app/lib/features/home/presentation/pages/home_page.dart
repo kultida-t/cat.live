@@ -297,6 +297,9 @@ class _HomePageState extends ConsumerState<HomePage> with ToastMixin {
     HomeState state,
     HomeController controller,
   ) {
+    final isGuest = ref.read(authControllerProvider).isGuest;
+    final isEn = ref.read(appLocaleProvider) == 'en';
+    final species = ref.read(petSpeciesConfigProvider);
     switch (state.updatesStatus) {
       case HomeUpdatesStatus.loading:
         return const [SliverToBoxAdapter(child: HomeUpdatesSkeleton())];
@@ -324,15 +327,59 @@ class _HomePageState extends ConsumerState<HomePage> with ToastMixin {
                 return HomePostPreviewCard(
                   post: post,
                   onOpenFeed: () => context.go('/community'),
-                  onToggleLike: (p) => _run(() => controller.toggleLike(p)),
-                  onToggleSave: _toggleSave,
-                  onOpenComments: _openComments,
+                  onToggleLike: (p) {
+                    if (isGuest) {
+                      showGuestAuthSheet(
+                        context,
+                        species: species,
+                        isEn: isEn,
+                        actionName: isEn ? 'Like posts' : 'ถูกใจโพสต์',
+                      );
+                      return;
+                    }
+                    _run(() => controller.toggleLike(p));
+                  },
+                  onToggleSave: (p) {
+                    if (isGuest) {
+                      showGuestAuthSheet(
+                        context,
+                        species: species,
+                        isEn: isEn,
+                        actionName: isEn ? 'Save posts' : 'บันทึกโพสต์',
+                      );
+                      return;
+                    }
+                    _toggleSave(p);
+                  },
+                  onOpenComments: (p) {
+                    if (isGuest) {
+                      showGuestAuthSheet(
+                        context,
+                        species: species,
+                        isEn: isEn,
+                        actionName: isEn ? 'Comments' : 'แสดงความคิดเห็น',
+                      );
+                      return;
+                    }
+                    _openComments(p);
+                  },
                   onShare: _openShare,
                   onOpenMenu: _openMenu,
                   onComingSoon: _comingSoon,
-                  onOpenTreats: (p) => context.push(
-                    '/treats?to=${Uri.encodeQueryComponent(p.author.id)}',
-                  ),
+                  onOpenTreats: (p) {
+                    if (isGuest) {
+                      showGuestAuthSheet(
+                        context,
+                        species: species,
+                        isEn: isEn,
+                        actionName: isEn ? 'Send treats' : 'เลี้ยงขนม',
+                      );
+                      return;
+                    }
+                    context.push(
+                      '/treats?to=${Uri.encodeQueryComponent(p.author.id)}',
+                    );
+                  },
                 );
               },
             ),
