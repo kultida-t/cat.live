@@ -8,9 +8,11 @@ import 'package:image_picker/image_picker.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../../core/config/app_locale.dart';
+import '../../../../core/config/pet_species_config.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/error_view.dart';
 import '../../../../core/widgets/toast_pill.dart';
+import '../../../auth/presentation/providers/auth_controller.dart';
 import '../../../shell/presentation/main_shell.dart';
 import '../../domain/entities/cat_ai_data.dart';
 import '../providers/cat_ai_controller.dart';
@@ -113,7 +115,35 @@ class _CatAiPageState extends ConsumerState<CatAiPage> with ToastMixin {
     final state = ref.watch(catAiControllerProvider);
     final ctrl = ref.read(catAiControllerProvider.notifier);
     final isEn = ref.watch(appLocaleProvider) == 'en';
+    final isGuest = ref.watch(authControllerProvider).isGuest;
+    final species = ref.watch(petSpeciesConfigProvider);
     final cat = state.selectedCat;
+
+    if (isGuest) {
+      return DecoratedBox(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            stops: [0, 0.38, 0.72, 1],
+            colors: [
+              AppColors.page,
+              AppColors.page,
+              AppColors.catAiGradientMid,
+              AppColors.catAiGradientEnd,
+            ],
+          ),
+        ),
+        child: SafeArea(
+          bottom: false,
+          child: _GuestCatAiView(
+            species: species,
+            isEn: isEn,
+            onSignInTap: () => context.push('/login'),
+          ),
+        ),
+      );
+    }
     final hasCat =
         !state.isLoading && state.errorMessage == null && cat != null;
     // ว่างเปล่า = ยังไม่มีข้อความ ไม่ได้พิมพ์ และไม่ได้แนบรูป
@@ -844,6 +874,89 @@ class _FeedbackButton extends StatelessWidget {
         width: 36,
         height: 32,
         child: Icon(icon, size: 16, color: AppColors.muted),
+      ),
+    );
+  }
+}
+
+class _GuestCatAiView extends StatelessWidget {
+  const _GuestCatAiView({
+    required this.species,
+    required this.isEn,
+    required this.onSignInTap,
+  });
+
+  final PetSpeciesConfig species;
+  final bool isEn;
+  final VoidCallback onSignInTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(22, 16, 22, 28),
+        child: Container(
+          padding: const EdgeInsets.all(22),
+          decoration: BoxDecoration(
+            color: AppColors.card,
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: AppColors.line),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Image.asset(
+                'assets/brand/maew-logo.png',
+                height: 42,
+                semanticLabel: species.brandName(isEn),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                isEn
+                    ? 'Sign in to ask ${species.aiAssistantName}'
+                    : 'เข้าสู่ระบบเพื่อปรึกษา ${species.aiAssistantName}',
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.text,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                isEn
+                    ? 'Ask symptoms, upload photos, and save drafts\nstraight into your ${species.petNoun(true).toLowerCase()} health timeline.'
+                    : 'ถามอาการเบื้องต้น ส่งรูปประเมินอาการ\nและบันทึกลงสมุดสุขภาพน้อง${species.petNoun(false)}ได้ทันที',
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 13,
+                  color: AppColors.muted,
+                  height: 1.45,
+                ),
+              ),
+              const SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton(
+                  onPressed: onSignInTap,
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.ownerTeal,
+                    foregroundColor: Colors.white,
+                    shape: const StadiumBorder(),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                  ),
+                  child: Text(
+                    isEn ? 'Sign in / Register' : 'เข้าสู่ระบบ / สมัครสมาชิก',
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

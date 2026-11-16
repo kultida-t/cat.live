@@ -1,7 +1,9 @@
 import 'package:go_router/go_router.dart';
 
+import '../../features/auth/presentation/pages/login_page.dart';
 import '../../features/cat_ai/presentation/pages/cat_ai_page.dart';
 import '../../features/cat_ai/presentation/pages/cat_face_check_page.dart';
+import '../../features/feature_flags/presentation/pages/feature_flags_page.dart';
 import '../../features/feed/presentation/pages/community_page.dart';
 import '../../features/feed/presentation/pages/connections_page.dart';
 import '../../features/feed/presentation/pages/guidelines_page.dart';
@@ -35,6 +37,11 @@ GoRouter createAppRouter() {
         path: '/p/:id',
         builder: (_, state) =>
             PostLinkPage(postId: state.pathParameters['id']!),
+      ),
+      GoRoute(path: '/login', builder: (_, _) => const LoginPage()),
+      GoRoute(
+        path: '/feature-flags',
+        builder: (_, _) => const FeatureFlagsPage(),
       ),
       GoRoute(path: '/menu', builder: (_, _) => const MenuPage()),
       GoRoute(

@@ -9,6 +9,8 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/app_avatar.dart';
 import '../../../../core/widgets/error_view.dart';
 import '../../../../core/widgets/toast_pill.dart';
+import '../../../auth/domain/entities/auth_data.dart';
+import '../../../auth/presentation/providers/auth_controller.dart';
 import '../../domain/entities/settings_data.dart';
 import '../providers/settings_controller.dart';
 import '../widgets/settings_l10n.dart';
@@ -29,6 +31,7 @@ class SettingsPage extends ConsumerStatefulWidget {
 
 class _SettingsPageState extends ConsumerState<SettingsPage> with ToastMixin {
   bool _openedInitialSection = false;
+  int _versionTapCount = 0;
 
   @override
   void dispose() {
@@ -130,11 +133,17 @@ class _SettingsPageState extends ConsumerState<SettingsPage> with ToastMixin {
         .length;
     final totalCategories = NotificationCategoryKey.values.length;
     final grantedPdpa = data.pdpaConsents.where((e) => e.granted).length;
+    final authState = ref.watch(authControllerProvider);
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 36),
       children: [
-        _AccountSummaryCard(data: data, isEn: isEn),
+        _AccountSummaryCard(
+          data: data,
+          authState: authState,
+          isEn: isEn,
+          onSignInTap: () => context.push('/login'),
+        ),
         SettingsSectionHeader(title: SettingsL10n.sectionAccount(isEn)),
         SettingsCard(
           children: [
@@ -290,32 +299,70 @@ class _SettingsPageState extends ConsumerState<SettingsPage> with ToastMixin {
           ],
         ),
         const SizedBox(height: 22),
-        SizedBox(
-          height: 50,
-          child: OutlinedButton.icon(
-            onPressed: () => showSignOutConfirmDialog(
-              context,
-              isEn: isEn,
-              onConfirm: () => showToast(SettingsL10n.signOutDoneToast(isEn)),
+        if (authState.isGuest)
+          SizedBox(
+            height: 50,
+            child: FilledButton.icon(
+              onPressed: () => context.push('/login'),
+              icon: const Icon(LucideIcons.logIn, size: 17),
+              label: Text(
+                isEn ? 'Sign in / Register' : 'เข้าสู่ระบบ / สมัครสมาชิก',
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              style: FilledButton.styleFrom(
+                backgroundColor: AppColors.ownerTeal,
+                foregroundColor: Colors.white,
+                shape: const StadiumBorder(),
+              ),
             ),
-            icon: const Icon(LucideIcons.logOut, size: 17),
-            label: Text(
-              SettingsL10n.signOut(isEn),
-              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
-            ),
-            style: OutlinedButton.styleFrom(
-              backgroundColor: AppColors.logoutBg,
-              foregroundColor: AppColors.logoutText,
-              side: const BorderSide(color: AppColors.logoutBorder),
-              shape: const StadiumBorder(),
+          )
+        else
+          SizedBox(
+            height: 50,
+            child: OutlinedButton.icon(
+              onPressed: () => showSignOutConfirmDialog(
+                context,
+                isEn: isEn,
+                onConfirm: () async {
+                  await ref.read(authControllerProvider.notifier).signOut();
+                  if (!context.mounted) return;
+                  showToast(SettingsL10n.signOutDoneToast(isEn));
+                  context.push('/login');
+                },
+              ),
+              icon: const Icon(LucideIcons.logOut, size: 17),
+              label: Text(
+                SettingsL10n.signOut(isEn),
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              style: OutlinedButton.styleFrom(
+                backgroundColor: AppColors.logoutBg,
+                foregroundColor: AppColors.logoutText,
+                side: const BorderSide(color: AppColors.logoutBorder),
+                shape: const StadiumBorder(),
+              ),
             ),
           ),
-        ),
         const SizedBox(height: 16),
-        Text(
-          SettingsL10n.versionFooter(data.appVersion, isEn),
-          textAlign: TextAlign.center,
-          style: const TextStyle(fontSize: 13, color: AppColors.muted),
+        GestureDetector(
+          onTap: () {
+            _versionTapCount++;
+            if (_versionTapCount >= 5) {
+              _versionTapCount = 0;
+              context.push('/feature-flags');
+            }
+          },
+          child: Text(
+            SettingsL10n.versionFooter(data.appVersion, isEn),
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 13, color: AppColors.muted),
+          ),
         ),
       ],
     );
@@ -375,16 +422,34 @@ class _Header extends StatelessWidget {
 }
 
 class _AccountSummaryCard extends StatelessWidget {
-  const _AccountSummaryCard({required this.data, required this.isEn});
+  const _AccountSummaryCard({
+    required this.data,
+    required this.authState,
+    required this.isEn,
+    required this.onSignInTap,
+  });
 
   final SettingsData data;
+  final AuthState authState;
   final bool isEn;
+  final VoidCallback onSignInTap;
 
   @override
   Widget build(BuildContext context) {
-    final displayName = isEn && data.accountName == 'จุฑามาศ ลูกแก้ว'
-        ? 'Jutamas Lukkaew'
-        : data.accountName;
+    final isGuest = authState.isGuest;
+    final rawName = authState.session.user?.displayName ?? data.accountName;
+    final displayName = isGuest
+        ? (isEn ? 'Guest Mode' : 'ผู้เยี่ยมชม (Guest Mode)')
+        : (isEn && rawName == 'จุฑามาศ ลูกแก้ว' ? 'Jutamas Lukkaew' : rawName);
+    final methodLabel = switch (authState.session.user?.method) {
+      AuthMethod.apple => 'Apple ID',
+      AuthMethod.google => 'Google',
+      AuthMethod.line => 'LINE',
+      AuthMethod.phoneOtp =>
+        authState.session.user?.phoneMasked ?? data.accountHandle,
+      _ => data.accountHandle,
+    };
+
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -394,7 +459,7 @@ class _AccountSummaryCard extends StatelessWidget {
       ),
       child: Row(
         children: [
-          if (data.accountAvatarSource.isNotEmpty)
+          if (!isGuest && data.accountAvatarSource.isNotEmpty)
             AppAvatar(
               source: data.accountAvatarSource,
               bg: 0xFFFFE89A,
@@ -404,14 +469,14 @@ class _AccountSummaryCard extends StatelessWidget {
             Container(
               width: 46,
               height: 46,
-              decoration: const BoxDecoration(
-                color: AppColors.ownerPillBg,
+              decoration: BoxDecoration(
+                color: isGuest ? AppColors.soft : AppColors.ownerPillBg,
                 shape: BoxShape.circle,
               ),
-              child: const Icon(
-                LucideIcons.userCheck,
+              child: Icon(
+                isGuest ? LucideIcons.compass : LucideIcons.userCheck,
                 size: 22,
-                color: AppColors.ownerTeal,
+                color: isGuest ? AppColors.muted : AppColors.ownerTeal,
               ),
             ),
           const SizedBox(width: 12),
@@ -431,7 +496,11 @@ class _AccountSummaryCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  data.accountHandle,
+                  isGuest
+                      ? (isEn
+                            ? 'Browsing without an account'
+                            : 'กำลังใช้งานแบบไม่ระบุตัวตน')
+                      : methodLabel,
                   style: const TextStyle(
                     fontSize: 13,
                     color: AppColors.muted,
@@ -440,7 +509,19 @@ class _AccountSummaryCard extends StatelessWidget {
               ],
             ),
           ),
-          if (data.accountVerified)
+          if (isGuest)
+            TextButton(
+              onPressed: onSignInTap,
+              child: Text(
+                isEn ? 'Sign in' : 'เข้าสู่ระบบ',
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.ownerTeal,
+                ),
+              ),
+            )
+          else if (data.accountVerified)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
               decoration: BoxDecoration(

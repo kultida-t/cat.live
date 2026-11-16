@@ -180,8 +180,8 @@ abstract final class SettingsL10n {
   static String signOutConfirmTitle(bool isEn) =>
       isEn ? 'Sign out?' : 'ออกจากระบบ?';
   static String signOutConfirmBody(bool isEn) => isEn
-      ? 'Your cats and health records stay safe. You can sign in again anytime.'
-      : 'ข้อมูลแมวและประวัติสุขภาพยังอยู่ครบ เข้าสู่ระบบใหม่ได้ทุกเมื่อ';
+      ? 'Your cats and health records stay safe.\nYou can sign in again anytime.'
+      : 'ข้อมูลแมวและประวัติสุขภาพยังอยู่ครบ\nเข้าสู่ระบบใหม่ได้ทุกเมื่อ';
   static String cancel(bool isEn) => isEn ? 'Cancel' : 'ยกเลิก';
   static String signOutDoneToast(bool isEn) => isEn
       ? 'Demo account signed out (mock mode)'

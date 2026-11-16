@@ -8,11 +8,14 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../../core/config/app_config.dart';
 import '../../../../core/config/app_locale.dart';
+import '../../../../core/config/pet_species_config.dart';
 import '../../../../core/media/strip_image_metadata.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/app_avatar.dart';
 import '../../../../core/widgets/error_view.dart';
 import '../../../../core/widgets/toast_pill.dart';
+import '../../../auth/presentation/providers/auth_controller.dart';
+import '../../../auth/presentation/widgets/guest_auth_sheet.dart';
 import '../../domain/entities/my_cat_data.dart';
 import '../providers/my_cat_controller.dart';
 import '../widgets/cat_forms_sheets.dart';
@@ -280,7 +283,11 @@ class _MyCatPageState extends ConsumerState<MyCatPage> with ToastMixin {
   Widget build(BuildContext context) {
     final state = ref.watch(myCatControllerProvider);
     final isEn = ref.watch(appLocaleProvider) == 'en';
-    final headerTitle = state.isOwnerSelected
+    final isGuest = ref.watch(authControllerProvider).isGuest;
+    final species = ref.watch(petSpeciesConfigProvider);
+    final headerTitle = isGuest
+        ? (isEn ? 'Guest Mode' : 'ผู้เยี่ยมชม')
+        : state.isOwnerSelected
         ? (isEn ? 'Me' : 'ตัวฉัน')
         : (isEn ? 'My cats' : 'แมวของฉัน');
 
@@ -295,10 +302,31 @@ class _MyCatPageState extends ConsumerState<MyCatPage> with ToastMixin {
                 MyCatHeader(
                   title: headerTitle,
                   isEn: isEn,
-                  onCreateTap: _openCreateMenu,
+                  onCreateTap: () {
+                    if (isGuest) {
+                      showGuestAuthSheet(
+                        context,
+                        species: species,
+                        isEn: isEn,
+                        actionName: isEn
+                            ? '${species.petNoun(true)} profile'
+                            : 'โปรไฟล์${species.petNoun(false)}',
+                      );
+                      return;
+                    }
+                    _openCreateMenu();
+                  },
                   onSettingsTap: _openSettings,
                 ),
-                Expanded(child: _buildBody(state)),
+                Expanded(
+                  child: isGuest
+                      ? _GuestMyCatView(
+                          species: species,
+                          isEn: isEn,
+                          onSignInTap: () => context.push('/login'),
+                        )
+                      : _buildBody(state),
+                ),
               ],
             ),
             if (toastMessage != null)
@@ -518,6 +546,149 @@ class _EmptyCatsView extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _GuestMyCatView extends StatelessWidget {
+  const _GuestMyCatView({
+    required this.species,
+    required this.isEn,
+    required this.onSignInTap,
+  });
+
+  final PetSpeciesConfig species;
+  final bool isEn;
+  final VoidCallback onSignInTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(22, 16, 22, 28),
+        child: Container(
+          padding: const EdgeInsets.all(22),
+          decoration: BoxDecoration(
+            color: AppColors.card,
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: AppColors.line),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Image.asset(
+                'assets/brand/maew-logo.png',
+                height: 42,
+                semanticLabel: species.brandName(isEn),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                isEn
+                    ? 'Manage your ${species.petNoun(true).toLowerCase()} profiles'
+                    : 'ดูแลโปรไฟล์${species.petNoun(false)}ของคุณ',
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.text,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                isEn
+                    ? 'Sign in to track daily care, vaccine records,\nweight charts, and your Cat ID QR.'
+                    : 'บันทึกดูแลประจำวัน สมุดวัคซีน กราฟน้ำหนัก\nและสร้าง Cat ID QR ประจำตัวได้ครบในที่เดียว',
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 13,
+                  color: AppColors.muted,
+                  height: 1.45,
+                ),
+              ),
+              const SizedBox(height: 18),
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: AppColors.page,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppColors.line),
+                ),
+                child: Column(
+                  children: [
+                    _GuestFeatureBullet(
+                      icon: LucideIcons.clipboardCheck,
+                      title: isEn
+                          ? 'Daily care checklist'
+                          : 'เช็กลิสต์ดูแลประจำวัน (อาหาร/น้ำ/ยา)',
+                    ),
+                    const SizedBox(height: 10),
+                    _GuestFeatureBullet(
+                      icon: LucideIcons.bookHeart,
+                      title: isEn
+                          ? 'Digital vaccine & health book'
+                          : 'สมุดสุขภาพ วัคซีน และกราฟน้ำหนัก',
+                    ),
+                    const SizedBox(height: 10),
+                    _GuestFeatureBullet(
+                      icon: LucideIcons.qrCode,
+                      title: isEn
+                          ? 'Cat ID QR for lost-pet safety'
+                          : 'สร้าง Cat ID QR ป้องกันสัตว์เลี้ยงหลง',
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton(
+                  onPressed: onSignInTap,
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.ownerTeal,
+                    foregroundColor: Colors.white,
+                    shape: const StadiumBorder(),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                  ),
+                  child: Text(
+                    isEn ? 'Sign in / Register' : 'เข้าสู่ระบบ / สมัครสมาชิก',
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _GuestFeatureBullet extends StatelessWidget {
+  const _GuestFeatureBullet({required this.icon, required this.title});
+
+  final IconData icon;
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(icon, size: 17, color: AppColors.ownerTeal),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text(
+            title,
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: AppColors.text,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

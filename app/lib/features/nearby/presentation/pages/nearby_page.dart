@@ -5,9 +5,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/config/app_locale.dart';
+import '../../../../core/config/pet_species_config.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/error_view.dart';
 import '../../../../core/widgets/toast_pill.dart';
+import '../../../auth/presentation/providers/auth_controller.dart';
+import '../../../auth/presentation/widgets/guest_auth_sheet.dart';
 import '../../domain/entities/nearby_data.dart';
 import '../providers/nearby_controller.dart';
 import '../providers/nearby_providers.dart';
@@ -54,6 +57,15 @@ class _NearbyPageState extends ConsumerState<NearbyPage> with ToastMixin {
   }
 
   Future<void> _handleToggleBookmark(NearbyPlace place, bool isEn) async {
+    if (ref.read(authControllerProvider).isGuest) {
+      await showGuestAuthSheet(
+        context,
+        species: ref.read(petSpeciesConfigProvider),
+        isEn: isEn,
+        actionName: isEn ? 'Save places' : 'บันทึกสถานที่',
+      );
+      return;
+    }
     final ctrl = ref.read(nearbyControllerProvider.notifier);
     final saved = await ctrl.toggleBookmark(place.id);
     if (!mounted) return;

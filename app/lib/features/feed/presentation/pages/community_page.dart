@@ -5,13 +5,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
+import '../../../../core/config/app_config.dart';
+import '../../../../core/config/app_locale.dart';
+import '../../../../core/config/pet_species_config.dart';
 import '../../../../core/error/failure.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/app_avatar.dart';
 import '../../../../core/widgets/app_image.dart';
-import '../../../../core/config/app_config.dart';
 import '../../../../core/widgets/error_view.dart';
 import '../../../../core/widgets/toast_pill.dart';
+import '../../../auth/presentation/providers/auth_controller.dart';
+import '../../../auth/presentation/widgets/guest_auth_sheet.dart';
 import '../../../notifications/presentation/providers/notifications_controller.dart';
 import '../../domain/entities/feed_tab.dart';
 import '../../domain/entities/feed_user.dart';
@@ -124,7 +128,20 @@ class _CommunityPageState extends ConsumerState<CommunityPage> with ToastMixin {
     }
   }
 
+  bool _guardGuest(String actionTh, String actionEn) {
+    if (!ref.read(authControllerProvider).isGuest) return false;
+    final isEn = ref.read(appLocaleProvider) == 'en';
+    showGuestAuthSheet(
+      context,
+      species: ref.read(petSpeciesConfigProvider),
+      isEn: isEn,
+      actionName: isEn ? actionEn : actionTh,
+    );
+    return true;
+  }
+
   Future<void> _createPost() async {
+    if (_guardGuest('สร้างโพสต์', 'Create post')) return;
     final shareTo = await CreatePostPage.open(context);
     if (shareTo == null || !mounted) return;
     if (_openSavedPostId != null) setState(() => _openSavedPostId = null);
@@ -137,6 +154,13 @@ class _CommunityPageState extends ConsumerState<CommunityPage> with ToastMixin {
   }
 
   void _selectTab(FeedTab tab) {
+    if (tab != FeedTab.all &&
+        _guardGuest(
+          tab == FeedTab.following ? 'ฟีดกำลังติดตาม' : 'โพสต์ที่บันทึกไว้',
+          tab == FeedTab.following ? 'Following feed' : 'Saved posts',
+        )) {
+      return;
+    }
     if (_openSavedPostId != null) setState(() => _openSavedPostId = null);
     ref.read(feedControllerProvider.notifier).selectTab(tab);
   }
@@ -155,6 +179,8 @@ class _CommunityPageState extends ConsumerState<CommunityPage> with ToastMixin {
     final state = ref.watch(feedControllerProvider);
     final controller = ref.read(feedControllerProvider.notifier);
 
+    final isGuest = ref.watch(authControllerProvider).isGuest;
+
     final feed = SafeArea(
       bottom: false,
       child: Column(
@@ -165,9 +191,17 @@ class _CommunityPageState extends ConsumerState<CommunityPage> with ToastMixin {
             onComingSoon: _comingSoon,
             onCreatePost: _createPost,
             onOpenMenu: () => context.push('/menu'),
-            onOpenNotifications: () => context.push('/notifications'),
-            onOpenMessages: () => context.push('/messages'),
-            unreadNotifications: ref.watch(unreadNotificationsCountProvider),
+            onOpenNotifications: () {
+              if (_guardGuest('การแจ้งเตือน', 'Notifications')) return;
+              context.push('/notifications');
+            },
+            onOpenMessages: () {
+              if (_guardGuest('ข้อความแชท', 'Messages')) return;
+              context.push('/messages');
+            },
+            unreadNotifications: isGuest
+                ? 0
+                : ref.watch(unreadNotificationsCountProvider),
           ),
           Expanded(
             child: switch (state.status) {
@@ -194,18 +228,41 @@ class _CommunityPageState extends ConsumerState<CommunityPage> with ToastMixin {
                       setState(() => _openSavedPostId = id),
                   onCloseSavedPost: () =>
                       setState(() => _openSavedPostId = null),
-                  onOpenConnections: () => context.push('/connections'),
-                  onFollowUser: _followUser,
-                  onToggleLike: (p) => _run(() => controller.toggleLike(p)),
-                  onToggleSave: _toggleSave,
-                  onToggleFollow: _toggleFollow,
+                  onOpenConnections: () {
+                    if (_guardGuest('ผู้ติดตามและเพื่อน', 'Connections')) {
+                      return;
+                    }
+                    context.push('/connections');
+                  },
+                  onFollowUser: (u) {
+                    if (_guardGuest('ติดตามผู้ใช้', 'Follow users')) return;
+                    _followUser(u);
+                  },
+                  onToggleLike: (p) {
+                    if (_guardGuest('ถูกใจโพสต์', 'Like posts')) return;
+                    _run(() => controller.toggleLike(p));
+                  },
+                  onToggleSave: (p) {
+                    if (_guardGuest('บันทึกโพสต์', 'Save posts')) return;
+                    _toggleSave(p);
+                  },
+                  onToggleFollow: (p) {
+                    if (_guardGuest('ติดตามผู้โพสต์', 'Follow author')) return;
+                    _toggleFollow(p);
+                  },
                   onOpenMenu: _openMenu,
-                  onOpenComments: (p) => showCommentsSheet(context, p),
+                  onOpenComments: (p) {
+                    if (_guardGuest('แสดงความคิดเห็น', 'Comments')) return;
+                    showCommentsSheet(context, p);
+                  },
                   onShare: (p) => showShareSheet(context, p),
                   onComingSoon: _comingSoon,
-                  onOpenTreats: (p) => context.push(
-                    '/treats?to=${Uri.encodeQueryComponent(p.author.id)}',
-                  ),
+                  onOpenTreats: (p) {
+                    if (_guardGuest('เลี้ยงขนม', 'Send treats')) return;
+                    context.push(
+                      '/treats?to=${Uri.encodeQueryComponent(p.author.id)}',
+                    );
+                  },
                 ),
               ),
             },
