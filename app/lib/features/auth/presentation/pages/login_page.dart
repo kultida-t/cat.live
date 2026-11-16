@@ -409,7 +409,7 @@ class _LoginPageState extends ConsumerState<LoginPage> with ToastMixin {
                                 isEn,
                               ),
                         textAlign: TextAlign.center,
-                        maxLines: 1,
+                        maxLines: challenge == null ? 1 : 2,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                           fontSize: 13,
