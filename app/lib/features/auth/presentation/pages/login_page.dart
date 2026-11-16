@@ -372,6 +372,7 @@ class _LoginPageState extends ConsumerState<LoginPage> with ToastMixin {
                   ),
                 Expanded(
                   child: ListView(
+                    key: ValueKey(challenge == null ? 'login-list' : 'otp-list'),
                     padding: EdgeInsets.fromLTRB(
                       20,
                       challenge == null ? 24 : 8,
