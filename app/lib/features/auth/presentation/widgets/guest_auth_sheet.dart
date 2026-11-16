@@ -41,18 +41,10 @@ Future<void> showGuestAuthSheet(
             ),
             const SizedBox(height: 18),
             Center(
-              child: Container(
-                width: 60,
-                height: 60,
-                decoration: const BoxDecoration(
-                  color: AppColors.ownerPillBg,
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  LucideIcons.sparkles,
-                  size: 28,
-                  color: AppColors.ownerTeal,
-                ),
+              child: Image.asset(
+                'assets/brand/maew-logo.png',
+                height: 42,
+                semanticLabel: species.brandName(isEn),
               ),
             ),
             const SizedBox(height: 14),

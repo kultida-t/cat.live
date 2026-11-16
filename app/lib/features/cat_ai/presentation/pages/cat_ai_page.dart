@@ -905,18 +905,10 @@ class _GuestCatAiView extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Container(
-                width: 64,
-                height: 64,
-                decoration: const BoxDecoration(
-                  color: AppColors.quickAiBg,
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  LucideIcons.sparkles,
-                  size: 30,
-                  color: AppColors.quickAiInk,
-                ),
+              Image.asset(
+                'assets/brand/maew-logo.png',
+                height: 42,
+                semanticLabel: species.brandName(isEn),
               ),
               const SizedBox(height: 16),
               Text(

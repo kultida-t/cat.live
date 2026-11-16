@@ -576,18 +576,10 @@ class _GuestMyCatView extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Container(
-                width: 64,
-                height: 64,
-                decoration: const BoxDecoration(
-                  color: AppColors.ownerPillBg,
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  LucideIcons.cat,
-                  size: 30,
-                  color: AppColors.ownerTeal,
-                ),
+              Image.asset(
+                'assets/brand/maew-logo.png',
+                height: 42,
+                semanticLabel: species.brandName(isEn),
               ),
               const SizedBox(height: 16),
               Text(
@@ -641,7 +633,7 @@ class _GuestMyCatView extends StatelessWidget {
                       icon: LucideIcons.qrCode,
                       title: isEn
                           ? 'Cat ID QR for lost-pet safety'
-                          : 'สร้าง Cat ID QR สำหรับสแกนเมื่อพลัดหลง',
+                          : 'สร้าง Cat ID QR ป้องกันสัตว์เลี้ยงหลง',
                     ),
                   ],
                 ),

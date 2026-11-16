@@ -7,8 +7,6 @@ import '../../../../core/config/app_locale.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/error_view.dart';
 import '../../../../core/widgets/toast_pill.dart';
-import '../../../feature_flags/domain/entities/feature_flags_data.dart';
-import '../../../feature_flags/presentation/providers/feature_flags_controller.dart';
 import '../../domain/entities/menu_data.dart';
 import '../providers/menu_controller.dart';
 import '../widgets/menu_l10n.dart';
@@ -37,18 +35,6 @@ class _MenuPageState extends ConsumerState<MenuPage> with ToastMixin {
       return;
     }
     if (service.action == MenuServiceAction.treats) {
-      final treatsEnabled = ref.read(
-        isFeatureEnabledProvider(AppFeatureFlag.treatsGifting),
-      );
-      if (!treatsEnabled) {
-        final title = MenuL10n.serviceTitle(service.action, isEn);
-        showToast(
-          isEn
-              ? '$title — Coming in the next phase'
-              : '$title — กำลังเตรียมเปิดให้บริการในเฟสถัดไป',
-        );
-        return;
-      }
       context.push('/treats');
       return;
     }
