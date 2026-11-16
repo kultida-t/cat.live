@@ -21,6 +21,7 @@ import '../../features/notifications/presentation/pages/notification_post_detail
 import '../../features/notifications/presentation/pages/notifications_page.dart';
 import '../../features/notifications/presentation/pages/received_treats_page.dart';
 import '../../features/search/presentation/pages/search_page.dart';
+import '../../features/settings/presentation/pages/settings_page.dart';
 import '../../features/shell/presentation/main_shell.dart';
 import '../../features/tag/presentation/pages/tag_page.dart';
 import '../../features/treats/presentation/pages/treats_page.dart';
@@ -36,6 +37,19 @@ GoRouter createAppRouter() {
             PostLinkPage(postId: state.pathParameters['id']!),
       ),
       GoRoute(path: '/menu', builder: (_, _) => const MenuPage()),
+      GoRoute(
+        path: '/settings',
+        builder: (_, state) =>
+            SettingsPage(initialSection: state.uri.queryParameters['section']),
+      ),
+      GoRoute(
+        path: '/settings/guidelines',
+        builder: (_, _) => const GuidelinesPage(),
+      ),
+      GoRoute(
+        path: '/settings/tracker',
+        builder: (_, _) => const CatTrackerPage(initialDeviceMode: true),
+      ),
       GoRoute(
         path: '/notifications',
         builder: (_, _) => const NotificationsPage(),

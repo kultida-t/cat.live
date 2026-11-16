@@ -130,4 +130,6 @@
 - **หน้าค้นหา (`/search`, `SearchPage`)** — ล็อก UI Mock Baseline เมื่อ 2026-11-13
 - **หน้าเลี้ยงขนมแมว (`/treats`, `TreatsPage`)** — ล็อก UI Mock Baseline เมื่อ 2026-11-13 (ข้อ 12)
 - **หน้าการแจ้งเตือน (`/notifications`, `NotificationsPage`)** — ล็อก UI Mock Baseline เมื่อ 2026-11-16 (ข้อ 13)
+- **หน้า แมว.live Tag (`/tag`, `TagPage`)** — ล็อก UI Mock Baseline เมื่อ 2026-11-16 (ข้อ 14)
+- **หน้าตั้งค่าและศูนย์ช่วยเหลือ (`/settings`, `SettingsPage`)** — ล็อก UI Mock Baseline เมื่อ 2026-11-16 (ข้อ 15 — รวมจุดตั้งค่าจาก `/menu` และ `/my-cat` เป็นหน้าเดียว)
 *(ดูขอบเขตไฟล์และข้อยกเว้นสำหรับเชื่อมหน้าอื่น/API จริงได้ที่ `PROTECTED_SCREENS.md`)*

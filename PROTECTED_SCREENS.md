@@ -253,3 +253,24 @@
   - `app/lib/core/router/app_router.dart` (route `/tag`), `app/lib/core/theme/app_colors.dart` (หมวด `tag*`)
 - **ขอบเขตที่ยังอนุญาตให้เชื่อมเพิ่มในเฟสถัดไป (ต้องไม่กระทบดีไซน์/พฤติกรรมเดิมที่ล็อกไว้):**
   - เชื่อมหน้าร้านและสั่งซื้อปลอกคอ/แท็กจริง (`/collars`) และ Backend API จริงใน Phase 2
+
+### 15. หน้าตั้งค่าและศูนย์ช่วยเหลือ (`/settings` — UI Mock Baseline) — ล็อกเมื่อ 2026-11-16
+- **ตรวจรับบน:** Android (`emulator-5554`), iOS (`iPhone 17`) และเทียบสไตล์สวิตช์/รายการตั้งค่ากับหน้าเว็บจริง `www.แมว.live` (`flutter analyze` ผ่าน 0 issues, `flutter test` **155/155 เคสผ่าน** บน `feat/settings-page`) พี่มาเต็มทดสอบผ่านครบทุกเคสแล้ว
+- **หน้าจอที่ล็อก:**
+  - `/settings` (`SettingsPage` — ครบ 4 สถานะ `loading` skeleton / `empty` / `error` + ลองใหม่ / `content` พร้อมสลับภาษา ไทย/EN ผ่าน `SettingsL10n` + `appLocaleProvider`)
+  - **การ์ดบัญชี:** แสดงชื่อและรูปโปรไฟล์ตรงกับบัญชีหลักของแอป (**จุฑามาศ ลูกแก้ว** / `@jutamas.lk` / `Jutamas Lukkaew` เมื่อ EN + ป้าย `บัญชีที่ยืนยันแล้ว`)
+  - **บัญชีและการแสดงผล (`SET-01`):** สลับภาษา `ไทย` / `EN` (`appLocaleProvider`) และปรับขนาดตัวอักษร `เล็ก` / `ปกติ` / `ใหญ่` (`appTextScaleProvider` ครอบใน `app.dart`) มีผลทันทีทั้งแอป
+  - **การแจ้งเตือน (`NOTI-01` / `NOTI-02`):** สวิตช์ทรง `CupertinoSwitch` (`#7CCBBB` / `#E6DDD4`) ตรงกันทั้ง Android & iOS, โหมดเงียบพร้อมชีตตั้งช่วงเวลา (`22:00–07:00`, `23:00–06:00`, `21:00–08:00`), และชีตจัดการประเภทการแจ้งเตือน 8 หมวด (ล็อกหมวด `"มีคนพบแมว (สแกน Cat ID)"` ปิดไม่ได้)
+  - **ความเป็นส่วนตัว & PDPA (`PDPA-01` / `PDPA-02`):** ชีตความยินยอมแยก 3 เรื่อง (`ตำแหน่งที่ตั้ง`, `การตลาดและโปรโมชัน`, `ใช้ข้อมูลช่วยฝึกฝน Cat AI`) พร้อมเวอร์ชัน/วันที่, อ่านนโยบายความเป็นส่วนตัว & ข้อกำหนดการใช้งาน, และปุ่มขอสำเนาข้อมูล (`JSON + PDF`)
+  - **อุปกรณ์ กฎ และศูนย์ช่วยเหลือ:** เส้นทาง `/settings/tracker` และ `/settings/guidelines` (top-level routes), ชีตศูนย์ช่วยเหลือ (FAQ กางอ่านได้ 4 ข้อ + ฟอร์มส่งข้อความติดต่อทีม + ช่องทาง LINE/Email), ปุ่ม `ออกจากระบบ` (Dialog ยืนยัน), และเวอร์ชัน `แมว.live เวอร์ชัน 0.1`
+- **การเชื่อมจุดเข้าหน้า (อนุมัติจากพี่มาเต็มเมื่อ 2026-11-16):**
+  - เพิ่มรายการ `ตั้งค่าและศูนย์ช่วยเหลือ` ในหน้าเมนูหลัก `/menu` (`menu_page.dart`) → `/settings`
+  - รวมปุ่มเฟืองในหน้า `/my-cat` (`my_cat_page.dart`) ให้เปิด `/settings` หน้าเดียวกันทั้งแอป และให้ `MyCatPage` ซิงก์ภาษาจาก `appLocaleProvider`
+- **ไฟล์หลัก:**
+  - `app/lib/core/config/app_text_scale.dart`, `app/lib/app.dart`, `app/lib/core/router/app_router.dart`
+  - `app/lib/features/settings/` (domain / data / presentation)
+  - `app/test/features/settings/settings_page_test.dart`
+  - `app/lib/features/menu/presentation/pages/menu_page.dart`, `app/test/features/menu/menu_page_test.dart`
+  - `app/lib/features/my_cat/presentation/pages/my_cat_page.dart`, `app/test/features/my_cat/my_cat_page_test.dart`
+- **ขอบเขตที่ยังอนุญาตให้เชื่อมเพิ่มในเฟสถัดไป (ต้องไม่กระทบดีไซน์/พฤติกรรมเดิมที่ล็อกไว้):**
+  - เชื่อม Backend API จริง (PDPA consent audit log, Data export request, Support ticket, Auth Sign-out/OTP `AUTH-01..05`) ใน Phase ถัดไป

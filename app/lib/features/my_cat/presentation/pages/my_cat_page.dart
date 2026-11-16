@@ -7,6 +7,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../../core/config/app_config.dart';
+import '../../../../core/config/app_locale.dart';
 import '../../../../core/media/strip_image_metadata.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/app_avatar.dart';
@@ -43,9 +44,7 @@ class _MyCatPageState extends ConsumerState<MyCatPage> with ToastMixin {
     super.dispose();
   }
 
-  bool get _isEn =>
-      ref.read(myCatControllerProvider).bundle?.owner.notifications.locale ==
-      'en';
+  bool get _isEn => ref.read(appLocaleProvider) == 'en';
 
   void _comingSoon(String feature) => showToast(
     _isEn
@@ -155,7 +154,7 @@ class _MyCatPageState extends ConsumerState<MyCatPage> with ToastMixin {
 
   Future<void> _openCreateMenu() async {
     final state = ref.read(myCatControllerProvider);
-    final isEn = state.bundle?.owner.notifications.locale == 'en';
+    final isEn = _isEn;
     final action = await showMyCatCreateSheet(
       context,
       activeCatName: state.selectedCat?.name,
@@ -188,29 +187,14 @@ class _MyCatPageState extends ConsumerState<MyCatPage> with ToastMixin {
     }
   }
 
-  Future<void> _openSettings() async {
-    final owner = ref.read(myCatControllerProvider).bundle?.owner;
-    if (owner == null) return;
-    await showMyCatSettingsSheet(
-      context,
-      initial: owner.notifications,
-      onSaveSettings: (next) {
-        final latestOwner =
-            ref.read(myCatControllerProvider).bundle?.owner ?? owner;
-        ref
-            .read(myCatControllerProvider.notifier)
-            .updateOwner(latestOwner.copyWith(notifications: next));
-      },
-      onOpenTagDevice: () => context.push('/my-cat/tracker'),
-      onOpenGuidelines: () => context.push('/guidelines'),
-      onShowMessage: showToast,
-    );
+  void _openSettings() {
+    context.push('/settings');
   }
 
   Future<void> _openAddCatForm() async {
     final bundle = ref.read(myCatControllerProvider).bundle;
     final cats = bundle?.cats ?? const [];
-    final isEn = bundle?.owner.notifications.locale == 'en';
+    final isEn = _isEn;
     final existingNames = cats.map((c) => c.name.trim().toLowerCase()).toSet();
     await showCatFormSheet(
       context,
@@ -240,7 +224,7 @@ class _MyCatPageState extends ConsumerState<MyCatPage> with ToastMixin {
   Future<void> _openEditCatForm(CatProfile cat) async {
     final bundle = ref.read(myCatControllerProvider).bundle;
     final cats = bundle?.cats ?? const [];
-    final isEn = bundle?.owner.notifications.locale == 'en';
+    final isEn = _isEn;
     final existingNames = cats
         .where((c) => c.id != cat.id)
         .map((c) => c.name.trim().toLowerCase())
@@ -267,7 +251,7 @@ class _MyCatPageState extends ConsumerState<MyCatPage> with ToastMixin {
   }
 
   Future<void> _openOwnerEdit(OwnerProfile owner) async {
-    final isEn = owner.notifications.locale == 'en';
+    final isEn = _isEn;
     await showOwnerEditSheet(
       context,
       owner: owner,
@@ -295,7 +279,7 @@ class _MyCatPageState extends ConsumerState<MyCatPage> with ToastMixin {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(myCatControllerProvider);
-    final isEn = state.bundle?.owner.notifications.locale == 'en';
+    final isEn = ref.watch(appLocaleProvider) == 'en';
     final headerTitle = state.isOwnerSelected
         ? (isEn ? 'Me' : 'ตัวฉัน')
         : (isEn ? 'My cats' : 'แมวของฉัน');
@@ -356,7 +340,7 @@ class _MyCatPageState extends ConsumerState<MyCatPage> with ToastMixin {
     final selectedId =
         state.selectedTargetId ??
         (bundle.cats.isNotEmpty ? bundle.cats.first.id : ownerTargetId);
-    final isEn = bundle.owner.notifications.locale == 'en';
+    final isEn = ref.watch(appLocaleProvider) == 'en';
 
     return RefreshIndicator(
       color: AppColors.ink,

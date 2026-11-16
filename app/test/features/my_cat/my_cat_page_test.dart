@@ -11,6 +11,7 @@ import 'package:catlive/features/my_cat/domain/repositories/my_cat_repository.da
 import 'package:catlive/features/my_cat/presentation/pages/my_cat_page.dart';
 import 'package:catlive/features/my_cat/presentation/providers/my_cat_providers.dart';
 import 'package:catlive/features/my_cat/presentation/widgets/my_cat_skeleton.dart';
+import 'package:catlive/features/settings/presentation/pages/settings_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -88,6 +89,11 @@ Widget _buildTestApp(_ControlledMyCatRepository repo) {
         path: '/my-cat/profile',
         builder: (_, _) =>
             const Scaffold(body: Center(child: Text('หน้า Cat ID'))),
+      ),
+      GoRoute(
+        path: '/settings',
+        builder: (_, state) =>
+            SettingsPage(initialSection: state.uri.queryParameters['section']),
       ),
       GoRoute(
         path: '/my-cat/tracker',
@@ -460,25 +466,23 @@ void main() {
 
     await tester.tap(find.bySemanticsLabel('ตั้งค่า'));
     await tester.pumpAndSettle();
-    expect(find.text('ตั้งค่า'), findsOneWidget);
+    await tester.pump(const Duration(milliseconds: 200));
+    await tester.pumpAndSettle();
+    expect(find.text('ตั้งค่าและช่วยเหลือ'), findsOneWidget);
 
-    await tester.tap(find.text('การแจ้งเตือน'));
+    await tester.tap(find.text('การแจ้งเตือน').last);
+    await tester.pump(const Duration(milliseconds: 150));
     await tester.pumpAndSettle();
     expect(find.text('ปิดการแจ้งเตือนแล้ว'), findsOneWidget);
-    await tester.pump(const Duration(seconds: 2));
-
-    await tester.tap(find.text('ความเป็นส่วนตัว'));
-    await tester.pumpAndSettle();
-    expect(find.text('ความเป็นส่วนตัว · หน้านี้กำลังพัฒนา'), findsOneWidget);
     await tester.pump(const Duration(seconds: 2));
 
     await tester.tap(find.text('EN'));
     await tester.pumpAndSettle();
     expect(find.text('Switched to English'), findsOneWidget);
-    expect(find.text('Settings'), findsOneWidget);
+    expect(find.text('Settings & Help'), findsOneWidget);
     await tester.pump(const Duration(seconds: 2));
 
-    await tester.tap(find.bySemanticsLabel('Close settings'));
+    await tester.tap(find.bySemanticsLabel('Back'));
     await tester.pumpAndSettle();
     expect(find.text('My cats'), findsOneWidget);
     expect(find.text('Mali'), findsAtLeastNWidgets(2));
@@ -514,11 +518,13 @@ void main() {
     await tester.pump(const Duration(milliseconds: 300));
     await tester.tap(find.bySemanticsLabel('ตั้งค่า'));
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pump(const Duration(milliseconds: 250));
+    await tester.pump();
     await tester.tap(find.text('EN'));
     await tester.pump();
     await tester.pump(const Duration(seconds: 2));
-    await tester.tap(find.bySemanticsLabel('Close settings'));
+    await tester.tap(find.bySemanticsLabel('Back'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
 

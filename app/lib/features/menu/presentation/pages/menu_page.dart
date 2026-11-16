@@ -121,6 +121,88 @@ class _MenuPageState extends ConsumerState<MenuPage> with ToastMixin {
                           onSelectService: (svc) =>
                               _handleServiceTap(svc, isEn),
                         ),
+                        const SizedBox(height: 12),
+                        const Divider(height: 1, color: AppColors.line),
+                        const SizedBox(height: 14),
+                        Padding(
+                          padding: const EdgeInsets.only(left: 4, bottom: 8),
+                          child: Text(
+                            isEn ? 'Settings & Support' : 'การตั้งค่าและช่วยเหลือ',
+                            style: const TextStyle(
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.muted,
+                            ),
+                          ),
+                        ),
+                        InkWell(
+                          onTap: () => context.push('/settings'),
+                          borderRadius: BorderRadius.circular(14),
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(minHeight: 58),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 4,
+                                vertical: 8,
+                              ),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    width: 40,
+                                    height: 40,
+                                    decoration: BoxDecoration(
+                                      color: AppColors.settingsIconBox,
+                                      borderRadius: BorderRadius.circular(13),
+                                    ),
+                                    child: const Icon(
+                                      LucideIcons.settings,
+                                      size: 20,
+                                      color: AppColors.ink,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text(
+                                          isEn
+                                              ? 'Settings & Help Center'
+                                              : 'ตั้งค่าและศูนย์ช่วยเหลือ',
+                                          style: const TextStyle(
+                                            fontSize: 15,
+                                            fontWeight: FontWeight.w600,
+                                            color: AppColors.text,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          isEn
+                                              ? 'Language · Text · Alerts · PDPA'
+                                              : 'ภาษา · ตัวอักษร · แจ้งเตือน · PDPA',
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: const TextStyle(
+                                            fontSize: 12.5,
+                                            color: AppColors.muted,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  const Icon(
+                                    LucideIcons.chevronRight,
+                                    size: 18,
+                                    color: AppColors.muted,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
                       ],
                     ),
                   },

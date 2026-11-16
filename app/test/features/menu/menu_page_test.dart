@@ -59,7 +59,7 @@ Widget _wrapMenu({MenuRepository? repo, String initialLocale = 'th'}) {
 
 void main() {
   testWidgets(
-    'แสดงบริการเสริม 8 รายการตรงตามเว็บจริงและไม่มีตั้งค่า/ออกจากระบบ',
+    'แสดงบริการเสริม 8 รายการตรงตามเว็บจริงและมีจุดเข้าตั้งค่าและศูนย์ช่วยเหลือ',
     (tester) async {
       await tester.pumpWidget(_wrapMenu());
       expect(find.byType(MenuSkeleton), findsOneWidget);
@@ -77,7 +77,11 @@ void main() {
       expect(find.text('ประกันสุขภาพแมว'), findsOneWidget);
       expect(find.text('เร็ว ๆ นี้'), findsNWidgets(2));
 
-      expect(find.text('ตั้งค่า'), findsNothing);
+      await tester.scrollUntilVisible(
+        find.text('ตั้งค่าและศูนย์ช่วยเหลือ'),
+        200,
+      );
+      expect(find.text('ตั้งค่าและศูนย์ช่วยเหลือ'), findsOneWidget);
       expect(find.text('ออกจากระบบ'), findsNothing);
     },
   );

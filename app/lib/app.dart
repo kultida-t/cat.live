@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'core/config/app_locale.dart';
+import 'core/config/app_text_scale.dart';
 import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
 import 'features/shell/presentation/splash_overlay.dart';
@@ -22,6 +23,7 @@ class _CatLiveAppState extends ConsumerState<CatLiveApp> {
   @override
   Widget build(BuildContext context) {
     final isEn = ref.watch(appLocaleProvider) == 'en';
+    final textScale = ref.watch(appTextScaleProvider).factor;
 
     return MaterialApp.router(
       title: 'แมว.live',
@@ -29,18 +31,22 @@ class _CatLiveAppState extends ConsumerState<CatLiveApp> {
       theme: AppTheme.light,
       routerConfig: _router,
       builder: (context, child) {
-        return Stack(
-          fit: StackFit.expand,
-          children: [
-            child ?? const SizedBox.shrink(),
-            if (_showSplash)
-              SplashOverlay(
-                isEn: isEn,
-                onFinished: () {
-                  if (mounted) setState(() => _showSplash = false);
-                },
-              ),
-          ],
+        final media = MediaQuery.of(context);
+        return MediaQuery(
+          data: media.copyWith(textScaler: TextScaler.linear(textScale)),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              child ?? const SizedBox.shrink(),
+              if (_showSplash)
+                SplashOverlay(
+                  isEn: isEn,
+                  onFinished: () {
+                    if (mounted) setState(() => _showSplash = false);
+                  },
+                ),
+            ],
+          ),
         );
       },
     );
