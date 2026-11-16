@@ -1,4 +1,5 @@
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -7,13 +8,14 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../../core/config/app_locale.dart';
 import '../../../../core/config/pet_species_config.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/widgets/social_brand_icons.dart';
 import '../../../../core/widgets/toast_pill.dart';
 import '../../domain/entities/auth_data.dart';
 import '../../domain/usecases/auth_rules.dart';
 import '../providers/auth_controller.dart';
 import '../widgets/auth_l10n.dart';
 
-/// หน้าเข้าสู่ระบบและ Guest Mode (/login — AUTH-01..04, PDPA-03)
+/// หน้าเข้าสู่ระบบ สมัครสมาชิก และ Guest Mode (/login — AUTH-01..04, PDPA-03)
 class LoginPage extends ConsumerStatefulWidget {
   const LoginPage({super.key});
 
@@ -22,8 +24,10 @@ class LoginPage extends ConsumerStatefulWidget {
 }
 
 class _LoginPageState extends ConsumerState<LoginPage> with ToastMixin {
+  final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
   final _otpController = TextEditingController();
+  bool _isRegisterMode = false;
   int _selectedBirthYear = 1995;
   bool _guardianConsent = false;
   bool _pdpaAccepted = false;
@@ -37,6 +41,7 @@ class _LoginPageState extends ConsumerState<LoginPage> with ToastMixin {
 
   @override
   void dispose() {
+    _nameController.dispose();
     _phoneController.dispose();
     _otpController.dispose();
     disposeToast();
@@ -54,6 +59,7 @@ class _LoginPageState extends ConsumerState<LoginPage> with ToastMixin {
   );
 
   bool get _canProceedAuth {
+    if (!_isRegisterMode) return true;
     if (_ageEligibility == AgeEligibility.under13Blocked) return false;
     if (_ageEligibility == AgeEligibility.minorNeedsGuardianConsent &&
         !_guardianConsent) {
@@ -66,6 +72,10 @@ class _LoginPageState extends ConsumerState<LoginPage> with ToastMixin {
       _canProceedAuth && AuthRules.isValidThaiPhone(_phoneController.text);
 
   bool _validateCompliance(bool isEn) {
+    if (!_isRegisterMode) {
+      setState(() => _validationError = null);
+      return true;
+    }
     if (_ageEligibility == AgeEligibility.under13Blocked) {
       setState(() => _validationError = AuthL10n.birthYearUnder13Error(isEn));
       return false;
@@ -352,36 +362,32 @@ class _LoginPageState extends ConsumerState<LoginPage> with ToastMixin {
           children: [
             Column(
               children: [
-                _TopBar(
-                  title: challenge == null
-                      ? AuthL10n.pageTitle(isEn)
-                      : AuthL10n.otpTitle(isEn),
-                  backLabel: AuthL10n.backLabel(isEn),
-                  onBack: () {
-                    if (challenge != null) {
-                      ref
-                          .read(authControllerProvider.notifier)
-                          .clearOtpChallenge();
-                    } else if (context.canPop()) {
-                      context.pop();
-                    } else {
-                      context.go('/');
-                    }
-                  },
-                ),
+                if (challenge != null)
+                  _OtpTopBar(
+                    title: AuthL10n.otpTitle(isEn),
+                    backLabel: AuthL10n.backLabel(isEn),
+                    onBack: () => ref
+                        .read(authControllerProvider.notifier)
+                        .clearOtpChallenge(),
+                  ),
                 Expanded(
                   child: ListView(
-                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
+                    padding: EdgeInsets.fromLTRB(
+                      20,
+                      challenge == null ? 24 : 8,
+                      20,
+                      32,
+                    ),
                     children: [
                       Center(
                         child: Image.asset(
                           'assets/brand/maew-logo.png',
-                          width: 128,
-                          height: 36,
+                          width: 132,
+                          height: 38,
                           semanticLabel: species.brandName(isEn),
                         ),
                       ),
-                      const SizedBox(height: 10),
+                      const SizedBox(height: 12),
                       Text(
                         challenge == null
                             ? AuthL10n.headline(species, isEn)
@@ -410,14 +416,24 @@ class _LoginPageState extends ConsumerState<LoginPage> with ToastMixin {
                           color: AppColors.muted,
                         ),
                       ),
-                      const SizedBox(height: 18),
-                      if (challenge == null)
+                      const SizedBox(height: 20),
+                      if (challenge == null) ...[
+                        _AuthModeTabs(
+                          isRegisterMode: _isRegisterMode,
+                          signInLabel: AuthL10n.tabSignIn(isEn),
+                          registerLabel: AuthL10n.tabRegister(isEn),
+                          onChanged: (register) => setState(() {
+                            _isRegisterMode = register;
+                            _validationError = null;
+                          }),
+                        ),
+                        const SizedBox(height: 14),
                         _buildLoginMethodsCard(
                           authState: authState,
                           species: species,
                           isEn: isEn,
-                        )
-                      else
+                        ),
+                      ] else
                         _buildOtpVerifyCard(
                           authState: authState,
                           challenge: challenge,
@@ -480,8 +496,11 @@ class _LoginPageState extends ConsumerState<LoginPage> with ToastMixin {
     required bool isEn,
   }) {
     final eligibility = _ageEligibility;
-    final isUnder13 = eligibility == AgeEligibility.under13Blocked;
-    final isMinor = eligibility == AgeEligibility.minorNeedsGuardianConsent;
+    final isUnder13 =
+        _isRegisterMode && eligibility == AgeEligibility.under13Blocked;
+    final isMinor =
+        _isRegisterMode &&
+        eligibility == AgeEligibility.minorNeedsGuardianConsent;
     final canSocial = !authState.isSubmitting && _canProceedAuth;
 
     return Container(
@@ -494,136 +513,148 @@ class _LoginPageState extends ConsumerState<LoginPage> with ToastMixin {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(
-            AuthL10n.birthYearLabel(isEn),
-            style: const TextStyle(
-              fontSize: 12.5,
-              fontWeight: FontWeight.w700,
-              color: AppColors.text2,
-            ),
-          ),
-          const SizedBox(height: 8),
-          InkWell(
-            onTap: () => _openBirthYearPicker(isEn),
-            borderRadius: BorderRadius.circular(14),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-              decoration: BoxDecoration(
-                color: AppColors.soft,
-                borderRadius: BorderRadius.circular(14),
+          if (_isRegisterMode) ...[
+            Text(
+              AuthL10n.displayNameLabel(isEn),
+              style: const TextStyle(
+                fontSize: 12.5,
+                fontWeight: FontWeight.w700,
+                color: AppColors.text2,
               ),
-              child: Row(
-                children: [
-                  const Icon(
-                    LucideIcons.calendar,
-                    size: 18,
-                    color: AppColors.muted,
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      isEn
-                          ? '$_selectedBirthYear'
-                          : '$_selectedBirthYear (พ.ศ. ${_selectedBirthYear + 543})',
-                      style: const TextStyle(
-                        fontSize: 14.5,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.text,
+            ),
+            const SizedBox(height: 6),
+            TextField(
+              controller: _nameController,
+              decoration: InputDecoration(
+                hintText: AuthL10n.displayNameHint(isEn),
+                prefixIcon: const Icon(LucideIcons.user, size: 18),
+                filled: true,
+                fillColor: AppColors.soft,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: BorderSide.none,
+                ),
+              ),
+            ),
+            const SizedBox(height: 14),
+            Text(
+              AuthL10n.birthYearLabel(isEn),
+              style: const TextStyle(
+                fontSize: 12.5,
+                fontWeight: FontWeight.w700,
+                color: AppColors.text2,
+              ),
+            ),
+            const SizedBox(height: 6),
+            InkWell(
+              onTap: () => _openBirthYearPicker(isEn),
+              borderRadius: BorderRadius.circular(14),
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 12,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.soft,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(
+                      LucideIcons.calendar,
+                      size: 18,
+                      color: AppColors.muted,
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        isEn
+                            ? '$_selectedBirthYear'
+                            : '$_selectedBirthYear (พ.ศ. ${_selectedBirthYear + 543})',
+                        style: const TextStyle(
+                          fontSize: 14.5,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.text,
+                        ),
                       ),
                     ),
-                  ),
-                  const Icon(
-                    LucideIcons.chevronDown,
-                    size: 18,
-                    color: AppColors.muted,
-                  ),
-                ],
-              ),
-            ),
-          ),
-          if (isUnder13) ...[
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-              decoration: BoxDecoration(
-                color: AppColors.logoutBg,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.logoutBorder),
-              ),
-              child: Text(
-                AuthL10n.birthYearUnder13Error(isEn),
-                style: const TextStyle(
-                  fontSize: 12.5,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.logoutText,
+                    const Icon(
+                      LucideIcons.chevronDown,
+                      size: 18,
+                      color: AppColors.muted,
+                    ),
+                  ],
                 ),
               ),
             ),
-          ],
-          if (isMinor) ...[
-            const SizedBox(height: 10),
-            _ConsentCheckboxRow(
-              value: _guardianConsent,
-              label: AuthL10n.guardianConsentLabel(isEn),
-              onChanged: (val) => setState(() {
-                _guardianConsent = val;
-                _validationError = null;
-              }),
-            ),
-          ],
-          const SizedBox(height: 10),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Expanded(
-                child: _ConsentCheckboxRow(
-                  value: _pdpaAccepted,
-                  label: AuthL10n.pdpaTermsLabel(isEn),
-                  onChanged: (val) => setState(() {
-                    _pdpaAccepted = val;
-                    _validationError = null;
-                  }),
+            if (isUnder13) ...[
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 10,
                 ),
-              ),
-              TextButton(
-                onPressed: () => _openPdpaDetailsSheet(species, isEn),
-                style: TextButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 6),
-                  minimumSize: Size.zero,
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                decoration: BoxDecoration(
+                  color: AppColors.logoutBg,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.logoutBorder),
                 ),
                 child: Text(
-                  AuthL10n.pdpaReadMore(isEn),
+                  AuthL10n.birthYearUnder13Error(isEn),
                   style: const TextStyle(
                     fontSize: 12.5,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.ownerTeal,
-                    decoration: TextDecoration.underline,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.logoutText,
                   ),
                 ),
               ),
             ],
-          ),
-          if (_validationError != null && !isUnder13) ...[
-            const SizedBox(height: 10),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-              decoration: BoxDecoration(
-                color: AppColors.logoutBg,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.logoutBorder),
+            if (isMinor) ...[
+              const SizedBox(height: 10),
+              _ConsentCheckboxRow(
+                value: _guardianConsent,
+                label: AuthL10n.guardianConsentLabel(isEn),
+                onChanged: (val) => setState(() {
+                  _guardianConsent = val;
+                  _validationError = null;
+                }),
               ),
-              child: Text(
-                _validationError!,
-                style: const TextStyle(
-                  fontSize: 12.5,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.logoutText,
+            ],
+            const SizedBox(height: 10),
+            _PdpaConsentInlineRow(
+              value: _pdpaAccepted,
+              termsText: AuthL10n.pdpaTermsLabel(isEn),
+              readMoreText: AuthL10n.pdpaReadMore(isEn),
+              onChanged: (val) => setState(() {
+                _pdpaAccepted = val;
+                _validationError = null;
+              }),
+              onReadMore: () => _openPdpaDetailsSheet(species, isEn),
+            ),
+            if (_validationError != null && !isUnder13) ...[
+              const SizedBox(height: 10),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 10,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.logoutBg,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.logoutBorder),
+                ),
+                child: Text(
+                  _validationError!,
+                  style: const TextStyle(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.logoutText,
+                  ),
                 ),
               ),
-            ),
+            ],
+            const SizedBox(height: 16),
           ],
-          const SizedBox(height: 16),
           Text(
             AuthL10n.phoneLabel(isEn),
             style: const TextStyle(
@@ -704,13 +735,9 @@ class _LoginPageState extends ConsumerState<LoginPage> with ToastMixin {
             onPressed: canSocial
                 ? () => _handleSocialLogin(AuthMethod.google, isEn)
                 : null,
-            icon: Text(
-              'G',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w800,
-                color: canSocial ? const Color(0xFF4285F4) : AppColors.muted,
-              ),
+            icon: Opacity(
+              opacity: canSocial ? 1.0 : 0.45,
+              child: const GoogleLogoIcon(size: 18),
             ),
             label: Text(
               AuthL10n.googleBtn(isEn),
@@ -732,7 +759,10 @@ class _LoginPageState extends ConsumerState<LoginPage> with ToastMixin {
             onPressed: canSocial
                 ? () => _handleSocialLogin(AuthMethod.line, isEn)
                 : null,
-            icon: const Icon(LucideIcons.messageCircle, size: 18),
+            icon: Opacity(
+              opacity: canSocial ? 1.0 : 0.45,
+              child: const LineLogoIcon(size: 20),
+            ),
             label: Text(
               AuthL10n.lineBtn(isEn),
               style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
@@ -906,6 +936,173 @@ class _LoginPageState extends ConsumerState<LoginPage> with ToastMixin {
   }
 }
 
+class _AuthModeTabs extends StatelessWidget {
+  const _AuthModeTabs({
+    required this.isRegisterMode,
+    required this.signInLabel,
+    required this.registerLabel,
+    required this.onChanged,
+  });
+
+  final bool isRegisterMode;
+  final String signInLabel;
+  final String registerLabel;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: AppColors.soft,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: _ModeTabButton(
+              label: signInLabel,
+              selected: !isRegisterMode,
+              onTap: () => onChanged(false),
+            ),
+          ),
+          Expanded(
+            child: _ModeTabButton(
+              label: registerLabel,
+              selected: isRegisterMode,
+              onTap: () => onChanged(true),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ModeTabButton extends StatelessWidget {
+  const _ModeTabButton({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 160),
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        decoration: BoxDecoration(
+          color: selected ? AppColors.card : Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: selected
+              ? const [
+                  BoxShadow(
+                    color: Color(0x12000000),
+                    blurRadius: 4,
+                    offset: Offset(0, 1),
+                  ),
+                ]
+              : null,
+        ),
+        child: Text(
+          label,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
+            color: selected ? AppColors.text : AppColors.muted,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PdpaConsentInlineRow extends StatefulWidget {
+  const _PdpaConsentInlineRow({
+    required this.value,
+    required this.termsText,
+    required this.readMoreText,
+    required this.onChanged,
+    required this.onReadMore,
+  });
+
+  final bool value;
+  final String termsText;
+  final String readMoreText;
+  final ValueChanged<bool> onChanged;
+  final VoidCallback onReadMore;
+
+  @override
+  State<_PdpaConsentInlineRow> createState() => _PdpaConsentInlineRowState();
+}
+
+class _PdpaConsentInlineRowState extends State<_PdpaConsentInlineRow> {
+  late final TapGestureRecognizer _readMoreRecognizer;
+
+  @override
+  void initState() {
+    super.initState();
+    _readMoreRecognizer = TapGestureRecognizer()
+      ..onTap = widget.onReadMore;
+  }
+
+  @override
+  void dispose() {
+    _readMoreRecognizer.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Checkbox(
+          value: widget.value,
+          activeColor: AppColors.ownerTeal,
+          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          onChanged: (next) => widget.onChanged(next ?? false),
+        ),
+        const SizedBox(width: 4),
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.only(top: 6),
+            child: Text.rich(
+              TextSpan(
+                style: const TextStyle(
+                  fontSize: 12.5,
+                  color: AppColors.text,
+                  height: 1.45,
+                ),
+                children: [
+                  TextSpan(text: '${widget.termsText} '),
+                  TextSpan(
+                    text: widget.readMoreText,
+                    recognizer: _readMoreRecognizer,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.ownerTeal,
+                      decoration: TextDecoration.underline,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 class _PdpaDetailSection extends StatelessWidget {
   const _PdpaDetailSection({required this.title, required this.body});
 
@@ -982,8 +1179,8 @@ class _ConsentCheckboxRow extends StatelessWidget {
   }
 }
 
-class _TopBar extends StatelessWidget {
-  const _TopBar({
+class _OtpTopBar extends StatelessWidget {
+  const _OtpTopBar({
     required this.title,
     required this.backLabel,
     required this.onBack,

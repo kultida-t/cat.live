@@ -54,7 +54,7 @@ void main() {
   });
 
   testWidgets(
-    'LoginPage ต้องยินยอม PDPA ก่อน, เปิดอ่านรายละเอียด PDPA ได้, และขอ/ยืนยัน OTP สำเร็จ',
+    'แท็บสมัครสมาชิก: เปิดอ่านรายละเอียด PDPA, Wheel Picker, และขอ/ยืนยัน OTP สำเร็จ',
     (tester) async {
       WidgetRef? capturedRef;
       await tester.pumpWidget(
@@ -71,34 +71,40 @@ void main() {
         findsOneWidget,
       );
 
-      // 1. เปิดอ่านรายละเอียด PDPA และกดยอมรับและปิดหน้าต่าง
-      await tester.tap(find.text('อ่านรายละเอียด'));
-      await tester.pumpAndSettle();
-      expect(
-        find.text('ข้อกำหนดและนโยบายคุ้มครองข้อมูล (PDPA)'),
-        findsOneWidget,
-      );
-      await tester.tap(find.text('ยอมรับและปิดหน้าต่าง'));
+      // สลับไปแท็บ สมัครสมาชิก
+      await tester.tap(find.text('สมัครสมาชิก'));
       await tester.pumpAndSettle();
 
-      // 2. กรอกเบอร์ไม่ครบ -> ปุ่มขอ OTP ยังกดไม่ได้ (disabled)
-      await tester.enterText(find.byType(TextField).first, '1234');
+      // 1. เปิด Wheel Picker ปีเกิด
+      await tester.tap(find.text('1995 (พ.ศ. 2538)'));
+      await tester.pumpAndSettle();
+      expect(find.text('เลือกปีเกิด'), findsOneWidget);
+      await tester.tap(find.text('ตกลง'));
+      await tester.pumpAndSettle();
+
+      // 2. ติ๊ก PDPA
+      await tester.tap(find.byType(Checkbox).first);
+      await tester.pump();
+
+      // 3. กรอกเบอร์ไม่ครบ -> ปุ่มขอ OTP ยังกดไม่ได้ (disabled)
+      await tester.enterText(find.byType(TextField).last, '1234');
       await tester.pump();
       final disabledBtn = tester.widget<FilledButton>(
         find.widgetWithText(FilledButton, 'ขอรหัส OTP'),
       );
       expect(disabledBtn.onPressed, isNull);
 
-      // 3. กรอกเบอร์ถูกต้อง -> ขอ OTP สำเร็จ
-      await tester.enterText(find.byType(TextField).first, '0812345678');
+      // 4. กรอกเบอร์ถูกต้อง -> ขอ OTP สำเร็จ
+      await tester.enterText(find.byType(TextField).last, '0812345678');
       await tester.pump();
+      await tester.ensureVisible(find.text('ขอรหัส OTP'));
       await tester.tap(find.text('ขอรหัส OTP'));
       await tester.pump(const Duration(milliseconds: 50));
       await tester.pump();
       expect(find.text('ยืนยันรหัส OTP'), findsWidgets);
       expect(find.textContaining('Ref: ML5678'), findsOneWidget);
 
-      // 4. กรอกผิด 5 ครั้ง -> ล็อก 15 นาที
+      // 5. กรอกผิด 5 ครั้ง -> ล็อก 15 นาที
       for (var i = 1; i <= 5; i++) {
         await tester.enterText(find.byType(TextField).first, '000000');
         await tester.tap(find.text('ยืนยันและเข้าสู่ระบบ'));
@@ -107,11 +113,12 @@ void main() {
       }
       expect(find.textContaining('กรอกรหัสผิดครบ 5 ครั้ง'), findsOneWidget);
 
-      // 5. เปลี่ยนเบอร์แล้วขอใหม่ + กดเติม 123456 แล้วยืนยันสำเร็จ
+      // 6. เปลี่ยนเบอร์แล้วขอใหม่ + กดเติม 123456 แล้วยืนยันสำเร็จ
       await tester.tap(find.text('เปลี่ยนเบอร์โทรศัพท์'));
       await tester.pump();
-      await tester.enterText(find.byType(TextField).first, '0812345678');
+      await tester.enterText(find.byType(TextField).last, '0812345678');
       await tester.pump();
+      await tester.ensureVisible(find.text('ขอรหัส OTP'));
       await tester.tap(find.text('ขอรหัส OTP'));
       await tester.pump(const Duration(milliseconds: 50));
       await tester.pump();
@@ -126,7 +133,7 @@ void main() {
     },
   );
 
-  testWidgets('LoginPage เปิด Wheel Picker เลือกปีเกิดได้ และเข้า Guest Mode ได้', (
+  testWidgets('แท็บเข้าสู่ระบบ: เข้า Guest Mode และ Social Login (LINE) ได้', (
     tester,
   ) async {
     WidgetRef? capturedRef;
@@ -136,13 +143,6 @@ void main() {
         onRefReady: (r) => capturedRef = r,
       ),
     );
-    await tester.pumpAndSettle();
-
-    // เปิด Wheel Picker ปีเกิด
-    await tester.tap(find.text('1995 (พ.ศ. 2538)'));
-    await tester.pumpAndSettle();
-    expect(find.text('เลือกปีเกิด'), findsOneWidget);
-    await tester.tap(find.text('ตกลง'));
     await tester.pumpAndSettle();
 
     // กดเข้า Guest Mode
@@ -162,7 +162,7 @@ void main() {
     expect(capturedRef!.read(authControllerProvider).isGuest, isTrue);
   });
 
-  testWidgets('LoginPage รองรับ Social Login เมื่อติ๊ก PDPA แล้ว (LINE)', (
+  testWidgets('แท็บเข้าสู่ระบบ: กด Social Login LINE สำเร็จทันที', (
     tester,
   ) async {
     WidgetRef? capturedRef;
@@ -173,10 +173,6 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-
-    // ติ๊ก PDPA ก่อน
-    await tester.tap(find.text('ยอมรับข้อกำหนดและนโยบายคุ้มครองข้อมูล (PDPA)'));
-    await tester.pump();
 
     await tester.scrollUntilVisible(
       find.text('ดำเนินการต่อด้วย LINE'),

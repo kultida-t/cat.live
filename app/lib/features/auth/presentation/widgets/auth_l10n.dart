@@ -5,6 +5,18 @@ abstract final class AuthL10n {
   static String pageTitle(bool isEn) =>
       isEn ? 'Sign in' : 'เข้าสู่ระบบ';
 
+  static String tabSignIn(bool isEn) =>
+      isEn ? 'Sign in' : 'เข้าสู่ระบบ';
+
+  static String tabRegister(bool isEn) =>
+      isEn ? 'Register' : 'สมัครสมาชิก';
+
+  static String displayNameLabel(bool isEn) =>
+      isEn ? 'Display name (optional)' : 'ชื่อที่แสดง (ไม่บังคับ)';
+
+  static String displayNameHint(bool isEn) =>
+      isEn ? 'e.g. Lookkaew' : 'เช่น ลูกแก้ว';
+
   static String backLabel(bool isEn) => isEn ? 'Back' : 'ย้อนกลับ';
 
   static String headline(PetSpeciesConfig species, bool isEn) => isEn

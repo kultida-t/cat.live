@@ -108,3 +108,24 @@ class TikTokLogoIcon extends StatelessWidget {
     );
   }
 }
+
+/// โลโก้ G 4 สีทางการของ Google
+class GoogleLogoIcon extends StatelessWidget {
+  const GoogleLogoIcon({super.key, this.size = 20});
+
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    return SvgPicture.string(
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">'
+      '<path fill="#4285F4" d="M23.49 12.27c0-.79-.07-1.54-.2-2.27H12v4.3h6.45c-.28 1.49-1.12 2.75-2.38 3.6v2.99h3.85c2.25-2.07 3.57-5.12 3.57-8.62z"/>'
+      '<path fill="#34A853" d="M12 24c3.24 0 5.95-1.07 7.93-2.91l-3.85-2.99c-1.07.72-2.44 1.15-4.08 1.15-3.14 0-5.8-2.12-6.75-4.97H1.28v3.08C3.25 21.28 7.31 24 12 24z"/>'
+      '<path fill="#FBBC05" d="M5.25 14.28c-.24-.72-.38-1.49-.38-2.28s.14-1.56.38-2.28V6.64H1.28C.47 8.25 0 10.07 0 12s.47 3.75 1.28 5.36l3.97-3.08z"/>'
+      '<path fill="#EA4335" d="M12 4.75c1.76 0 3.34.61 4.58 1.8l3.43-3.43C17.95 1.19 15.24 0 12 0 7.31 0 3.25 2.72 1.28 6.64l3.97 3.08c.95-2.85 3.61-4.97 6.75-4.97z"/>'
+      '</svg>',
+      width: size,
+      height: size,
+    );
+  }
+}
