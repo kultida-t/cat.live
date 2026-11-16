@@ -35,6 +35,14 @@ class _ConnectionsPageState extends ConsumerState<ConnectionsPage>
   _SortOrder _sort = _SortOrder.defaultOrder;
 
   @override
+  void initState() {
+    super.initState();
+    Future.microtask(
+      () => ref.read(feedControllerProvider.notifier).ensureAccountsLoaded(),
+    );
+  }
+
+  @override
   void dispose() {
     disposeToast();
     _search.dispose();

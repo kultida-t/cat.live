@@ -13,7 +13,9 @@ class FeedHeader extends StatelessWidget {
     required this.onComingSoon,
     required this.onCreatePost,
     this.onOpenMenu,
+    this.onOpenNotifications,
     this.onOpenMessages,
+    this.unreadNotifications = 3,
   });
 
   final FeedTab tab;
@@ -21,7 +23,9 @@ class FeedHeader extends StatelessWidget {
   final ValueChanged<String> onComingSoon;
   final VoidCallback onCreatePost;
   final VoidCallback? onOpenMenu;
+  final VoidCallback? onOpenNotifications;
   final VoidCallback? onOpenMessages;
+  final int unreadNotifications;
 
   static const _labels = {
     FeedTab.all: 'ทั้งหมด',
@@ -58,10 +62,13 @@ class FeedHeader extends StatelessWidget {
                 ),
               ),
               _HeaderButton(
-                label: 'การแจ้งเตือน 3 รายการใหม่',
+                label: unreadNotifications > 0
+                    ? 'การแจ้งเตือน $unreadNotifications รายการใหม่'
+                    : 'การแจ้งเตือน',
                 icon: LucideIcons.bell,
-                dotRight: 10,
-                onTap: () => onComingSoon('การแจ้งเตือน'),
+                dotRight: unreadNotifications > 0 ? 10 : null,
+                onTap:
+                    onOpenNotifications ?? () => onComingSoon('การแจ้งเตือน'),
               ),
               _HeaderButton(
                 label: 'ข้อความ 3 รายการยังไม่อ่าน',

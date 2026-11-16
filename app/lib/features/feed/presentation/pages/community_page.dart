@@ -12,6 +12,7 @@ import '../../../../core/widgets/app_image.dart';
 import '../../../../core/config/app_config.dart';
 import '../../../../core/widgets/error_view.dart';
 import '../../../../core/widgets/toast_pill.dart';
+import '../../../notifications/presentation/providers/notifications_controller.dart';
 import '../../domain/entities/feed_tab.dart';
 import '../../domain/entities/feed_user.dart';
 import '../../domain/entities/post.dart';
@@ -164,7 +165,9 @@ class _CommunityPageState extends ConsumerState<CommunityPage> with ToastMixin {
             onComingSoon: _comingSoon,
             onCreatePost: _createPost,
             onOpenMenu: () => context.push('/menu'),
+            onOpenNotifications: () => context.push('/notifications'),
             onOpenMessages: () => context.push('/messages'),
+            unreadNotifications: ref.watch(unreadNotificationsCountProvider),
           ),
           Expanded(
             child: switch (state.status) {

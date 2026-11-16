@@ -204,3 +204,26 @@
   - `app/lib/core/router/app_router.dart` (route `/treats`), `app/lib/core/theme/app_colors.dart` (หมวด `treats*`)
 - **ขอบเขตที่ยังอนุญาตให้เชื่อมเพิ่มในเฟสถัดไป (ต้องไม่กระทบดีไซน์/พฤติกรรมเดิมที่ล็อกไว้):**
   - สลับแหล่งข้อมูลผู้รับและขนมเป็น Backend API จริง (`/v1/treats`), ชำระเงิน QR จริง (PromptPay/Omise ตามที่ตัดสินใจ), และการจัดส่งขนมจริง
+
+### 13. หน้าการแจ้งเตือน (`/notifications` และหน้าปลายทาง — UI Mock Baseline) — ล็อกเมื่อ 2026-11-16
+- **ตรวจรับบน:** Android (`emulator-5554`), iOS (`iPhone 17`) และตรวจหน้าเว็บจริง `www.แมว.live` (บนเว็บจริงปุ่มกระดิ่งยังเป็น placeholder) แล้ว (`flutter analyze` ผ่าน, `flutter test` 142 เคสผ่าน บน `feat/notifications-page`) พี่มาเต็มทดสอบผ่านครบทุกเคสแล้ว
+- **หน้าจอที่ล็อก:**
+  - `/notifications` (`NotificationsPage` — ครบ 4 สถานะ `loading` skeleton / `empty` / `error` + ลองใหม่ / `content` พร้อมสลับภาษา ไทย/EN ผ่าน `NotificationsL10n` + `appLocaleProvider`)
+  - **ส่วนหัวและตัวกรอง:** ปุ่ม `<`, หัวข้อ `การแจ้งเตือน`, ปุ่ม `อ่านทั้งหมดแล้ว` (ซิงก์จุดแดงบนกระดิ่ง `HomeHeader` และ `FeedHeader` ทันที), ชิปกรอง `ทั้งหมด` / `ยังไม่อ่าน (N)`
+  - **หน้าปลายทาง (push ซ้อนบนหน้าแจ้งเตือนเพื่อให้กด `<` กลับหน้าแจ้งเตือนได้ทุกอัน):**
+    - `/notifications/post/:id` (`NotificationPostDetailPage` — แสดง `PostCard` แบบเดียวกับหน้าฟีด, เด้งชีต `ความคิดเห็น` อัตโนมัติเมื่อ `?comments=1`)
+    - `/notifications/treats` (`ReceivedTreatsPage` — รายละเอียด + ประวัติขนมที่ได้รับ, ปุ่ม `ส่งข้อความขอบคุณ` 1 บรรทัดเข้าห้องแชทผู้ส่งโดยตรง และ `ส่งขนมกลับ` → `/treats?to=<id>`)
+    - `/notifications/help` (`NotificationHelpAlertPage` — รายละเอียดประกาศแมวหายใกล้คุณ)
+    - `/notifications/connections` (`ConnectionsPage(initialTab: ConnectionsTab.followers)` — โหลดรายชื่ออัตโนมัติผ่าน `ensureAccountsLoaded()` แม้ยังไม่เคยเปิดแท็บฟีด)
+    - `/notifications/health?cat=<id>` (`CatHealthPage(initialCatId: ...)` — เปิดสมุดสุขภาพตรงตามแมวที่แจ้งเตือน)
+    - `/cat-profile` (`CatIdPage`)
+- **การเชื่อมจุดเข้าหน้า (อนุมัติจากพี่มาเต็มเมื่อ 2026-11-16):**
+  - เชื่อมปุ่มกระดิ่ง 🔔 บน `HomeHeader` (`home_header.dart`, `home_page.dart`) และ `FeedHeader` (`feed_header.dart`, `community_page.dart`) → `/notifications` พร้อมซิงก์จำนวน `unreadNotificationsCountProvider`
+  - เชื่อมสถิติ `12 ผู้ติดตาม` บน `OwnerProfileView` (`owner_profile_view.dart`) → `/notifications/connections` และให้ `ConnectionsPage` (`connections_page.dart`) โหลด `accounts` อัตโนมัติผ่าน `FeedController.ensureAccountsLoaded()`
+  - เพิ่ม `initialCatId` ใน `CatHealthPage` (`cat_health_page.dart`)
+- **ไฟล์หลัก:**
+  - `app/lib/features/notifications/` (domain / data / presentation)
+  - `app/test/features/notifications/notifications_page_test.dart`
+  - `app/lib/core/router/app_router.dart`
+- **ขอบเขตที่ยังอนุญาตให้เชื่อมเพิ่มในเฟสถัดไป (ต้องไม่กระทบดีไซน์/พฤติกรรมเดิมที่ล็อกไว้):**
+  - สลับแหล่งข้อมูลแจ้งเตือนและสถานะการอ่านเป็น Backend API จริง (`/v1/notifications`) และเชื่อม Push Notification จริงใน Phase 2

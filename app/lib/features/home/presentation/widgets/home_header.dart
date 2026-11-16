@@ -10,13 +10,17 @@ class HomeHeader extends StatelessWidget {
     required this.onComingSoon,
     this.onOpenMenu,
     this.onOpenSearch,
+    this.onOpenNotifications,
     this.onOpenMessages,
+    this.unreadNotifications = 3,
   });
 
   final ValueChanged<String> onComingSoon;
   final VoidCallback? onOpenMenu;
   final VoidCallback? onOpenSearch;
+  final VoidCallback? onOpenNotifications;
   final VoidCallback? onOpenMessages;
+  final int unreadNotifications;
 
   @override
   Widget build(BuildContext context) {
@@ -47,10 +51,12 @@ class HomeHeader extends StatelessWidget {
               ),
             ),
             _HeaderButton(
-              label: 'การแจ้งเตือน 3 รายการใหม่',
+              label: unreadNotifications > 0
+                  ? 'การแจ้งเตือน $unreadNotifications รายการใหม่'
+                  : 'การแจ้งเตือน',
               icon: LucideIcons.bell,
-              dotRight: 10,
-              onTap: () => onComingSoon('การแจ้งเตือน'),
+              dotRight: unreadNotifications > 0 ? 10 : null,
+              onTap: onOpenNotifications ?? () => onComingSoon('การแจ้งเตือน'),
             ),
             _HeaderButton(
               label: 'ข้อความ 3 รายการยังไม่อ่าน',
