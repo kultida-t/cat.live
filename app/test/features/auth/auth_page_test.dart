@@ -125,6 +125,7 @@ void main() {
     await tester.scrollUntilVisible(
       find.text('เข้าใช้งานต่อแบบผู้เยี่ยมชม (Guest Mode)'),
       200,
+      scrollable: find.byType(Scrollable).first,
     );
     await tester.tap(find.text('เข้าใช้งานต่อแบบผู้เยี่ยมชม (Guest Mode)'));
     await tester.pumpAndSettle();
@@ -148,7 +149,10 @@ void main() {
     await tester.scrollUntilVisible(
       find.text('ดำเนินการต่อด้วย LINE'),
       200,
+      scrollable: find.byType(Scrollable).first,
     );
+    await tester.ensureVisible(find.text('ดำเนินการต่อด้วย LINE'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('ดำเนินการต่อด้วย LINE'));
     await tester.pumpAndSettle();
 

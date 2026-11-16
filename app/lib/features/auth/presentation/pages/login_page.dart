@@ -319,29 +319,17 @@ class _LoginPageState extends ConsumerState<LoginPage> with ToastMixin {
           ),
           if (isMinor) ...[
             const SizedBox(height: 8),
-            CheckboxListTile(
+            _ConsentCheckboxRow(
               value: _guardianConsent,
-              contentPadding: EdgeInsets.zero,
-              controlAffinity: ListTileControlAffinity.leading,
-              activeColor: AppColors.ownerTeal,
-              title: Text(
-                AuthL10n.guardianConsentLabel(isEn),
-                style: const TextStyle(fontSize: 12.5, color: AppColors.text),
-              ),
-              onChanged: (val) =>
-                  setState(() => _guardianConsent = val ?? false),
+              label: AuthL10n.guardianConsentLabel(isEn),
+              onChanged: (val) => setState(() => _guardianConsent = val),
             ),
           ],
-          CheckboxListTile(
+          const SizedBox(height: 4),
+          _ConsentCheckboxRow(
             value: _pdpaAccepted,
-            contentPadding: EdgeInsets.zero,
-            controlAffinity: ListTileControlAffinity.leading,
-            activeColor: AppColors.ownerTeal,
-            title: Text(
-              AuthL10n.pdpaTermsLabel(isEn),
-              style: const TextStyle(fontSize: 12.5, color: AppColors.text),
-            ),
-            onChanged: (val) => setState(() => _pdpaAccepted = val ?? false),
+            label: AuthL10n.pdpaTermsLabel(isEn),
+            onChanged: (val) => setState(() => _pdpaAccepted = val),
           ),
           if (_validationError != null) ...[
             Container(
@@ -629,6 +617,46 @@ class _LoginPageState extends ConsumerState<LoginPage> with ToastMixin {
             ],
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _ConsentCheckboxRow extends StatelessWidget {
+  const _ConsentCheckboxRow({
+    required this.value,
+    required this.label,
+    required this.onChanged,
+  });
+
+  final bool value;
+  final String label;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: () => onChanged(!value),
+      borderRadius: BorderRadius.circular(10),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Row(
+          children: [
+            Checkbox(
+              value: value,
+              activeColor: AppColors.ownerTeal,
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              onChanged: (next) => onChanged(next ?? false),
+            ),
+            const SizedBox(width: 4),
+            Expanded(
+              child: Text(
+                label,
+                style: const TextStyle(fontSize: 12.5, color: AppColors.text),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
