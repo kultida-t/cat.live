@@ -75,6 +75,23 @@ abstract final class AuthL10n {
       ? 'Please enter a valid 10-digit Thai mobile number.'
       : 'กรุณากรอกเบอร์มือถือไทย 10 หลักให้ถูกต้อง (เช่น 0812345678)';
 
+  static String pinLabel(bool isEn) =>
+      isEn ? '6-digit PIN' : 'รหัส PIN 6 หลัก';
+
+  static String signInWithPinBtn(bool isEn) =>
+      isEn ? 'Sign in with PIN' : 'เข้าสู่ระบบด้วย PIN';
+
+  static String biometricBtn(bool isEn) =>
+      isEn ? 'Sign in with Face ID / Touch ID' : 'เข้าสู่ระบบด้วย Face ID / สแกนนิ้ว';
+
+  static String switchDeviceOtpLink(bool isEn) => isEn
+      ? 'New device or forgot PIN? Verify with OTP'
+      : 'เปลี่ยนเครื่อง / ลืม PIN? ยืนยันด้วยรหัส OTP';
+
+  static String invalidPinError(bool isEn) => isEn
+      ? 'Incorrect PIN (Demo PIN: 123456).'
+      : 'รหัส PIN ไม่ถูกต้อง (รหัสทดสอบ: 123456)';
+
   static String requestOtpBtn(bool isEn) =>
       isEn ? 'Request OTP' : 'ขอรหัส OTP';
 

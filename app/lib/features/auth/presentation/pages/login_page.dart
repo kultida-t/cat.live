@@ -26,8 +26,10 @@ class LoginPage extends ConsumerStatefulWidget {
 class _LoginPageState extends ConsumerState<LoginPage> with ToastMixin {
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
+  final _pinController = TextEditingController();
   final _otpController = TextEditingController();
   bool _isRegisterMode = false;
+  bool _useOtpInSignIn = false;
   int _selectedBirthYear = 1995;
   bool _guardianConsent = false;
   bool _pdpaAccepted = false;
@@ -36,14 +38,31 @@ class _LoginPageState extends ConsumerState<LoginPage> with ToastMixin {
   @override
   void initState() {
     super.initState();
-    _phoneController.addListener(() => setState(() {}));
-    _otpController.addListener(() => setState(() {}));
+    _phoneController.addListener(() {
+      if (_phoneController.text.length == 10) {
+        FocusManager.instance.primaryFocus?.unfocus();
+      }
+      setState(() {});
+    });
+    _pinController.addListener(() {
+      if (_pinController.text.length == 6) {
+        FocusManager.instance.primaryFocus?.unfocus();
+      }
+      setState(() {});
+    });
+    _otpController.addListener(() {
+      if (_otpController.text.length == 6) {
+        FocusManager.instance.primaryFocus?.unfocus();
+      }
+      setState(() {});
+    });
   }
 
   @override
   void dispose() {
     _nameController.dispose();
     _phoneController.dispose();
+    _pinController.dispose();
     _otpController.dispose();
     disposeToast();
     super.dispose();
@@ -71,6 +90,31 @@ class _LoginPageState extends ConsumerState<LoginPage> with ToastMixin {
 
   bool get _canRequestOtp =>
       _canProceedAuth && AuthRules.isValidThaiPhone(_phoneController.text);
+
+  bool get _canSignInWithPin =>
+      AuthRules.isValidThaiPhone(_phoneController.text) &&
+      _pinController.text.trim().length == 6;
+
+  Future<void> _handleSignInWithPin(bool isEn) async {
+    FocusManager.instance.primaryFocus?.unfocus();
+    if (!_canSignInWithPin) return;
+    if (_pinController.text.trim() != AuthRules.mockValidOtp) {
+      setState(() => _validationError = AuthL10n.invalidPinError(isEn));
+      return;
+    }
+    setState(() => _validationError = null);
+    final ok = await ref
+        .read(authControllerProvider.notifier)
+        .signInWithProvider(
+          method: AuthMethod.phoneOtp,
+          birthYear: _selectedBirthYear,
+          guardianConsentGranted: _guardianConsent,
+        );
+    if (ok && mounted) {
+      showToast(isEn ? 'Signed in successfully' : 'เข้าสู่ระบบสำเร็จแล้ว');
+      context.go('/');
+    }
+  }
 
   bool _validateCompliance(bool isEn) {
     if (!_isRegisterMode) {
@@ -359,24 +403,31 @@ class _LoginPageState extends ConsumerState<LoginPage> with ToastMixin {
     final species = ref.watch(petSpeciesConfigProvider);
     final challenge = authState.otpChallenge;
 
-    return Scaffold(
-      backgroundColor: AppColors.page,
-      body: SafeArea(
-        child: Stack(
-          children: [
-            Column(
-              children: [
-                if (challenge != null)
-                  _OtpTopBar(
-                    title: AuthL10n.otpTitle(isEn),
-                    backLabel: AuthL10n.backLabel(isEn),
-                    onBack: () => ref
-                        .read(authControllerProvider.notifier)
-                        .clearOtpChallenge(),
-                  ),
-                Expanded(
-                  child: ListView(
-                    key: ValueKey(challenge == null ? 'login-list' : 'otp-list'),
+    return GestureDetector(
+      behavior: HitTestBehavior.translucent,
+      onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+      child: Scaffold(
+        backgroundColor: AppColors.page,
+        body: SafeArea(
+          child: Stack(
+            children: [
+              Column(
+                children: [
+                  if (challenge != null)
+                    _OtpTopBar(
+                      title: AuthL10n.otpTitle(isEn),
+                      backLabel: AuthL10n.backLabel(isEn),
+                      onBack: () => ref
+                          .read(authControllerProvider.notifier)
+                          .clearOtpChallenge(),
+                    ),
+                  Expanded(
+                    child: ListView(
+                      key: ValueKey(
+                        challenge == null ? 'login-list' : 'otp-list',
+                      ),
+                      keyboardDismissBehavior:
+                          ScrollViewKeyboardDismissBehavior.onDrag,
                     padding: EdgeInsets.fromLTRB(
                       20,
                       challenge == null ? 24 : 8,
@@ -429,6 +480,7 @@ class _LoginPageState extends ConsumerState<LoginPage> with ToastMixin {
                           registerLabel: AuthL10n.tabRegister(isEn),
                           onChanged: (register) => setState(() {
                             _isRegisterMode = register;
+                            _useOtpInSignIn = false;
                             _validationError = null;
                           }),
                         ),
@@ -492,6 +544,7 @@ class _LoginPageState extends ConsumerState<LoginPage> with ToastMixin {
           ],
         ),
       ),
+    ),
     );
   }
 
@@ -673,8 +726,11 @@ class _LoginPageState extends ConsumerState<LoginPage> with ToastMixin {
             controller: _phoneController,
             enabled: !isUnder13,
             keyboardType: TextInputType.phone,
+            maxLength: 10,
+            textInputAction: TextInputAction.done,
             decoration: InputDecoration(
               hintText: AuthL10n.phoneHint(isEn),
+              counterText: '',
               prefixIcon: const Icon(LucideIcons.smartphone, size: 18),
               filled: true,
               fillColor: AppColors.soft,
@@ -684,24 +740,151 @@ class _LoginPageState extends ConsumerState<LoginPage> with ToastMixin {
               ),
             ),
           ),
-          const SizedBox(height: 12),
-          FilledButton(
-            onPressed: authState.isSubmitting || !_canRequestOtp
-                ? null
-                : () => _handleRequestOtp(isEn),
-            style: FilledButton.styleFrom(
-              backgroundColor: AppColors.ownerTeal,
-              foregroundColor: Colors.white,
-              disabledBackgroundColor: AppColors.line2,
-              disabledForegroundColor: AppColors.muted,
-              shape: const StadiumBorder(),
-              padding: const EdgeInsets.symmetric(vertical: 14),
+          if (!_isRegisterMode && !_useOtpInSignIn) ...[
+            const SizedBox(height: 12),
+            Text(
+              AuthL10n.pinLabel(isEn),
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: AppColors.text,
+              ),
             ),
-            child: Text(
-              AuthL10n.requestOtpBtn(isEn),
-              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _pinController,
+              keyboardType: TextInputType.number,
+              obscureText: true,
+              maxLength: 6,
+              textInputAction: TextInputAction.done,
+              decoration: InputDecoration(
+                hintText: '••••••',
+                counterText: '',
+                prefixIcon: const Icon(LucideIcons.lockKeyhole, size: 18),
+                filled: true,
+                fillColor: AppColors.soft,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: BorderSide.none,
+                ),
+              ),
             ),
-          ),
+            if (_validationError != null) ...[
+              const SizedBox(height: 10),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 10,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.logoutBg,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.logoutBorder),
+                ),
+                child: Text(
+                  _validationError!,
+                  style: const TextStyle(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.logoutText,
+                  ),
+                ),
+              ),
+            ],
+            const SizedBox(height: 12),
+            FilledButton(
+              onPressed: authState.isSubmitting || !_canSignInWithPin
+                  ? null
+                  : () => _handleSignInWithPin(isEn),
+              style: FilledButton.styleFrom(
+                backgroundColor: AppColors.ownerTeal,
+                foregroundColor: Colors.white,
+                disabledBackgroundColor: AppColors.line2,
+                disabledForegroundColor: AppColors.muted,
+                shape: const StadiumBorder(),
+                padding: const EdgeInsets.symmetric(vertical: 14),
+              ),
+              child: Text(
+                AuthL10n.signInWithPinBtn(isEn),
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            OutlinedButton.icon(
+              onPressed: authState.isSubmitting
+                  ? null
+                  : () => _handleSocialLogin(AuthMethod.phoneOtp, isEn),
+              icon: const Icon(LucideIcons.scanFace, size: 18),
+              label: Text(
+                AuthL10n.biometricBtn(isEn),
+                style: const TextStyle(
+                  fontSize: 13.5,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              style: OutlinedButton.styleFrom(
+                backgroundColor: Colors.white,
+                foregroundColor: AppColors.ownerTeal,
+                side: const BorderSide(color: AppColors.ownerTealBorder),
+                shape: const StadiumBorder(),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+              ),
+            ),
+            TextButton(
+              onPressed: () => setState(() {
+                _useOtpInSignIn = true;
+                _validationError = null;
+              }),
+              child: Text(
+                AuthL10n.switchDeviceOtpLink(isEn),
+                style: const TextStyle(
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.muted,
+                ),
+              ),
+            ),
+          ] else ...[
+            const SizedBox(height: 12),
+            FilledButton(
+              onPressed: authState.isSubmitting || !_canRequestOtp
+                  ? null
+                  : () => _handleRequestOtp(isEn),
+              style: FilledButton.styleFrom(
+                backgroundColor: AppColors.ownerTeal,
+                foregroundColor: Colors.white,
+                disabledBackgroundColor: AppColors.line2,
+                disabledForegroundColor: AppColors.muted,
+                shape: const StadiumBorder(),
+                padding: const EdgeInsets.symmetric(vertical: 14),
+              ),
+              child: Text(
+                AuthL10n.requestOtpBtn(isEn),
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+            if (!_isRegisterMode && _useOtpInSignIn)
+              TextButton(
+                onPressed: () => setState(() {
+                  _useOtpInSignIn = false;
+                  _validationError = null;
+                }),
+                child: Text(
+                  isEn ? 'Back to PIN sign-in' : 'กลับไปเข้าสู่ระบบด้วย PIN',
+                  style: const TextStyle(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.muted,
+                  ),
+                ),
+              ),
+          ],
           const SizedBox(height: 16),
           Row(
             children: [

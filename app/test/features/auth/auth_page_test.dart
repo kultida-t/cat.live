@@ -169,6 +169,29 @@ void main() {
     expect(capturedRef!.read(authControllerProvider).isGuest, isTrue);
   });
 
+  testWidgets('แท็บเข้าสู่ระบบ: เข้าด้วยเบอร์โทร + PIN 6 หลักได้', (
+    tester,
+  ) async {
+    WidgetRef? capturedRef;
+    await tester.pumpWidget(
+      _wrapLoginPage(
+        remoteDataSource: MockAuthRemoteDataSource(latency: Duration.zero),
+        onRefReady: (r) => capturedRef = r,
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextField).first, '0812345678');
+    await tester.enterText(find.byType(TextField).last, '123456');
+    await tester.pump();
+
+    await tester.tap(find.text('เข้าสู่ระบบด้วย PIN'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Home'), findsOneWidget);
+    expect(capturedRef!.read(authControllerProvider).isAuthenticated, isTrue);
+  });
+
   testWidgets('แท็บเข้าสู่ระบบ: กด Social Login LINE สำเร็จทันที', (
     tester,
   ) async {
