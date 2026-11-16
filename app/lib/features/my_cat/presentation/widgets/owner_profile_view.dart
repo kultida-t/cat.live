@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../../core/theme/app_colors.dart';
@@ -62,6 +63,7 @@ class OwnerProfileView extends StatelessWidget {
                       child: _StatColumn(
                         value: '${owner.followerCount}',
                         label: isEn ? 'Followers' : 'ผู้ติดตาม',
+                        onTap: () => context.push('/notifications/connections'),
                       ),
                     ),
                     Expanded(
@@ -251,31 +253,48 @@ class OwnerProfileView extends StatelessWidget {
 }
 
 class _StatColumn extends StatelessWidget {
-  const _StatColumn({required this.value, required this.label});
+  const _StatColumn({required this.value, required this.label, this.onTap});
 
   final String value;
   final String label;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    return FittedBox(
-      fit: BoxFit.scaleDown,
-      child: Column(
-        children: [
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 19,
-              fontWeight: FontWeight.w700,
-              color: AppColors.text,
-            ),
+    final child = ConstrainedBox(
+      constraints: const BoxConstraints(minHeight: 44),
+      child: Center(
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Column(
+            children: [
+              Text(
+                value,
+                style: const TextStyle(
+                  fontSize: 19,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.text,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                label,
+                style: const TextStyle(fontSize: 12, color: AppColors.muted),
+              ),
+            ],
           ),
-          const SizedBox(height: 2),
-          Text(
-            label,
-            style: const TextStyle(fontSize: 12, color: AppColors.muted),
-          ),
-        ],
+        ),
+      ),
+    );
+    if (onTap == null) return child;
+    return Semantics(
+      button: true,
+      label: '$value $label',
+      excludeSemantics: true,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: child,
       ),
     );
   }

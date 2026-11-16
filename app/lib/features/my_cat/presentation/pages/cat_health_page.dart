@@ -38,14 +38,16 @@ enum HealthBookTab {
 
 /// หน้าสมุดสุขภาพทั้งหมด (/my-cat/health) — เทียบตรงจาก www.แมว.live/my-cat/health
 class CatHealthPage extends ConsumerStatefulWidget {
-  const CatHealthPage({super.key});
+  const CatHealthPage({super.key, this.initialCatId});
+
+  final String? initialCatId;
 
   @override
   ConsumerState<CatHealthPage> createState() => _CatHealthPageState();
 }
 
 class _CatHealthPageState extends ConsumerState<CatHealthPage> with ToastMixin {
-  String? _selectedCatId;
+  late String? _selectedCatId = widget.initialCatId;
   HealthBookTab _activeTab = HealthBookTab.history;
   final Map<String, GlobalKey> _catChipKeys = {};
   final Map<HealthBookTab, GlobalKey> _tabKeys = {};
@@ -166,7 +168,9 @@ class _CatHealthPageState extends ConsumerState<CatHealthPage> with ToastMixin {
                           onNotify: showToast,
                         ),
                 ),
-                Expanded(child: _buildBody(state, bundle, cats, activeCat, isEn)),
+                Expanded(
+                  child: _buildBody(state, bundle, cats, activeCat, isEn),
+                ),
               ],
             ),
             if (toastMessage != null)
@@ -349,9 +353,7 @@ class _CatHealthPageState extends ConsumerState<CatHealthPage> with ToastMixin {
           isEn: isEn,
           onSave: (vaccine) {
             controller.addVaccineRecord(cat.id, vaccine);
-            showToast(
-              isEn ? 'Vaccination saved' : 'บันทึกวัคซีนเรียบร้อยแล้ว',
-            );
+            showToast(isEn ? 'Vaccination saved' : 'บันทึกวัคซีนเรียบร้อยแล้ว');
           },
         ),
       ),
@@ -409,9 +411,7 @@ class _CatHealthPageState extends ConsumerState<CatHealthPage> with ToastMixin {
           onNotify: showToast,
           onAddDocument: (doc) {
             controller.addHealthDocument(cat.id, doc);
-            showToast(
-              isEn ? 'Document added' : 'เพิ่มเอกสารสุขภาพแล้ว',
-            );
+            showToast(isEn ? 'Document added' : 'เพิ่มเอกสารสุขภาพแล้ว');
           },
         ),
       ),
@@ -543,11 +543,7 @@ class _HealthCatChip extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                AppAvatar(
-                  source: cat.avatarSource,
-                  bg: cat.avatarBg,
-                  size: 32,
-                ),
+                AppAvatar(source: cat.avatarSource, bg: cat.avatarBg, size: 32),
                 const SizedBox(width: 8),
                 Text(
                   MyCatL10n.catName(cat.name, isEn),

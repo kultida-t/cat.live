@@ -14,6 +14,7 @@ import '../../../feed/presentation/providers/comments_controller.dart';
 import '../../../feed/presentation/widgets/comments_sheet.dart';
 import '../../../feed/presentation/widgets/post_menu_sheet.dart';
 import '../../../feed/presentation/widgets/share_sheet.dart';
+import '../../../notifications/presentation/providers/notifications_controller.dart';
 import '../providers/home_controller.dart';
 import '../widgets/hero_photo_sheet.dart';
 import '../widgets/home_header.dart';
@@ -157,7 +158,11 @@ class _HomePageState extends ConsumerState<HomePage> with ToastMixin {
                   onComingSoon: _comingSoon,
                   onOpenMenu: () => context.push('/menu'),
                   onOpenSearch: () => context.push('/search'),
+                  onOpenNotifications: () => context.push('/notifications'),
                   onOpenMessages: () => context.push('/messages'),
+                  unreadNotifications: ref.watch(
+                    unreadNotificationsCountProvider,
+                  ),
                 ),
               ),
               SliverToBoxAdapter(

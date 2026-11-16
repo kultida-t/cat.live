@@ -16,6 +16,10 @@ import '../../features/my_cat/presentation/pages/cat_id_page.dart';
 import '../../features/my_cat/presentation/pages/cat_tracker_page.dart';
 import '../../features/my_cat/presentation/pages/my_cat_page.dart';
 import '../../features/nearby/presentation/pages/nearby_page.dart';
+import '../../features/notifications/presentation/pages/notification_help_alert_page.dart';
+import '../../features/notifications/presentation/pages/notification_post_detail_page.dart';
+import '../../features/notifications/presentation/pages/notifications_page.dart';
+import '../../features/notifications/presentation/pages/received_treats_page.dart';
 import '../../features/search/presentation/pages/search_page.dart';
 import '../../features/shell/presentation/main_shell.dart';
 import '../../features/treats/presentation/pages/treats_page.dart';
@@ -31,6 +35,35 @@ GoRouter createAppRouter() {
             PostLinkPage(postId: state.pathParameters['id']!),
       ),
       GoRoute(path: '/menu', builder: (_, _) => const MenuPage()),
+      GoRoute(
+        path: '/notifications',
+        builder: (_, _) => const NotificationsPage(),
+      ),
+      GoRoute(
+        path: '/notifications/post/:id',
+        builder: (_, state) => NotificationPostDetailPage(
+          postId: state.pathParameters['id']!,
+          openComments: state.uri.queryParameters['comments'] == '1',
+        ),
+      ),
+      GoRoute(
+        path: '/notifications/connections',
+        builder: (_, _) =>
+            const ConnectionsPage(initialTab: ConnectionsTab.followers),
+      ),
+      GoRoute(
+        path: '/notifications/treats',
+        builder: (_, _) => const ReceivedTreatsPage(),
+      ),
+      GoRoute(
+        path: '/notifications/help',
+        builder: (_, _) => const NotificationHelpAlertPage(),
+      ),
+      GoRoute(
+        path: '/notifications/health',
+        builder: (_, state) =>
+            CatHealthPage(initialCatId: state.uri.queryParameters['cat']),
+      ),
       GoRoute(
         path: '/treats',
         builder: (_, state) =>

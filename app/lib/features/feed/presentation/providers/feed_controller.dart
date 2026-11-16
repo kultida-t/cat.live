@@ -134,6 +134,17 @@ class FeedController extends Notifier<FeedState> {
     await _load(reset: true);
   }
 
+  /// โหลดทะเบียนบัญชีเมื่อเปิดหน้าผู้ติดตามจากหน้าอื่น (เช่น แจ้งเตือน/โปรไฟล์)
+  Future<void> ensureAccountsLoaded() async {
+    if (state.accounts.isNotEmpty) return;
+    try {
+      final accounts = await ref.read(getAccountsProvider)();
+      if (ref.mounted && state.accounts.isEmpty) {
+        state = state.copyWith(accounts: accounts);
+      }
+    } catch (_) {}
+  }
+
   /// ดึงลงเพื่อรีเฟรช — คง posts เดิมไว้จนกว่าข้อมูลใหม่จะมา
   Future<void> refresh() => _load(reset: true, keepVisible: true);
 
