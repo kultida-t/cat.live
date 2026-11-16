@@ -37,6 +37,7 @@ class _LoginPageState extends ConsumerState<LoginPage> with ToastMixin {
   void initState() {
     super.initState();
     _phoneController.addListener(() => setState(() {}));
+    _otpController.addListener(() => setState(() {}));
   }
 
   @override
@@ -310,9 +311,12 @@ class _LoginPageState extends ConsumerState<LoginPage> with ToastMixin {
     }
   }
 
+  bool get _canVerifyOtp => _otpController.text.trim().length == 6;
+
   Future<void> _handleVerifyOtp(bool isEn) async {
     if (!_validateCompliance(isEn)) return;
     final code = _otpController.text.trim();
+    if (code.length != 6) return;
     final ok = await ref
         .read(authControllerProvider.notifier)
         .verifyOtp(
@@ -860,12 +864,14 @@ class _LoginPageState extends ConsumerState<LoginPage> with ToastMixin {
           ],
           const SizedBox(height: 14),
           FilledButton(
-            onPressed: authState.isSubmitting
+            onPressed: authState.isSubmitting || !_canVerifyOtp
                 ? null
                 : () => _handleVerifyOtp(isEn),
             style: FilledButton.styleFrom(
               backgroundColor: AppColors.ownerTeal,
               foregroundColor: Colors.white,
+              disabledBackgroundColor: AppColors.line2,
+              disabledForegroundColor: AppColors.muted,
               shape: const StadiumBorder(),
               padding: const EdgeInsets.symmetric(vertical: 14),
             ),
@@ -1193,22 +1199,26 @@ class _SocialBrandButton extends StatelessWidget {
         customBorder: const StadiumBorder(),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 13),
-          child: Row(
-            children: [
-              SizedBox(width: 24, child: Center(child: icon)),
-              Expanded(
-                child: Text(
-                  label,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: fg,
+          child: Center(
+            child: SizedBox(
+              width: 224,
+              child: Row(
+                children: [
+                  SizedBox(width: 22, child: Center(child: icon)),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      label,
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: fg,
+                      ),
+                    ),
                   ),
-                ),
+                ],
               ),
-              const SizedBox(width: 24),
-            ],
+            ),
           ),
         ),
       ),

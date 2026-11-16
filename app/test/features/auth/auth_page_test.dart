@@ -104,9 +104,16 @@ void main() {
       expect(find.text('ยืนยันรหัส OTP'), findsWidgets);
       expect(find.textContaining('Ref: ML5678'), findsOneWidget);
 
+      // ยังไม่กรอก OTP -> ปุ่มยืนยันต้อง disabled (ไม่หักสิทธิ์)
+      final verifyDisabled = tester.widget<FilledButton>(
+        find.widgetWithText(FilledButton, 'ยืนยันและเข้าสู่ระบบ'),
+      );
+      expect(verifyDisabled.onPressed, isNull);
+
       // 5. กรอกผิด 5 ครั้ง -> ล็อก 15 นาที
       for (var i = 1; i <= 5; i++) {
         await tester.enterText(find.byType(TextField).first, '000000');
+        await tester.pump();
         await tester.tap(find.text('ยืนยันและเข้าสู่ระบบ'));
         await tester.pump(const Duration(milliseconds: 50));
         await tester.pump();
