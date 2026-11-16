@@ -11,8 +11,6 @@ import '../../../../core/widgets/error_view.dart';
 import '../../../../core/widgets/toast_pill.dart';
 import '../../../auth/domain/entities/auth_data.dart';
 import '../../../auth/presentation/providers/auth_controller.dart';
-import '../../../feature_flags/domain/usecases/feature_flags_usecases.dart';
-import '../../../feature_flags/presentation/providers/feature_flags_controller.dart';
 import '../../domain/entities/settings_data.dart';
 import '../providers/settings_controller.dart';
 import '../widgets/settings_l10n.dart';
@@ -33,6 +31,7 @@ class SettingsPage extends ConsumerStatefulWidget {
 
 class _SettingsPageState extends ConsumerState<SettingsPage> with ToastMixin {
   bool _openedInitialSection = false;
+  int _versionTapCount = 0;
 
   @override
   void dispose() {
@@ -135,10 +134,6 @@ class _SettingsPageState extends ConsumerState<SettingsPage> with ToastMixin {
     final totalCategories = NotificationCategoryKey.values.length;
     final grantedPdpa = data.pdpaConsents.where((e) => e.granted).length;
     final authState = ref.watch(authControllerProvider);
-    final flagsSnapshot = ref.watch(featureFlagsControllerProvider).snapshot;
-    final enabledPhase2Count = flagsSnapshot == null
-        ? 0
-        : FeatureFlagsRules.countEnabledPhase2Features(flagsSnapshot);
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 36),
@@ -181,19 +176,6 @@ class _SettingsPageState extends ConsumerState<SettingsPage> with ToastMixin {
                   showToast(SettingsL10n.textSizeChangedToast(next, isEn));
                 },
               ),
-            ),
-            SettingsRow(
-              icon: LucideIcons.slidersVertical,
-              title: isEn ? 'Feature Flags (OPS-04)' : 'จัดการ Feature Flags',
-              subtitle: isEn
-                  ? 'Phase 2 active: $enabledPhase2Count flags'
-                  : 'เปิดใช้งาน Phase 2 อยู่ $enabledPhase2Count รายการ',
-              trailing: const Icon(
-                LucideIcons.chevronRight,
-                size: 18,
-                color: AppColors.muted,
-              ),
-              onTap: () => context.push('/feature-flags'),
             ),
           ],
         ),
@@ -368,10 +350,19 @@ class _SettingsPageState extends ConsumerState<SettingsPage> with ToastMixin {
             ),
           ),
         const SizedBox(height: 16),
-        Text(
-          SettingsL10n.versionFooter(data.appVersion, isEn),
-          textAlign: TextAlign.center,
-          style: const TextStyle(fontSize: 13, color: AppColors.muted),
+        GestureDetector(
+          onTap: () {
+            _versionTapCount++;
+            if (_versionTapCount >= 5) {
+              _versionTapCount = 0;
+              context.push('/feature-flags');
+            }
+          },
+          child: Text(
+            SettingsL10n.versionFooter(data.appVersion, isEn),
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 13, color: AppColors.muted),
+          ),
         ),
       ],
     );

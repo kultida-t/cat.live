@@ -53,64 +53,80 @@ void main() {
     );
   });
 
-  testWidgets('LoginPage ขอ OTP, กรอกผิด 5 ครั้งล็อก 15 นาที, และยืนยันสำเร็จ', (
-    tester,
-  ) async {
-    WidgetRef? capturedRef;
-    await tester.pumpWidget(
-      _wrapLoginPage(
-        remoteDataSource: MockAuthRemoteDataSource(latency: Duration.zero),
-        onRefReady: (r) => capturedRef = r,
-      ),
-    );
-    await tester.pumpAndSettle();
+  testWidgets(
+    'LoginPage ต้องยินยอม PDPA ก่อน, เปิดอ่านรายละเอียด PDPA ได้, และขอ/ยืนยัน OTP สำเร็จ',
+    (tester) async {
+      WidgetRef? capturedRef;
+      await tester.pumpWidget(
+        _wrapLoginPage(
+          remoteDataSource: MockAuthRemoteDataSource(latency: Duration.zero),
+          onRefReady: (r) => capturedRef = r,
+        ),
+      );
+      await tester.pumpAndSettle();
 
-    expect(find.text('ยินดีต้อนรับสู่ แมว.live'), findsOneWidget);
+      expect(find.text('ยินดีต้อนรับสู่ แมว.live'), findsOneWidget);
+      expect(
+        find.text('ดูแลโปรไฟล์ สมุดสุขภาพ และชุมชนคนรักแมว'),
+        findsOneWidget,
+      );
 
-    // 1. กรอกเบอร์ไม่ถูกต้อง -> แจ้ง error
-    await tester.enterText(find.byType(TextField).first, '1234');
-    await tester.tap(find.text('ขอรหัส OTP'));
-    await tester.pumpAndSettle();
-    expect(
-      find.text('กรุณากรอกเบอร์มือถือไทย 10 หลักให้ถูกต้อง (เช่น 0812345678)'),
-      findsOneWidget,
-    );
+      // 1. เปิดอ่านรายละเอียด PDPA และกดยอมรับและปิดหน้าต่าง
+      await tester.tap(find.text('อ่านรายละเอียด'));
+      await tester.pumpAndSettle();
+      expect(
+        find.text('ข้อกำหนดและนโยบายคุ้มครองข้อมูล (PDPA)'),
+        findsOneWidget,
+      );
+      await tester.tap(find.text('ยอมรับและปิดหน้าต่าง'));
+      await tester.pumpAndSettle();
 
-    // 2. กรอกเบอร์ถูกต้อง -> ขอ OTP สำเร็จ
-    await tester.enterText(find.byType(TextField).first, '0812345678');
-    await tester.tap(find.text('ขอรหัส OTP'));
-    await tester.pump(const Duration(milliseconds: 50));
-    await tester.pump();
-    expect(find.text('ยืนยันรหัส OTP'), findsWidgets);
-    expect(find.textContaining('Ref: ML5678'), findsOneWidget);
+      // 2. กรอกเบอร์ไม่ครบ -> ปุ่มขอ OTP ยังกดไม่ได้ (disabled)
+      await tester.enterText(find.byType(TextField).first, '1234');
+      await tester.pump();
+      final disabledBtn = tester.widget<FilledButton>(
+        find.widgetWithText(FilledButton, 'ขอรหัส OTP'),
+      );
+      expect(disabledBtn.onPressed, isNull);
 
-    // 3. กรอกผิด 5 ครั้ง -> ล็อก 15 นาที
-    for (var i = 1; i <= 5; i++) {
-      await tester.enterText(find.byType(TextField).first, '000000');
-      await tester.tap(find.text('ยืนยันและเข้าสู่ระบบ'));
+      // 3. กรอกเบอร์ถูกต้อง -> ขอ OTP สำเร็จ
+      await tester.enterText(find.byType(TextField).first, '0812345678');
+      await tester.pump();
+      await tester.tap(find.text('ขอรหัส OTP'));
       await tester.pump(const Duration(milliseconds: 50));
       await tester.pump();
-    }
-    expect(find.textContaining('กรอกรหัสผิดครบ 5 ครั้ง'), findsOneWidget);
+      expect(find.text('ยืนยันรหัส OTP'), findsWidgets);
+      expect(find.textContaining('Ref: ML5678'), findsOneWidget);
 
-    // 4. เปลี่ยนเบอร์แล้วขอใหม่ + กดเติม 123456 แล้วยืนยันสำเร็จ
-    await tester.tap(find.text('เปลี่ยนเบอร์โทรศัพท์'));
-    await tester.pump();
-    await tester.enterText(find.byType(TextField).first, '0812345678');
-    await tester.tap(find.text('ขอรหัส OTP'));
-    await tester.pump(const Duration(milliseconds: 50));
-    await tester.pump();
+      // 4. กรอกผิด 5 ครั้ง -> ล็อก 15 นาที
+      for (var i = 1; i <= 5; i++) {
+        await tester.enterText(find.byType(TextField).first, '000000');
+        await tester.tap(find.text('ยืนยันและเข้าสู่ระบบ'));
+        await tester.pump(const Duration(milliseconds: 50));
+        await tester.pump();
+      }
+      expect(find.textContaining('กรอกรหัสผิดครบ 5 ครั้ง'), findsOneWidget);
 
-    await tester.tap(find.text('กรอก 123456'));
-    await tester.pump();
-    await tester.tap(find.text('ยืนยันและเข้าสู่ระบบ'));
-    await tester.pumpAndSettle();
+      // 5. เปลี่ยนเบอร์แล้วขอใหม่ + กดเติม 123456 แล้วยืนยันสำเร็จ
+      await tester.tap(find.text('เปลี่ยนเบอร์โทรศัพท์'));
+      await tester.pump();
+      await tester.enterText(find.byType(TextField).first, '0812345678');
+      await tester.pump();
+      await tester.tap(find.text('ขอรหัส OTP'));
+      await tester.pump(const Duration(milliseconds: 50));
+      await tester.pump();
 
-    expect(find.text('Home'), findsOneWidget);
-    expect(capturedRef!.read(authControllerProvider).isAuthenticated, isTrue);
-  });
+      await tester.tap(find.text('กรอก 123456'));
+      await tester.pump();
+      await tester.tap(find.text('ยืนยันและเข้าสู่ระบบ'));
+      await tester.pumpAndSettle();
 
-  testWidgets('LoginPage รองรับเข้าใช้งานต่อแบบผู้เยี่ยมชม (Guest Mode)', (
+      expect(find.text('Home'), findsOneWidget);
+      expect(capturedRef!.read(authControllerProvider).isAuthenticated, isTrue);
+    },
+  );
+
+  testWidgets('LoginPage เปิด Wheel Picker เลือกปีเกิดได้ และเข้า Guest Mode ได้', (
     tester,
   ) async {
     WidgetRef? capturedRef;
@@ -122,11 +138,23 @@ void main() {
     );
     await tester.pumpAndSettle();
 
+    // เปิด Wheel Picker ปีเกิด
+    await tester.tap(find.text('1995 (พ.ศ. 2538)'));
+    await tester.pumpAndSettle();
+    expect(find.text('เลือกปีเกิด'), findsOneWidget);
+    await tester.tap(find.text('ตกลง'));
+    await tester.pumpAndSettle();
+
+    // กดเข้า Guest Mode
     await tester.scrollUntilVisible(
       find.text('เข้าใช้งานต่อแบบผู้เยี่ยมชม (Guest Mode)'),
       200,
       scrollable: find.byType(Scrollable).first,
     );
+    await tester.ensureVisible(
+      find.text('เข้าใช้งานต่อแบบผู้เยี่ยมชม (Guest Mode)'),
+    );
+    await tester.pumpAndSettle();
     await tester.tap(find.text('เข้าใช้งานต่อแบบผู้เยี่ยมชม (Guest Mode)'));
     await tester.pumpAndSettle();
 
@@ -134,7 +162,7 @@ void main() {
     expect(capturedRef!.read(authControllerProvider).isGuest, isTrue);
   });
 
-  testWidgets('LoginPage รองรับ Social Login (Apple / Google / LINE)', (
+  testWidgets('LoginPage รองรับ Social Login เมื่อติ๊ก PDPA แล้ว (LINE)', (
     tester,
   ) async {
     WidgetRef? capturedRef;
@@ -145,6 +173,10 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
+
+    // ติ๊ก PDPA ก่อน
+    await tester.tap(find.text('ยอมรับข้อกำหนดและนโยบายคุ้มครองข้อมูล (PDPA)'));
+    await tester.pump();
 
     await tester.scrollUntilVisible(
       find.text('ดำเนินการต่อด้วย LINE'),

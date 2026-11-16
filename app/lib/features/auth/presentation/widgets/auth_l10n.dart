@@ -12,8 +12,8 @@ abstract final class AuthL10n {
       : 'ยินดีต้อนรับสู่ ${species.brandName(false)}';
 
   static String subheadline(PetSpeciesConfig species, bool isEn) => isEn
-      ? 'Sign in to save ${species.petNoun(true).toLowerCase()} profiles, health records, and community updates.'
-      : 'เข้าสู่ระบบเพื่อบันทึกโปรไฟล์${species.petNoun(false)} สมุดสุขภาพ และติดตามชุมชน';
+      ? 'Care for ${species.petNoun(true).toLowerCase()} profiles, health & community.'
+      : 'ดูแลโปรไฟล์ สมุดสุขภาพ และชุมชนคนรัก${species.petNoun(false)}';
 
   static String birthYearLabel(bool isEn) =>
       isEn ? 'Birth year (CE) for age verification' : 'ปีเกิด (ค.ศ.) เพื่อตรวจเกณฑ์อายุ PDPA';
@@ -31,8 +31,24 @@ abstract final class AuthL10n {
       : 'กรุณายืนยันความยินยอมจากผู้ปกครองสำหรับอายุ 13–19 ปี';
 
   static String pdpaTermsLabel(bool isEn) => isEn
-      ? 'I accept the Terms of Service and Privacy Policy (PDPA).'
-      : 'ยอมรับข้อกำหนดการใช้งานและนโยบายคุ้มครองข้อมูล (PDPA)';
+      ? 'I accept the Terms and Privacy Policy (PDPA)'
+      : 'ยอมรับข้อกำหนดและนโยบายคุ้มครองข้อมูล (PDPA)';
+
+  static String pdpaReadMore(bool isEn) =>
+      isEn ? 'Read details' : 'อ่านรายละเอียด';
+
+  static String pdpaSheetTitle(bool isEn) => isEn
+      ? 'Terms & Privacy Policy (PDPA)'
+      : 'ข้อกำหนดและนโยบายคุ้มครองข้อมูล (PDPA)';
+
+  static String pdpaSheetClose(bool isEn) => isEn ? 'Close' : 'ปิด';
+
+  static String pickerCancel(bool isEn) => isEn ? 'Cancel' : 'ยกเลิก';
+
+  static String pickerDone(bool isEn) => isEn ? 'Done' : 'ตกลง';
+
+  static String pickerTitle(bool isEn) =>
+      isEn ? 'Select birth year' : 'เลือกปีเกิด';
 
   static String pdpaRequiredError(bool isEn) => isEn
       ? 'Please accept the Terms and Privacy Policy first.'

@@ -700,7 +700,7 @@ class _HelpCenterSheetState extends ConsumerState<_HelpCenterSheet> {
   }
 }
 
-/// 5. Dialog ยืนยันออกจากระบบตรงเว็บจริง
+/// 5. Dialog ยืนยันออกจากระบบตรงเว็บจริง (พื้นขาว, จัดกึ่งกลาง, 2 ปุ่มเท่ากัน)
 Future<void> showSignOutConfirmDialog(
   BuildContext context, {
   required bool isEn,
@@ -708,25 +708,89 @@ Future<void> showSignOutConfirmDialog(
 }) {
   return showDialog<void>(
     context: context,
-    builder: (ctx) => AlertDialog(
-      title: Text(SettingsL10n.signOutConfirmTitle(isEn)),
-      content: Text(SettingsL10n.signOutConfirmBody(isEn)),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(ctx).pop(),
-          child: Text(SettingsL10n.cancel(isEn)),
+    barrierColor: AppColors.sheetBarrier,
+    builder: (ctx) => Dialog(
+      backgroundColor: AppColors.card,
+      surfaceTintColor: Colors.transparent,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      insetPadding: const EdgeInsets.symmetric(horizontal: 28),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(22, 24, 22, 20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              SettingsL10n.signOutConfirmTitle(isEn),
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+                color: AppColors.text,
+              ),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              SettingsL10n.signOutConfirmBody(isEn),
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 13.5,
+                color: AppColors.muted,
+                height: 1.45,
+              ),
+            ),
+            const SizedBox(height: 20),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => Navigator.of(ctx).pop(),
+                    style: OutlinedButton.styleFrom(
+                      backgroundColor: AppColors.page,
+                      foregroundColor: AppColors.text,
+                      side: const BorderSide(color: AppColors.line2),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                    child: Text(
+                      SettingsL10n.cancel(isEn),
+                      style: const TextStyle(
+                        fontSize: 14.5,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: FilledButton(
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppColors.danger,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                    onPressed: () {
+                      Navigator.of(ctx).pop();
+                      onConfirm();
+                    },
+                    child: Text(
+                      SettingsL10n.signOut(isEn),
+                      style: const TextStyle(
+                        fontSize: 14.5,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
         ),
-        FilledButton(
-          style: FilledButton.styleFrom(
-            backgroundColor: AppColors.logoutText,
-          ),
-          onPressed: () {
-            Navigator.of(ctx).pop();
-            onConfirm();
-          },
-          child: Text(SettingsL10n.signOut(isEn)),
-        ),
-      ],
+      ),
     ),
   );
 }

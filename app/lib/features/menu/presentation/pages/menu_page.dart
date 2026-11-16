@@ -44,8 +44,8 @@ class _MenuPageState extends ConsumerState<MenuPage> with ToastMixin {
         final title = MenuL10n.serviceTitle(service.action, isEn);
         showToast(
           isEn
-              ? '$title — Disabled in Phase 1 (toggle in Settings > Feature Flags)'
-              : '$title — ปิดไว้ใน Phase 1 (เปิดทดสอบได้ที่ ตั้งค่า > Feature Flags)',
+              ? '$title — Coming in the next phase'
+              : '$title — กำลังเตรียมเปิดให้บริการในเฟสถัดไป',
         );
         return;
       }
