@@ -274,3 +274,21 @@
   - `app/lib/features/my_cat/presentation/pages/my_cat_page.dart`, `app/test/features/my_cat/my_cat_page_test.dart`
 - **ขอบเขตที่ยังอนุญาตให้เชื่อมเพิ่มในเฟสถัดไป (ต้องไม่กระทบดีไซน์/พฤติกรรมเดิมที่ล็อกไว้):**
   - เชื่อม Backend API จริง (PDPA consent audit log, Data export request, Support ticket, Auth Sign-out/OTP `AUTH-01..05`) ใน Phase ถัดไป
+
+### 16. ระบบ Auth, Guest Mode (`AUTH-01..04`, `PDPA-03`), Feature Flags (`OPS-04`) และ Species Config — ล็อกเมื่อ 2026-11-16
+- **ตรวจรับบน:** Android (`emulator-5554`), iOS (`iPhone 17`) (`flutter analyze` ผ่าน 0 issues, `flutter test` ชุด `auth`, `feature_flags`, `settings`, `menu`, `cat_ai`, `my_cat` ผ่านครบทุกเคส) พี่มาเต็มตรวจรับครบแล้ว
+- **ความสามารถที่ล็อก:**
+  - **หน้า `/login` (`LoginPage`):** แท็บ `เข้าสู่ระบบ` (เบอร์โทร + PIN 6 หลัก, Face ID / สแกนนิ้ว, Apple, Google ด้วยโลโก้ 4 สีจริง, LINE ด้วยโลโก้จริง, และลิงก์สลับไป OTP เฉพาะกรณีเปลี่ยนเครื่อง/ลืม PIN) และแท็บ `สมัครสมาชิก` (ชื่อที่แสดง, ปีเกิด Wheel Picker ตรวจอายุ `PDPA-03` < 13 ปีบล็อก / 13–19 ปีต้องมีผู้ปกครองยินยอม, PDPA Checkbox + ชีต `อ่านรายละเอียด`, และขอ OTP ครั้งแรก / Social Login), พับคีย์แพดอัตโนมัติเมื่อกรอกครบหรือแตะพื้นที่ว่าง/เลื่อนจอ, ปุ่ม `เข้าใช้งานต่อแบบผู้เยี่ยมชม (Guest Mode)` ด้านล่าง
+  - **Guest Mode & Guest Gates (อนุมัติจากพี่มาเต็มให้เชื่อมในหน้าจอที่ล็อกแล้ว):**
+    - `showGuestAuthSheet` ใช้โลโก้ `แมว.live`, จุดเด่น 3 ข้อ, คลุมเหนือแถบเมนูล่าง
+    - หน้า `/` (แบนเนอร์ Guest + gate กระดิ่ง/ข้อความ/รูปหน้าแรก/ไลก์/เซฟ/คอมเมนต์/เลี้ยงขนม), `/community` (gate โพสต์/แท็บติดตาม-บันทึก/แอคชั่นโพสต์), `/cat-ai` (Guest Card ชวนเข้าสู่ระบบ), `/my-cat` (Guest Card ชวนเข้าสู่ระบบ + จุดเด่น 3 ข้อ), `/help` (gate สร้างประกาศ/แจ้งเบาะแส/ติดต่อ/ประกาศของฉัน), `/nearby` (gate บุ๊กมาร์กสถานที่), `/settings` (การ์ดผู้เยี่ยมชม + ปุ่มเข้าสู่ระบบ + Dialog ออกจากระบบพื้นขาว 2 ปุ่มเท่ากัน)
+  - **Feature Flags (`OPS-04` / `DEC-01..11`) & Species Config:**
+    - `PetSpeciesConfig` (`cat` / `dog`) แยกคอนฟิกเฉพาะสัตว์เลี้ยงออกจาก UI พร้อมต่อยอด `หมา.live`
+    - หน้า `/feature-flags` ซ่อนจากการแสดงผลผู้ใช้ทั่วไป เปิดเฉพาะทีมงาน/QA โดยแตะข้อความเวอร์ชันใน `/settings` 5 ครั้ง (เมนู `เลี้ยงอาหารน้อง ๆ` ใน `/menu` เปิดเข้า `/treats` ไว้ตามเดิม)
+- **ไฟล์หลัก:**
+  - `app/lib/core/config/pet_species_config.dart`, `app/lib/core/widgets/social_brand_icons.dart` (`GoogleLogoIcon`), `app/lib/core/router/app_router.dart`
+  - `app/lib/features/auth/`, `app/lib/features/feature_flags/`
+  - `app/test/features/auth/auth_page_test.dart`, `app/test/features/feature_flags/feature_flags_test.dart`
+  - `app/lib/features/home/presentation/pages/home_page.dart`, `app/lib/features/feed/presentation/pages/community_page.dart`, `app/lib/features/cat_ai/presentation/pages/cat_ai_page.dart`, `app/lib/features/my_cat/presentation/pages/my_cat_page.dart`, `app/lib/features/help/presentation/pages/help_page.dart`, `app/lib/features/nearby/presentation/pages/nearby_page.dart`, `app/lib/features/settings/`
+- **ขอบเขตที่ยังอนุญาตให้เชื่อมเพิ่มในเฟสถัดไป:**
+  - สลับ `MockAuthRemoteDataSource` / `MockFeatureFlagsRemoteDataSource` เป็น `Dio*RemoteDataSource` + `flutter_secure_storage` เมื่อ Backend API พร้อม
