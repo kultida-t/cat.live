@@ -21,6 +21,10 @@ playwright-report/
 .env.*
 !.env.example
 
+# Python cache
+__pycache__/
+*.pyc
+
 # Local MCP config (contains API keys — never commit)
 .devin/mcp_config.local.json
 

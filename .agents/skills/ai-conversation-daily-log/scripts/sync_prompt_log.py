@@ -571,7 +571,15 @@ def main() -> int:
     args = parser.parse_args()
     target_date = args.date
     auto_worklog = not args.no_auto_worklog
-    output_path = args.output or f"{target_date}_ai-log.json"
+    if not args.output:
+        if os.path.exists(f"deliverables/{target_date}_ai-log.json"):
+            output_path = f"deliverables/{target_date}_ai-log.json"
+        elif os.path.isdir("deliverables"):
+            output_path = f"deliverables/{target_date}_ai-log.json"
+        else:
+            output_path = f"{target_date}_ai-log.json"
+    else:
+        output_path = args.output
 
     # 1. Resolve transcript path if not using --turns-json
     transcript_path = args.transcript
