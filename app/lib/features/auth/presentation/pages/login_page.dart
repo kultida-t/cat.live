@@ -713,69 +713,47 @@ class _LoginPageState extends ConsumerState<LoginPage> with ToastMixin {
             ],
           ),
           const SizedBox(height: 16),
-          FilledButton.icon(
+          _SocialBrandButton(
+            icon: const Icon(Icons.apple, size: 20, color: Colors.white),
+            label: AuthL10n.appleBtn(isEn),
+            backgroundColor: Colors.black,
+            foregroundColor: Colors.white,
+            disabledBackgroundColor: AppColors.line2,
+            disabledForegroundColor: AppColors.muted,
             onPressed: canSocial
                 ? () => _handleSocialLogin(AuthMethod.apple, isEn)
                 : null,
-            icon: const Icon(Icons.apple, size: 20),
-            label: Text(
-              AuthL10n.appleBtn(isEn),
-              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
-            ),
-            style: FilledButton.styleFrom(
-              backgroundColor: Colors.black,
-              foregroundColor: Colors.white,
-              disabledBackgroundColor: AppColors.line2,
-              disabledForegroundColor: AppColors.muted,
-              shape: const StadiumBorder(),
-              padding: const EdgeInsets.symmetric(vertical: 13),
-            ),
           ),
           const SizedBox(height: 10),
-          OutlinedButton.icon(
+          _SocialBrandButton(
+            icon: Opacity(
+              opacity: canSocial ? 1.0 : 0.45,
+              child: const GoogleLogoIcon(size: 19),
+            ),
+            label: AuthL10n.googleBtn(isEn),
+            backgroundColor: Colors.white,
+            foregroundColor: AppColors.text,
+            borderColor: canSocial ? AppColors.line2 : AppColors.line,
+            disabledBackgroundColor: Colors.white,
+            disabledForegroundColor: AppColors.muted,
             onPressed: canSocial
                 ? () => _handleSocialLogin(AuthMethod.google, isEn)
                 : null,
-            icon: Opacity(
-              opacity: canSocial ? 1.0 : 0.45,
-              child: const GoogleLogoIcon(size: 18),
-            ),
-            label: Text(
-              AuthL10n.googleBtn(isEn),
-              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
-            ),
-            style: OutlinedButton.styleFrom(
-              backgroundColor: Colors.white,
-              foregroundColor: AppColors.text,
-              disabledForegroundColor: AppColors.muted,
-              side: BorderSide(
-                color: canSocial ? AppColors.line2 : AppColors.line,
-              ),
-              shape: const StadiumBorder(),
-              padding: const EdgeInsets.symmetric(vertical: 13),
-            ),
           ),
           const SizedBox(height: 10),
-          FilledButton.icon(
-            onPressed: canSocial
-                ? () => _handleSocialLogin(AuthMethod.line, isEn)
-                : null,
+          _SocialBrandButton(
             icon: Opacity(
               opacity: canSocial ? 1.0 : 0.45,
               child: const LineLogoIcon(size: 20),
             ),
-            label: Text(
-              AuthL10n.lineBtn(isEn),
-              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
-            ),
-            style: FilledButton.styleFrom(
-              backgroundColor: AppColors.brandLine,
-              foregroundColor: Colors.white,
-              disabledBackgroundColor: AppColors.line2,
-              disabledForegroundColor: AppColors.muted,
-              shape: const StadiumBorder(),
-              padding: const EdgeInsets.symmetric(vertical: 13),
-            ),
+            label: AuthL10n.lineBtn(isEn),
+            backgroundColor: AppColors.brandLine,
+            foregroundColor: Colors.white,
+            disabledBackgroundColor: AppColors.line2,
+            disabledForegroundColor: AppColors.muted,
+            onPressed: canSocial
+                ? () => _handleSocialLogin(AuthMethod.line, isEn)
+                : null,
           ),
         ],
       ),
@@ -804,53 +782,50 @@ class _LoginPageState extends ConsumerState<LoginPage> with ToastMixin {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            decoration: BoxDecoration(
-              color: AppColors.ownerPillBg,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    AuthL10n.otpMockHelper(isEn),
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.ownerTeal,
-                    ),
-                  ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                isEn ? 'Enter 6-digit code' : 'กรอกรหัส 6 หลัก',
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.text,
                 ),
-                TextButton(
-                  onPressed: () {
-                    _otpController.text = AuthRules.mockValidOtp;
-                  },
-                  child: Text(
-                    AuthL10n.fillMockOtp(isEn),
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
+              ),
+              Text(
+                isEn
+                    ? 'Expires in $expiryMin:$expirySec'
+                    : 'หมดอายุใน $expiryMin:$expirySec',
+                style: const TextStyle(
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.muted,
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 10),
           TextField(
             controller: _otpController,
             keyboardType: TextInputType.number,
             maxLength: 6,
             textAlign: TextAlign.center,
             style: const TextStyle(
-              fontSize: 22,
+              fontSize: 24,
               fontWeight: FontWeight.w800,
-              letterSpacing: 6,
+              letterSpacing: 10,
+              color: AppColors.text,
             ),
             decoration: InputDecoration(
-              hintText: AuthL10n.otpInputHint(isEn),
-              counterText: '$expiryMin:$expirySec',
+              hintText: '••••••',
+              hintStyle: const TextStyle(
+                fontSize: 24,
+                letterSpacing: 10,
+                color: AppColors.unchecked,
+              ),
+              counterText: '',
+              contentPadding: const EdgeInsets.symmetric(vertical: 14),
               filled: true,
               fillColor: AppColors.soft,
               border: OutlineInputBorder(
@@ -1091,7 +1066,6 @@ class _PdpaConsentInlineRowState extends State<_PdpaConsentInlineRow> {
                     style: const TextStyle(
                       fontWeight: FontWeight.w700,
                       color: AppColors.ownerTeal,
-                      decoration: TextDecoration.underline,
                     ),
                   ),
                 ],
@@ -1174,6 +1148,68 @@ class _ConsentCheckboxRow extends StatelessWidget {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SocialBrandButton extends StatelessWidget {
+  const _SocialBrandButton({
+    required this.icon,
+    required this.label,
+    required this.backgroundColor,
+    required this.foregroundColor,
+    required this.disabledBackgroundColor,
+    required this.disabledForegroundColor,
+    this.borderColor,
+    this.onPressed,
+  });
+
+  final Widget icon;
+  final String label;
+  final Color backgroundColor;
+  final Color foregroundColor;
+  final Color disabledBackgroundColor;
+  final Color disabledForegroundColor;
+  final Color? borderColor;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final enabled = onPressed != null;
+    final fg = enabled ? foregroundColor : disabledForegroundColor;
+    final bg = enabled ? backgroundColor : disabledBackgroundColor;
+
+    return Material(
+      color: bg,
+      shape: StadiumBorder(
+        side: borderColor != null
+            ? BorderSide(color: borderColor!)
+            : BorderSide.none,
+      ),
+      child: InkWell(
+        onTap: onPressed,
+        customBorder: const StadiumBorder(),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 13),
+          child: Row(
+            children: [
+              SizedBox(width: 24, child: Center(child: icon)),
+              Expanded(
+                child: Text(
+                  label,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: fg,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 24),
+            ],
+          ),
         ),
       ),
     );

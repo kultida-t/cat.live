@@ -123,7 +123,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 50));
       await tester.pump();
 
-      await tester.tap(find.text('กรอก 123456'));
+      await tester.enterText(find.byType(TextField).first, '123456');
       await tester.pump();
       await tester.tap(find.text('ยืนยันและเข้าสู่ระบบ'));
       await tester.pumpAndSettle();
