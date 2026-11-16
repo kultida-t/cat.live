@@ -221,4 +221,47 @@ abstract final class AppColors {
   static const treatsPackCrunch = Color(0xFFE7AB72);
   static const treatsPackFreeze = Color(0xFFA5C7B5);
   static const treatsPackBox = Color(0xFFD7A0A2);
+
+  // แมว.live Tag (/tag)
+  static const tagBgTop = Color(0xFFFFFCF3);
+  static const tagBgMid = Color(0xFFE1F1EE);
+  static const tagBgBottom = Color(0xFFD3E0F7);
+  static const tagHeroGlowMid = Color(0xFFEEF6F4);
+  static const tagTeal = Color(0xFF2F7F7A);
+  static const tagTealLight = Color(0xFF5AAAA2);
+  static const tagTealDeep = Color(0xFF1F4E4B);
+  static const tagTealBright = Color(0xFF3E978B);
+  static const tagTealRing = Color(0xFF7CC4BC);
+  static const tagTextDark = Color(0xFF4A3428);
+  static const tagTextMuted = Color(0xFF5E4636);
+  static const tagPhoneFrame = Color(0xFF2B2320);
+  static const tagBorder = Color(0xFFF1E6C6);
+  static const tagCollarCardBorder = Color(0xFFCFE6E2);
+  static const tagCollarCardMid = Color(0xFFF4FAF8);
+  static const tagCollarCardEnd = Color(0xFFE1F1EE);
+  static const tagColorTeal = Color(0xFF328F87);
+  static const tagColorCream = Color(0xFFDFC8A3);
+  static const tagColorPink = Color(0xFFCE929C);
+  static const tagColorWhite = Color(0xFFF2F0EB);
+  static const tagColorBlack = Color(0xFF2A2A2D);
+  static const tagCollarNavy = Color(0xFF2F3B66);
+  static const tagCollarPeach = Color(0xFFF4A7B0);
+  static const tagCollarMint = Color(0xFF8FD3BF);
+  static const tagCollarButter = Color(0xFFF6D47A);
+  static const tagCollarIvory = Color(0xFFF6F1E7);
+  static const tagCollarBlack = Color(0xFF2B2B2E);
+  static const tagEngraveWhite = Color(0xFFF6F3EC);
+  static const tagEngraveOrange = Color(0xFFE58A4E);
+  static const tagEngraveOlive = Color(0xFF4F6B3A);
+  static const tagCardMintSoft = Color(0xFFE1F1EE);
+  static const tagCardGreenSoft = Color(0xFFE4F4E8);
+  static const tagCardGreenInk = Color(0xFF2F7A4A);
+  static const tagCardBlueSoft = Color(0xFFEAF3EE);
+  static const tagCardPurpleSoft = Color(0xFFEFEAFB);
+  static const tagCardPurpleInk = Color(0xFF5B3FA8);
+  static const tagCardWarmSoft = Color(0xFFFFF6EC);
+  static const tagMapBuildingGreen = Color(0xFFD6EBDD);
+  static const tagMapBuildingBlue = Color(0xFFDCE7F5);
+  static const tagMapUserDot = Color(0xFF3E7CB1);
+  static const tagCaregiverBlue = Color(0xFF9DBEF0);
 }

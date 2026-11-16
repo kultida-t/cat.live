@@ -29,6 +29,11 @@ class _MenuPageState extends ConsumerState<MenuPage> with ToastMixin {
   }
 
   void _handleServiceTap(MenuExtraService service, bool isEn) {
+    if (service.action == MenuServiceAction.tag) {
+      context.pop();
+      context.push('/tag');
+      return;
+    }
     if (service.action == MenuServiceAction.treats) {
       context.push('/treats');
       return;

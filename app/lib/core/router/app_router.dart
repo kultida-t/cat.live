@@ -22,6 +22,7 @@ import '../../features/notifications/presentation/pages/notifications_page.dart'
 import '../../features/notifications/presentation/pages/received_treats_page.dart';
 import '../../features/search/presentation/pages/search_page.dart';
 import '../../features/shell/presentation/main_shell.dart';
+import '../../features/tag/presentation/pages/tag_page.dart';
 import '../../features/treats/presentation/pages/treats_page.dart';
 
 /// เส้นทางหลัก — แท็บล่าง 6 อัน แต่ละอันเก็บสถานะของตัวเอง (เลื่อนค้างไว้เมื่อสลับแท็บ)
@@ -87,6 +88,7 @@ GoRouter createAppRouter() {
             routes: [
               GoRoute(path: '/', builder: (_, _) => const HomePage()),
               GoRoute(path: '/search', builder: (_, _) => const SearchPage()),
+              GoRoute(path: '/tag', builder: (_, _) => const TagPage()),
             ],
           ),
           StatefulShellBranch(
