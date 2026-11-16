@@ -5,10 +5,14 @@ import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../../core/config/app_config.dart';
+import '../../../../core/config/app_locale.dart';
+import '../../../../core/config/pet_species_config.dart';
 import '../../../../core/error/failure.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/error_view.dart';
 import '../../../../core/widgets/toast_pill.dart';
+import '../../../auth/presentation/providers/auth_controller.dart';
+import '../../../auth/presentation/widgets/guest_auth_sheet.dart';
 import '../../../feed/domain/entities/post.dart';
 import '../../../feed/presentation/providers/comments_controller.dart';
 import '../../../feed/presentation/widgets/comments_sheet.dart';
@@ -141,6 +145,9 @@ class _HomePageState extends ConsumerState<HomePage> with ToastMixin {
   Widget build(BuildContext context) {
     final state = ref.watch(homeControllerProvider);
     final controller = ref.read(homeControllerProvider.notifier);
+    final isGuest = ref.watch(authControllerProvider).isGuest;
+    final isEn = ref.watch(appLocaleProvider) == 'en';
+    final species = ref.watch(petSpeciesConfigProvider);
 
     return Scaffold(
       backgroundColor: AppColors.page,
@@ -158,13 +165,42 @@ class _HomePageState extends ConsumerState<HomePage> with ToastMixin {
                   onComingSoon: _comingSoon,
                   onOpenMenu: () => context.push('/menu'),
                   onOpenSearch: () => context.push('/search'),
-                  onOpenNotifications: () => context.push('/notifications'),
-                  onOpenMessages: () => context.push('/messages'),
-                  unreadNotifications: ref.watch(
-                    unreadNotificationsCountProvider,
-                  ),
+                  onOpenNotifications: () {
+                    if (isGuest) {
+                      showGuestAuthSheet(
+                        context,
+                        species: species,
+                        isEn: isEn,
+                        actionName: isEn ? 'Notifications' : 'การแจ้งเตือน',
+                      );
+                      return;
+                    }
+                    context.push('/notifications');
+                  },
+                  onOpenMessages: () {
+                    if (isGuest) {
+                      showGuestAuthSheet(
+                        context,
+                        species: species,
+                        isEn: isEn,
+                        actionName: isEn ? 'Messages' : 'ข้อความแชท',
+                      );
+                      return;
+                    }
+                    context.push('/messages');
+                  },
+                  unreadNotifications: isGuest
+                      ? 0
+                      : ref.watch(unreadNotificationsCountProvider),
                 ),
               ),
+              if (isGuest)
+                SliverToBoxAdapter(
+                  child: _GuestHomeBanner(
+                    isEn: isEn,
+                    onSignInTap: () => context.push('/login'),
+                  ),
+                ),
               SliverToBoxAdapter(
                 child: HomeHeroBanner(
                   photo: state.activeHeroPhoto,
@@ -172,7 +208,18 @@ class _HomePageState extends ConsumerState<HomePage> with ToastMixin {
                   onPhotoTap: state.isCustomSelected
                       ? _openHeroPicker
                       : controller.nextSlide,
-                  onOpenPicker: _openHeroPicker,
+                  onOpenPicker: () {
+                    if (isGuest) {
+                      showGuestAuthSheet(
+                        context,
+                        species: species,
+                        isEn: isEn,
+                        actionName: isEn ? 'Home photo' : 'รูปหน้าแรกของฉัน',
+                      );
+                      return;
+                    }
+                    _openHeroPicker();
+                  },
                 ),
               ),
               const SliverToBoxAdapter(child: QuickActionsRow()),
@@ -324,6 +371,72 @@ class _EmptyUpdatesCard extends StatelessWidget {
               'ลองไปดูโพสต์ทั้งหมดหรือแบ่งปันเรื่องราวน้องแมวในฟีด',
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 13.5, color: AppColors.muted),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _GuestHomeBanner extends StatelessWidget {
+  const _GuestHomeBanner({required this.isEn, required this.onSignInTap});
+
+  final bool isEn;
+  final VoidCallback onSignInTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 10),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          color: AppColors.ownerPillBg,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.ownerTealBorder),
+        ),
+        child: Row(
+          children: [
+            const Icon(
+              LucideIcons.compass,
+              size: 18,
+              color: AppColors.ownerTeal,
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                isEn
+                    ? 'Guest Mode · Sign in to post & save profiles'
+                    : 'โหมดผู้เยี่ยมชม · เข้าสู่ระบบเพื่อโพสต์และดูแลโปรไฟล์',
+                style: const TextStyle(
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.ownerTeal,
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            FilledButton(
+              onPressed: onSignInTap,
+              style: FilledButton.styleFrom(
+                backgroundColor: AppColors.ownerTeal,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
+                minimumSize: Size.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                shape: const StadiumBorder(),
+              ),
+              child: Text(
+                isEn ? 'Sign in' : 'เข้าสู่ระบบ',
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
             ),
           ],
         ),
