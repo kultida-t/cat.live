@@ -191,6 +191,12 @@ abstract final class AuthL10n {
 
   static String pinNextBtn(bool isEn) => isEn ? 'Next' : 'ถัดไป';
 
+  static String pinSaveBtn(bool isEn) => isEn ? 'Save PIN' : 'บันทึกรหัส PIN';
+
+  static String showPinLabel(bool isEn) => isEn ? 'Show PIN' : 'แสดงรหัส PIN';
+
+  static String hidePinLabel(bool isEn) => isEn ? 'Hide PIN' : 'ซ่อนรหัส PIN';
+
   static String pinDoneTitle(bool hasPin, bool isEn) => hasPin
       ? (isEn ? 'PIN changed' : 'เปลี่ยนรหัส PIN เรียบร้อยแล้ว')
       : (isEn ? 'PIN set' : 'ตั้งรหัส PIN เรียบร้อยแล้ว');

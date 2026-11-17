@@ -52,6 +52,9 @@ class _LoginPageState extends ConsumerState<LoginPage> with ToastMixin {
   int _prevPinLen = 0;
   int _prevOtpLen = 0;
   bool _prevBothPinsDone = false;
+  bool _obscurePin = true;
+  bool _obscureNewPin = true;
+  bool _obscureConfirmPin = true;
 
   @override
   void initState() {
@@ -545,154 +548,158 @@ class _LoginPageState extends ConsumerState<LoginPage> with ToastMixin {
       onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
       child: Scaffold(
         backgroundColor: AppColors.page,
-        body: SafeArea(
-          child: Stack(
-            children: [
-              Column(
-                children: [
-                  if (challenge != null)
-                    _OtpTopBar(
-                      title: AuthL10n.otpTitle(isEn),
-                      backLabel: AuthL10n.backLabel(isEn),
-                      onBack: () => ref
-                          .read(authControllerProvider.notifier)
-                          .clearOtpChallenge(),
-                    )
-                  else if (_pinSetupPhase)
-                    _OtpTopBar(
-                      title: AuthL10n.pinSetupTitle(isEn),
-                      backLabel: AuthL10n.backLabel(isEn),
-                      onBack: () => _skipPinSetup(isEn),
-                    ),
-                  Expanded(
-                    child: ListView(
-                      key: ValueKey(
-                        challenge == null ? 'login-list' : 'otp-list',
+        body: GestureDetector(
+          // แตะพื้นว่างนอกช่องกรอก → ปิดคีย์แพ็ด/เลิกโฟกัส
+          onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+          child: SafeArea(
+            child: Stack(
+              children: [
+                Column(
+                  children: [
+                    if (challenge != null)
+                      _OtpTopBar(
+                        title: AuthL10n.otpTitle(isEn),
+                        backLabel: AuthL10n.backLabel(isEn),
+                        onBack: () => ref
+                            .read(authControllerProvider.notifier)
+                            .clearOtpChallenge(),
+                      )
+                    else if (_pinSetupPhase)
+                      _OtpTopBar(
+                        title: AuthL10n.pinSetupTitle(isEn),
+                        backLabel: AuthL10n.backLabel(isEn),
+                        onBack: () => _skipPinSetup(isEn),
                       ),
-                      keyboardDismissBehavior:
-                          ScrollViewKeyboardDismissBehavior.onDrag,
-                      padding: EdgeInsets.fromLTRB(
-                        20,
-                        challenge == null ? 24 : 8,
-                        20,
-                        32,
-                      ),
-                      children: [
-                        Center(
-                          child: Image.asset(
-                            'assets/brand/maew-logo.png',
-                            width: 132,
-                            height: 38,
-                            semanticLabel: species.brandName(isEn),
-                          ),
+                    Expanded(
+                      child: ListView(
+                        key: ValueKey(
+                          challenge == null ? 'login-list' : 'otp-list',
                         ),
-                        const SizedBox(height: 12),
-                        Text(
-                          challenge != null
-                              ? AuthL10n.otpTitle(isEn)
-                              : (_pinSetupPhase
-                                    ? AuthL10n.pinSetupTitle(isEn)
-                                    : AuthL10n.headline(species, isEn)),
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.w800,
-                            color: AppColors.text,
-                          ),
+                        keyboardDismissBehavior:
+                            ScrollViewKeyboardDismissBehavior.onDrag,
+                        padding: EdgeInsets.fromLTRB(
+                          20,
+                          challenge == null ? 24 : 8,
+                          20,
+                          32,
                         ),
-                        const SizedBox(height: 4),
-                        Text(
-                          challenge != null
-                              ? AuthL10n.otpSubtitle(
-                                  AuthRules.maskThaiPhone(
-                                    challenge.phoneNumber,
-                                  ),
-                                  challenge.refCode,
-                                  isEn,
-                                )
-                              : (_pinSetupPhase
-                                    ? AuthL10n.pinSetupSubtitle(isEn)
-                                    : AuthL10n.subheadline(species, isEn)),
-                          textAlign: TextAlign.center,
-                          maxLines: challenge == null ? 1 : 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontSize: 13,
-                            color: AppColors.muted,
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                        if (_pinSetupPhase)
-                          _buildPinSetupCard(authState: authState, isEn: isEn)
-                        else if (challenge == null) ...[
-                          _AuthModeTabs(
-                            isRegisterMode: _isRegisterMode,
-                            signInLabel: AuthL10n.tabSignIn(isEn),
-                            registerLabel: AuthL10n.tabRegister(isEn),
-                            onChanged: (register) => setState(() {
-                              _isRegisterMode = register;
-                              _useOtpInSignIn = false;
-                              _validationError = null;
-                            }),
-                          ),
-                          const SizedBox(height: 14),
-                          _buildLoginMethodsCard(
-                            authState: authState,
-                            species: species,
-                            isEn: isEn,
-                          ),
-                        ] else
-                          _buildOtpVerifyCard(
-                            authState: authState,
-                            challenge: challenge,
-                            isEn: isEn,
-                          ),
-                        const SizedBox(height: 18),
-                        OutlinedButton.icon(
-                          onPressed: authState.isSubmitting
-                              ? null
-                              : () => _handleGuestMode(isEn),
-                          icon: const Icon(LucideIcons.compass, size: 17),
-                          label: Text(
-                            AuthL10n.guestBtn(isEn),
-                            style: const TextStyle(
-                              fontSize: 13.5,
-                              fontWeight: FontWeight.w700,
+                        children: [
+                          Center(
+                            child: Image.asset(
+                              'assets/brand/maew-logo.png',
+                              width: 132,
+                              height: 38,
+                              semanticLabel: species.brandName(isEn),
                             ),
                           ),
-                          style: OutlinedButton.styleFrom(
-                            backgroundColor: AppColors.card,
-                            foregroundColor: AppColors.text,
-                            side: const BorderSide(color: AppColors.line2),
-                            shape: const StadiumBorder(),
-                            padding: const EdgeInsets.symmetric(vertical: 13),
+                          const SizedBox(height: 12),
+                          Text(
+                            challenge != null
+                                ? AuthL10n.otpTitle(isEn)
+                                : (_pinSetupPhase
+                                      ? AuthL10n.pinSetupTitle(isEn)
+                                      : AuthL10n.headline(species, isEn)),
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.text,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          AuthL10n.guestHint(isEn),
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: AppColors.muted,
-                            height: 1.4,
+                          const SizedBox(height: 4),
+                          Text(
+                            challenge != null
+                                ? AuthL10n.otpSubtitle(
+                                    AuthRules.maskThaiPhone(
+                                      challenge.phoneNumber,
+                                    ),
+                                    challenge.refCode,
+                                    isEn,
+                                  )
+                                : (_pinSetupPhase
+                                      ? AuthL10n.pinSetupSubtitle(isEn)
+                                      : AuthL10n.subheadline(species, isEn)),
+                            textAlign: TextAlign.center,
+                            maxLines: challenge == null ? 1 : 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 13,
+                              color: AppColors.muted,
+                            ),
                           ),
-                        ),
-                      ],
+                          const SizedBox(height: 20),
+                          if (_pinSetupPhase)
+                            _buildPinSetupCard(authState: authState, isEn: isEn)
+                          else if (challenge == null) ...[
+                            _AuthModeTabs(
+                              isRegisterMode: _isRegisterMode,
+                              signInLabel: AuthL10n.tabSignIn(isEn),
+                              registerLabel: AuthL10n.tabRegister(isEn),
+                              onChanged: (register) => setState(() {
+                                _isRegisterMode = register;
+                                _useOtpInSignIn = false;
+                                _validationError = null;
+                              }),
+                            ),
+                            const SizedBox(height: 14),
+                            _buildLoginMethodsCard(
+                              authState: authState,
+                              species: species,
+                              isEn: isEn,
+                            ),
+                          ] else
+                            _buildOtpVerifyCard(
+                              authState: authState,
+                              challenge: challenge,
+                              isEn: isEn,
+                            ),
+                          const SizedBox(height: 18),
+                          OutlinedButton.icon(
+                            onPressed: authState.isSubmitting
+                                ? null
+                                : () => _handleGuestMode(isEn),
+                            icon: const Icon(LucideIcons.compass, size: 17),
+                            label: Text(
+                              AuthL10n.guestBtn(isEn),
+                              style: const TextStyle(
+                                fontSize: 13.5,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            style: OutlinedButton.styleFrom(
+                              backgroundColor: AppColors.card,
+                              foregroundColor: AppColors.text,
+                              side: const BorderSide(color: AppColors.line2),
+                              shape: const StadiumBorder(),
+                              padding: const EdgeInsets.symmetric(vertical: 13),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            AuthL10n.guestHint(isEn),
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: AppColors.muted,
+                              height: 1.4,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                if (toastMessage != null)
+                  Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: 24,
+                    child: IgnorePointer(
+                      child: Center(child: ToastPill(message: toastMessage!)),
                     ),
                   ),
-                ],
-              ),
-              if (toastMessage != null)
-                Positioned(
-                  left: 0,
-                  right: 0,
-                  bottom: 24,
-                  child: IgnorePointer(
-                    child: Center(child: ToastPill(message: toastMessage!)),
-                  ),
-                ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -905,13 +912,24 @@ class _LoginPageState extends ConsumerState<LoginPage> with ToastMixin {
             TextField(
               controller: _pinController,
               keyboardType: TextInputType.number,
-              obscureText: true,
+              obscureText: _obscurePin,
               maxLength: 6,
               textInputAction: TextInputAction.done,
               decoration: InputDecoration(
                 hintText: '••••••',
                 counterText: '',
                 prefixIcon: const Icon(LucideIcons.lockKeyhole, size: 18),
+                suffixIcon: IconButton(
+                  tooltip: _obscurePin
+                      ? AuthL10n.showPinLabel(isEn)
+                      : AuthL10n.hidePinLabel(isEn),
+                  icon: Icon(
+                    _obscurePin ? LucideIcons.eye : LucideIcons.eyeOff,
+                    size: 18,
+                    color: AppColors.muted,
+                  ),
+                  onPressed: () => setState(() => _obscurePin = !_obscurePin),
+                ),
                 filled: true,
                 fillColor: AppColors.soft,
                 border: OutlineInputBorder(
@@ -1279,13 +1297,25 @@ class _LoginPageState extends ConsumerState<LoginPage> with ToastMixin {
             child: TextField(
               controller: _newPinController,
               keyboardType: TextInputType.number,
-              obscureText: true,
+              obscureText: _obscureNewPin,
               maxLength: 6,
               textInputAction: TextInputAction.next,
               decoration: InputDecoration(
                 hintText: '••••••',
                 counterText: '',
                 prefixIcon: const Icon(LucideIcons.lockKeyhole, size: 18),
+                suffixIcon: IconButton(
+                  tooltip: _obscureNewPin
+                      ? AuthL10n.showPinLabel(isEn)
+                      : AuthL10n.hidePinLabel(isEn),
+                  icon: Icon(
+                    _obscureNewPin ? LucideIcons.eye : LucideIcons.eyeOff,
+                    size: 18,
+                    color: AppColors.muted,
+                  ),
+                  onPressed: () =>
+                      setState(() => _obscureNewPin = !_obscureNewPin),
+                ),
                 filled: true,
                 fillColor: AppColors.soft,
                 border: OutlineInputBorder(
@@ -1310,13 +1340,25 @@ class _LoginPageState extends ConsumerState<LoginPage> with ToastMixin {
             child: TextField(
               controller: _confirmPinController,
               keyboardType: TextInputType.number,
-              obscureText: true,
+              obscureText: _obscureConfirmPin,
               maxLength: 6,
               textInputAction: TextInputAction.done,
               decoration: InputDecoration(
                 hintText: '••••••',
                 counterText: '',
                 prefixIcon: const Icon(LucideIcons.lockKeyhole, size: 18),
+                suffixIcon: IconButton(
+                  tooltip: _obscureConfirmPin
+                      ? AuthL10n.showPinLabel(isEn)
+                      : AuthL10n.hidePinLabel(isEn),
+                  icon: Icon(
+                    _obscureConfirmPin ? LucideIcons.eye : LucideIcons.eyeOff,
+                    size: 18,
+                    color: AppColors.muted,
+                  ),
+                  onPressed: () =>
+                      setState(() => _obscureConfirmPin = !_obscureConfirmPin),
+                ),
                 filled: true,
                 fillColor: AppColors.soft,
                 border: OutlineInputBorder(

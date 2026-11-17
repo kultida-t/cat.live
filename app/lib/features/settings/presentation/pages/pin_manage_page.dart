@@ -119,17 +119,21 @@ class _PinManagePageState extends ConsumerState<PinManagePage> {
 
     return Scaffold(
       backgroundColor: AppColors.page,
-      body: SafeArea(
-        child: Column(
-          children: [
-            _PinHeader(
-              title: AuthL10n.pinManageTitle(hasPin, isEn),
-              backLabel: SettingsL10n.backLabel(isEn),
-              onBack: () =>
-                  context.canPop() ? context.pop() : context.go('/settings'),
-            ),
-            Expanded(child: _buildBody(isEn, isGuest, hasPhone, hasPin)),
-          ],
+      body: GestureDetector(
+        // แตะพื้นว่างนอกช่องกรอก → ปิดคีย์แพ็ด/เลิกโฟกัส
+        onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+        child: SafeArea(
+          child: Column(
+            children: [
+              _PinHeader(
+                title: AuthL10n.pinManageTitle(hasPin, isEn),
+                backLabel: SettingsL10n.backLabel(isEn),
+                onBack: () =>
+                    context.canPop() ? context.pop() : context.go('/settings'),
+              ),
+              Expanded(child: _buildBody(isEn, isGuest, hasPhone, hasPin)),
+            ],
+          ),
         ),
       ),
     );
@@ -154,6 +158,7 @@ class _PinManagePageState extends ConsumerState<PinManagePage> {
           _PinField(
             label: AuthL10n.pinCurrentLabel(isEn),
             hint: AuthL10n.pinCurrentHint(isEn),
+            isEn: isEn,
             controller: _currentPinController,
           ),
         ],
@@ -167,14 +172,16 @@ class _PinManagePageState extends ConsumerState<PinManagePage> {
         fields: [
           _PinField(
             label: AuthL10n.pinSetupNewLabel(isEn),
+            isEn: isEn,
             controller: _newPinController,
           ),
           _PinField(
             label: AuthL10n.pinSetupConfirmLabel(isEn),
+            isEn: isEn,
             controller: _confirmPinController,
           ),
         ],
-        buttonLabel: AuthL10n.pinSetupSaveBtn(isEn),
+        buttonLabel: AuthL10n.pinSaveBtn(isEn),
         buttonEnabled:
             !_submitting &&
             _newPinController.text.trim().length == 6 &&
@@ -261,13 +268,27 @@ class _PinManagePageState extends ConsumerState<PinManagePage> {
   }
 }
 
-/// ช่องกรอก PIN — ซ่อนตัวอักษร + แป้นตัวเลขตามกติกา
-class _PinField extends StatelessWidget {
-  const _PinField({required this.label, required this.controller, this.hint});
+/// ช่องกรอก PIN — ซ่อนตัวอักษร + แป้นตัวเลขตามกติกา มีตาเปิด-ปิด
+/// ให้กดดูรหัสที่กรอกว่าถูกไหมก่อนบันทึก
+class _PinField extends StatefulWidget {
+  const _PinField({
+    required this.label,
+    required this.controller,
+    required this.isEn,
+    this.hint,
+  });
 
   final String label;
   final String? hint;
+  final bool isEn;
   final TextEditingController controller;
+
+  @override
+  State<_PinField> createState() => _PinFieldState();
+}
+
+class _PinFieldState extends State<_PinField> {
+  bool _obscure = true;
 
   @override
   Widget build(BuildContext context) {
@@ -275,34 +296,45 @@ class _PinField extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Text(
-          label,
+          widget.label,
           style: const TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w700,
             color: AppColors.text,
           ),
         ),
-        if (hint != null)
+        if (widget.hint != null)
           Padding(
             padding: const EdgeInsets.only(top: 2),
             child: Text(
-              hint!,
+              widget.hint!,
               style: const TextStyle(fontSize: 12, color: AppColors.muted),
             ),
           ),
         const SizedBox(height: 8),
         Semantics(
-          label: label,
+          label: widget.label,
           child: TextField(
-            controller: controller,
+            controller: widget.controller,
             keyboardType: TextInputType.number,
-            obscureText: true,
+            obscureText: _obscure,
             maxLength: 6,
             textInputAction: TextInputAction.done,
             decoration: InputDecoration(
               hintText: '••••••',
               counterText: '',
               prefixIcon: const Icon(LucideIcons.lockKeyhole, size: 18),
+              suffixIcon: IconButton(
+                tooltip: _obscure
+                    ? AuthL10n.showPinLabel(widget.isEn)
+                    : AuthL10n.hidePinLabel(widget.isEn),
+                icon: Icon(
+                  _obscure ? LucideIcons.eye : LucideIcons.eyeOff,
+                  size: 18,
+                  color: AppColors.muted,
+                ),
+                onPressed: () => setState(() => _obscure = !_obscure),
+              ),
               filled: true,
               fillColor: AppColors.soft,
               border: OutlineInputBorder(
@@ -464,15 +496,8 @@ class _CatIconBadge extends StatelessWidget {
               child: Container(
                 width: size,
                 height: size,
-                decoration: BoxDecoration(
-                  color: bg,
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  LucideIcons.cat,
-                  size: size * 0.46,
-                  color: color,
-                ),
+                decoration: BoxDecoration(color: bg, shape: BoxShape.circle),
+                child: Icon(LucideIcons.cat, size: size * 0.46, color: color),
               ),
             ),
             Positioned(
