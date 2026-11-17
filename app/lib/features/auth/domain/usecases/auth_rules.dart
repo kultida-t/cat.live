@@ -14,6 +14,10 @@ abstract final class AuthRules {
   static const otpLockDuration = Duration(minutes: 15);
   static const mockValidOtp = '123456';
 
+  /// PIN ใช้กติกาเดียวกับ OTP: ผิดครบ 5 ครั้งล็อก 15 นาที
+  static const pinMaxAttempts = otpMaxAttempts;
+  static const pinLockDuration = otpLockDuration;
+
   /// แปลงเบอร์โทรให้เหลือเฉพาะตัวเลข (รองรับ +66 -> 0)
   static String normalizeThaiPhone(String raw) {
     var digits = raw.replaceAll(RegExp(r'[^0-9]'), '');

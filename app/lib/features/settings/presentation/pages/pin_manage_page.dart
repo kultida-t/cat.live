@@ -5,8 +5,10 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../../core/config/app_locale.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../auth/domain/entities/auth_data.dart';
 import '../../../auth/presentation/providers/auth_controller.dart';
 import '../../../auth/presentation/widgets/auth_l10n.dart';
+import '../../../auth/presentation/widgets/pin_lock_notice.dart';
 import '../widgets/settings_l10n.dart';
 
 enum _PinStep { verifyCurrent, create, done }
@@ -30,6 +32,7 @@ class _PinManagePageState extends ConsumerState<PinManagePage> {
   bool? _hasPin;
   bool _submitting = false;
   String? _error;
+  PinAttemptStatus? _lockStatus;
 
   @override
   void initState() {
@@ -37,9 +40,22 @@ class _PinManagePageState extends ConsumerState<PinManagePage> {
     _currentPinController.addListener(_refresh);
     _newPinController.addListener(_refresh);
     _confirmPinController.addListener(_refresh);
+    _loadLockStatus();
   }
 
   void _refresh() => setState(() {});
+
+  bool get _isLocked => _lockStatus?.isLockedAt(DateTime.now()) ?? false;
+
+  /// โหลดสถานะการกรอก PIN ของบัญชีนี้ — ถ้าผิดจนล็อกจะปิดปุ่มและแสดงเวลาที่เหลือ
+  Future<void> _loadLockStatus() async {
+    final phone = ref.read(authControllerProvider).session.user?.phone;
+    if (phone == null) return;
+    final status = await ref
+        .read(authControllerProvider.notifier)
+        .pinAttemptStatus(phone);
+    if (mounted) setState(() => _lockStatus = status);
+  }
 
   @override
   void dispose() {
@@ -52,7 +68,7 @@ class _PinManagePageState extends ConsumerState<PinManagePage> {
   Future<void> _verifyCurrent(bool isEn) async {
     FocusManager.instance.primaryFocus?.unfocus();
     final pin = _currentPinController.text.trim();
-    if (pin.length != 6) return;
+    if (pin.length != 6 || _isLocked) return;
     setState(() {
       _submitting = true;
       _error = null;
@@ -60,12 +76,13 @@ class _PinManagePageState extends ConsumerState<PinManagePage> {
     final ok = await ref
         .read(authControllerProvider.notifier)
         .verifyCurrentPin(pin);
+    await _loadLockStatus();
     if (!mounted) return;
     setState(() {
       _submitting = false;
       if (ok) {
         _step = _PinStep.create;
-      } else {
+      } else if (!_isLocked) {
         _error = AuthL10n.pinWrongCurrentError(isEn);
       }
     });
@@ -162,9 +179,16 @@ class _PinManagePageState extends ConsumerState<PinManagePage> {
             controller: _currentPinController,
           ),
         ],
+        notice: PinLockNotice(
+          status: _lockStatus,
+          isEn: isEn,
+          onExpired: _loadLockStatus,
+        ),
         buttonLabel: AuthL10n.pinNextBtn(isEn),
         buttonEnabled:
-            !_submitting && _currentPinController.text.trim().length == 6,
+            !_submitting &&
+            !_isLocked &&
+            _currentPinController.text.trim().length == 6,
         onSubmit: () => _verifyCurrent(isEn),
       ),
       _PinStep.create => _buildForm(
@@ -197,6 +221,7 @@ class _PinManagePageState extends ConsumerState<PinManagePage> {
     required String buttonLabel,
     required bool buttonEnabled,
     required VoidCallback onSubmit,
+    Widget? notice,
   }) {
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
@@ -215,6 +240,7 @@ class _PinManagePageState extends ConsumerState<PinManagePage> {
                 if (i > 0) const SizedBox(height: 12),
                 fields[i],
               ],
+              ?notice,
               if (_error != null) ...[
                 const SizedBox(height: 10),
                 Container(

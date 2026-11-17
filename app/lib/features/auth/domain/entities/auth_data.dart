@@ -120,6 +120,26 @@ class OtpChallenge extends Equatable {
   ];
 }
 
+/// สถานะการกรอก PIN ผิดของบัญชี — ใช้แสดงจำนวนครั้งที่เหลือและเวลาที่ต้องรอปลดล็อก
+class PinAttemptStatus extends Equatable {
+  const PinAttemptStatus({required this.remainingAttempts, this.lockedUntil});
+
+  final int remainingAttempts;
+  final DateTime? lockedUntil;
+
+  bool isLockedAt(DateTime now) =>
+      lockedUntil != null && now.isBefore(lockedUntil!);
+
+  int secondsUntilUnlock(DateTime now) {
+    if (lockedUntil == null) return 0;
+    final diff = lockedUntil!.difference(now).inSeconds;
+    return diff > 0 ? diff : 0;
+  }
+
+  @override
+  List<Object?> get props => [remainingAttempts, lockedUntil];
+}
+
 /// สถานะเซสชันรวม Token สำหรับเตรียมสลับต่อ API จริง
 class AuthSession extends Equatable {
   const AuthSession({

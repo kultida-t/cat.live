@@ -8,13 +8,18 @@ import '../datasources/auth_pin_storage.dart';
 import '../datasources/auth_remote_data_source.dart';
 import '../datasources/auth_token_storage.dart';
 
+/// ผลการตรวจ PIN หนึ่งครั้ง — ล็อกแปลว่าครั้งนี้ผิดจนครบเกณฑ์หรืออยู่ในช่วงล็อกอยู่แล้ว
+enum _PinCheck { ok, wrong, locked }
+
 class AuthRepositoryImpl implements AuthRepository {
   AuthRepositoryImpl({
     required AuthRemoteDataSource remoteDataSource,
     required AuthTokenStorage tokenStorage,
     required this._pinStorage,
+    DateTime Function()? nowProvider,
   }) : _remote = remoteDataSource,
-       _storage = tokenStorage;
+       _storage = tokenStorage,
+       _now = nowProvider ?? DateTime.now;
 
   /// ค่าบัญชีเดโม (จุฑามาศ) ที่ seed PIN ให้ตั้งแต่เปิดแอปครั้งแรก
   static const _demoUserId = 'user-lookkaew';
@@ -24,6 +29,7 @@ class AuthRepositoryImpl implements AuthRepository {
   final AuthRemoteDataSource _remote;
   final AuthTokenStorage _storage;
   final AuthPinStorage _pinStorage;
+  final DateTime Function() _now;
 
   @override
   Future<AuthSession> restoreSession() async {
@@ -102,6 +108,11 @@ class AuthRepositoryImpl implements AuthRepository {
       displayName: displayName,
     );
     if (res.session != null) {
+      // OTP ผ่านคือหลักฐานว่าเป็นเจ้าของเบอร์ → เป็นทางกู้ปลดล็อก PIN ที่ค้างล็อกอยู่
+      final record = await _pinStorage.findByPhone(
+        AuthRules.normalizeThaiPhone(challenge.phoneNumber),
+      );
+      if (record != null) await _resetPinAttempts(record);
       await _storage.saveSession(res.session!);
       return (session: res.session!, updatedChallenge: null, errorCode: null);
     }
@@ -140,8 +151,14 @@ class AuthRepositoryImpl implements AuthRepository {
     if (record == null) {
       return (session: null, failure: PinSignInFailure.noPinForPhone);
     }
-    if (!PinRules.verifyPin(pin: pin, record: record)) {
-      return (session: null, failure: PinSignInFailure.wrongPin);
+    final check = await _checkPin(record: record, pin: pin);
+    if (check != _PinCheck.ok) {
+      return (
+        session: null,
+        failure: check == _PinCheck.locked
+            ? PinSignInFailure.locked
+            : PinSignInFailure.wrongPin,
+      );
     }
     final session = await _remote.signInWithPin(
       phone: normalized,
@@ -156,6 +173,55 @@ class AuthRepositoryImpl implements AuthRepository {
   Future<bool> hasPinForPhone(String phone) async {
     final normalized = AuthRules.normalizeThaiPhone(phone);
     return (await _pinStorage.findByPhone(normalized)) != null;
+  }
+
+  @override
+  Future<PinAttemptStatus?> pinAttemptStatus(String phone) async {
+    final record = await _pinStorage.findByPhone(
+      AuthRules.normalizeThaiPhone(phone),
+    );
+    if (record == null) return null;
+    final locked = _isPinLocked(record);
+    return PinAttemptStatus(
+      remainingAttempts: locked
+          ? 0
+          : AuthRules.pinMaxAttempts - record.failedPinAttempts,
+      lockedUntil: record.pinLockedUntil,
+    );
+  }
+
+  /// ตรวจ PIN พร้อมนับครั้งที่ผิด — ถ้าอยู่ในช่วงล็อกจะไม่ตรวจ PIN เลย
+  Future<_PinCheck> _checkPin({
+    required PinAccountRecord record,
+    required String pin,
+  }) async {
+    if (_isPinLocked(record)) return _PinCheck.locked;
+    if (PinRules.verifyPin(pin: pin, record: record)) {
+      await _resetPinAttempts(record);
+      return _PinCheck.ok;
+    }
+    final attempts = record.failedPinAttempts + 1;
+    final lockNow = attempts >= AuthRules.pinMaxAttempts;
+    await _pinStorage.saveRecord(
+      record.copyWith(
+        failedPinAttempts: lockNow ? 0 : attempts,
+        pinLockedUntil: lockNow ? _now().add(AuthRules.pinLockDuration) : null,
+        clearPinLockedUntil: !lockNow,
+      ),
+    );
+    return lockNow ? _PinCheck.locked : _PinCheck.wrong;
+  }
+
+  bool _isPinLocked(PinAccountRecord record) {
+    final until = record.pinLockedUntil;
+    return until != null && _now().isBefore(until);
+  }
+
+  Future<void> _resetPinAttempts(PinAccountRecord record) async {
+    if (record.failedPinAttempts == 0 && record.pinLockedUntil == null) return;
+    await _pinStorage.saveRecord(
+      record.copyWith(failedPinAttempts: 0, clearPinLockedUntil: true),
+    );
   }
 
   @override
@@ -192,7 +258,7 @@ class AuthRepositoryImpl implements AuthRepository {
     if (phone == null) return false;
     final record = await _pinStorage.findByPhone(phone);
     if (record == null) return false;
-    return PinRules.verifyPin(pin: pin, record: record);
+    return await _checkPin(record: record, pin: pin) == _PinCheck.ok;
   }
 
   @override

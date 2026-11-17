@@ -1,4 +1,5 @@
 import '../../../../core/config/pet_species_config.dart';
+import '../../domain/usecases/auth_rules.dart';
 
 /// ข้อความ 2 ภาษา (ไทย/EN) สำหรับหน้า Login, OTP และ Guest Mode (AUTH-01..04)
 abstract final class AuthL10n {
@@ -89,6 +90,17 @@ abstract final class AuthL10n {
   static String invalidPinError(bool isEn) => isEn
       ? 'Incorrect PIN. Please try again.'
       : 'รหัส PIN ไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง';
+
+  static String pinAttemptsLeft(int remaining, bool isEn) => isEn
+      ? 'Attempts left: $remaining'
+      : 'เหลือโอกาสกรอก PIN อีก $remaining ครั้ง';
+
+  static String pinLockedMessage(String remainingTime, bool isEn) => isEn
+      ? 'Too many wrong PIN attempts (${AuthRules.pinMaxAttempts}/${AuthRules.pinMaxAttempts}). Locked for now, try again in $remainingTime.'
+      : 'กรอกรหัส PIN ผิดครบ ${AuthRules.pinMaxAttempts} ครั้ง ระบบล็อกชั่วคราว ลองใหม่ได้อีก $remainingTime';
+
+  static String pinLockOtpBtn(bool isEn) =>
+      isEn ? 'Verify with OTP instead' : 'ยืนยันตัวตนด้วย OTP แทน';
 
   static String requestOtpBtn(bool isEn) => isEn ? 'Request OTP' : 'ขอรหัส OTP';
 

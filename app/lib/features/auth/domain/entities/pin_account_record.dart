@@ -17,6 +17,8 @@ class PinAccountRecord extends Equatable {
     this.email,
     this.birthYear,
     this.guardianConsentGranted = false,
+    this.failedPinAttempts = 0,
+    this.pinLockedUntil,
   });
 
   final String userId;
@@ -32,6 +34,35 @@ class PinAccountRecord extends Equatable {
   final String? email;
   final int? birthYear;
   final bool guardianConsentGranted;
+
+  /// จำนวนครั้งที่กรอก PIN ผิดติดกันหลังล็อกครั้งล่าสุด (รีเซ็ตเป็น 0 เมื่อกรอกถูกหรือหมดเวลาล็อก)
+  final int failedPinAttempts;
+
+  /// เวลาที่ปลดล็อก — ไม่เป็น null และยังไม่ถึงเวลา = ตอนนี้ยังล็อกอยู่
+  final DateTime? pinLockedUntil;
+
+  PinAccountRecord copyWith({
+    int? failedPinAttempts,
+    DateTime? pinLockedUntil,
+    bool clearPinLockedUntil = false,
+  }) {
+    return PinAccountRecord(
+      userId: userId,
+      phone: phone,
+      salt: salt,
+      pinHash: pinHash,
+      displayName: displayName,
+      method: method,
+      phoneMasked: phoneMasked,
+      email: email,
+      birthYear: birthYear,
+      guardianConsentGranted: guardianConsentGranted,
+      failedPinAttempts: failedPinAttempts ?? this.failedPinAttempts,
+      pinLockedUntil: clearPinLockedUntil
+          ? null
+          : (pinLockedUntil ?? this.pinLockedUntil),
+    );
+  }
 
   /// สร้าง AuthUser กลับจากโปรไฟล์ที่เก็บไว้ เพื่อคืนบัญชีเดิมหลังล็อกอินด้วย PIN
   AuthUser toAuthUser() {
@@ -59,5 +90,7 @@ class PinAccountRecord extends Equatable {
     email,
     birthYear,
     guardianConsentGranted,
+    failedPinAttempts,
+    pinLockedUntil,
   ];
 }

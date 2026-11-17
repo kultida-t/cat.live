@@ -11,11 +11,13 @@ import 'package:flutter_test/flutter_test.dart';
 AuthRepositoryImpl _repo({
   InMemoryAuthTokenStorage? tokenStorage,
   InMemoryAuthPinStorage? pinStorage,
+  DateTime Function()? now,
 }) {
   return AuthRepositoryImpl(
     remoteDataSource: MockAuthRemoteDataSource(latency: Duration.zero),
     tokenStorage: tokenStorage ?? InMemoryAuthTokenStorage(),
     pinStorage: pinStorage ?? InMemoryAuthPinStorage(),
+    nowProvider: now,
   );
 }
 
@@ -198,6 +200,149 @@ void main() {
         pin: '123456',
       );
       expect(again.failure, isNull);
+    });
+  });
+
+  group('PIN attempt lockout', () {
+    const demoPhone = '0812344567';
+
+    test(
+      'ผิดครบ 5 ครั้งติดกันแล้วล็อก — PIN ถูกก็เข้าไม่ได้ระหว่างล็อก',
+      () async {
+        var now = DateTime(2026, 11, 17, 10);
+        final repo = _repo(now: () => now);
+        await repo.restoreSession();
+
+        for (var i = 0; i < 4; i++) {
+          final r = await repo.signInWithPin(phone: demoPhone, pin: '654321');
+          expect(r.failure, PinSignInFailure.wrongPin);
+        }
+        expect((await repo.pinAttemptStatus(demoPhone))!.remainingAttempts, 1);
+
+        final fifth = await repo.signInWithPin(phone: demoPhone, pin: '654321');
+        expect(fifth.failure, PinSignInFailure.locked);
+
+        final correctWhileLocked = await repo.signInWithPin(
+          phone: demoPhone,
+          pin: '123456',
+        );
+        expect(correctWhileLocked.failure, PinSignInFailure.locked);
+        expect(correctWhileLocked.session, isNull);
+
+        final status = await repo.pinAttemptStatus(demoPhone);
+        expect(status!.remainingAttempts, 0);
+        expect(status.isLockedAt(now), isTrue);
+        expect(status.secondsUntilUnlock(now), 15 * 60);
+      },
+    );
+
+    test(
+      'ครบ 15 นาทีแล้วกรอก PIN ถูกได้ และนับครั้งผิดใหม่ตั้งแต่ 0',
+      () async {
+        var now = DateTime(2026, 11, 17, 10);
+        final repo = _repo(now: () => now);
+        await repo.restoreSession();
+        for (var i = 0; i < 5; i++) {
+          await repo.signInWithPin(phone: demoPhone, pin: '654321');
+        }
+
+        now = now.add(const Duration(minutes: 15));
+        expect((await repo.pinAttemptStatus(demoPhone))!.remainingAttempts, 5);
+
+        final ok = await repo.signInWithPin(phone: demoPhone, pin: '123456');
+        expect(ok.failure, isNull);
+        expect((await repo.pinAttemptStatus(demoPhone))!.remainingAttempts, 5);
+      },
+    );
+
+    test('กรอกถูกก่อนครบเกณฑ์ → นับใหม่ ไม่ล็อก', () async {
+      final now = DateTime(2026, 11, 17, 10);
+      final repo = _repo(now: () => now);
+      await repo.restoreSession();
+
+      for (var i = 0; i < 4; i++) {
+        await repo.signInWithPin(phone: demoPhone, pin: '654321');
+      }
+      final ok = await repo.signInWithPin(phone: demoPhone, pin: '123456');
+      expect(ok.failure, isNull);
+      expect((await repo.pinAttemptStatus(demoPhone))!.remainingAttempts, 5);
+
+      for (var i = 0; i < 4; i++) {
+        final r = await repo.signInWithPin(phone: demoPhone, pin: '654321');
+        expect(r.failure, PinSignInFailure.wrongPin);
+      }
+    });
+
+    test('สถานะล็อกเก็บใน PIN record จึงอยู่รอดเมื่อเปิดแอปใหม่', () async {
+      final now = DateTime(2026, 11, 17, 10);
+      final storage = InMemoryAuthPinStorage();
+      final first = _repo(pinStorage: storage, now: () => now);
+      await first.restoreSession();
+      for (var i = 0; i < 5; i++) {
+        await first.signInWithPin(phone: demoPhone, pin: '654321');
+      }
+
+      final reopened = _repo(pinStorage: storage, now: () => now);
+      final r = await reopened.signInWithPin(phone: demoPhone, pin: '123456');
+      expect(r.failure, PinSignInFailure.locked);
+    });
+
+    test('ผิดจากหน้าเปลี่ยน PIN นับรวมกับหน้าเข้าสู่ระบบ', () async {
+      final now = DateTime(2026, 11, 17, 10);
+      final repo = _repo(now: () => now);
+      await repo.restoreSession();
+      await repo.setPin(user: _phoneUser, pin: '111222');
+
+      for (var i = 0; i < 3; i++) {
+        await repo.signInWithPin(phone: _phoneUser.phone!, pin: '000000');
+      }
+      for (var i = 0; i < 2; i++) {
+        expect(
+          await repo.verifyCurrentPin(user: _phoneUser, pin: '000000'),
+          isFalse,
+        );
+      }
+      expect(
+        await repo.verifyCurrentPin(user: _phoneUser, pin: '111222'),
+        isFalse,
+      );
+      expect(
+        await repo.changePin(
+          user: _phoneUser,
+          currentPin: '111222',
+          newPin: '333444',
+        ),
+        isFalse,
+      );
+    });
+
+    test('OTP ที่ผ่านจะปลดล็อก PIN ที่ค้างอยู่', () async {
+      final now = DateTime(2026, 11, 17, 10);
+      final repo = _repo(now: () => now);
+      await repo.restoreSession();
+      for (var i = 0; i < 5; i++) {
+        await repo.signInWithPin(phone: demoPhone, pin: '654321');
+      }
+
+      final challenge = await repo.requestOtp(demoPhone);
+      final otp = await repo.verifyOtp(
+        challenge: challenge,
+        code: '123456',
+        birthYear: 1995,
+        guardianConsentGranted: false,
+      );
+      expect(otp.session.isAuthenticated, isTrue);
+
+      final afterOtp = await repo.signInWithPin(
+        phone: demoPhone,
+        pin: '123456',
+      );
+      expect(afterOtp.failure, isNull);
+    });
+
+    test('เบอร์ที่ยังไม่มี PIN ไม่มีสถานะ', () async {
+      final repo = _repo();
+      expect(await repo.pinAttemptStatus('0890001111'), isNull);
     });
   });
 

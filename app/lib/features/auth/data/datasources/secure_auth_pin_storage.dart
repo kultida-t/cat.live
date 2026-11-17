@@ -80,6 +80,8 @@ class SecureAuthPinStorage implements AuthPinStorage {
       'email': record.email,
       'birth_year': record.birthYear,
       'guardian_consent_granted': record.guardianConsentGranted,
+      'failed_pin_attempts': record.failedPinAttempts,
+      'pin_locked_until': record.pinLockedUntil?.toIso8601String(),
     };
   }
 
@@ -109,6 +111,10 @@ class SecureAuthPinStorage implements AuthPinStorage {
       birthYear: json['birth_year'] as int?,
       guardianConsentGranted:
           json['guardian_consent_granted'] as bool? ?? false,
+      failedPinAttempts: json['failed_pin_attempts'] as int? ?? 0,
+      pinLockedUntil: DateTime.tryParse(
+        json['pin_locked_until'] as String? ?? '',
+      ),
     );
   }
 

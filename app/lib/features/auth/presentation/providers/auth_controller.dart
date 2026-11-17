@@ -225,6 +225,12 @@ class AuthController extends Notifier<AuthState> {
     return repo.hasPinForPhone(phone);
   }
 
+  /// สถานะการกรอก PIN ผิดของเบอร์นี้ — ใช้แสดงจำนวนครั้งที่เหลือและเวลาล็อก
+  Future<PinAttemptStatus?> pinAttemptStatus(String phone) {
+    final repo = ref.read(authRepositoryProvider);
+    return repo.pinAttemptStatus(phone);
+  }
+
   /// ตั้ง PIN ให้บัญชีที่ล็อกอินอยู่ — คืน false ถ้าบัญชีไม่มีเบอร์ผูก
   Future<bool> setPinForCurrentAccount(String pin) async {
     final user = state.session.user;

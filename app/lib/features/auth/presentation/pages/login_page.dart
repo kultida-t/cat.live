@@ -17,6 +17,7 @@ import '../../domain/usecases/auth_rules.dart';
 import '../providers/auth_controller.dart';
 import '../widgets/auth_l10n.dart';
 import '../widgets/pending_deletion_sheet.dart';
+import '../widgets/pin_lock_notice.dart';
 
 /// หน้าเข้าสู่ระบบ สมัครสมาชิก และ Guest Mode (/login — AUTH-01..04, PDPA-03)
 /// `returnTo` = ปลายทางหลังล็อกอินสำเร็จ (AUTH-02), `initialRegister` = เปิดแท็บสมัครเลย
@@ -48,6 +49,9 @@ class _LoginPageState extends ConsumerState<LoginPage> with ToastMixin {
   bool _pinSetupPhase = false;
   bool? _accountHasPin;
   String? _pinSetupError;
+
+  /// สถานะการกรอก PIN ผิดของเบอร์ที่พิมพ์ — แสดงจำนวนครั้งที่เหลือและเวลาล็อก
+  PinAttemptStatus? _pinStatus;
   int _prevPhoneLen = 0;
   int _prevPinLen = 0;
   int _prevOtpLen = 0;
@@ -67,6 +71,11 @@ class _LoginPageState extends ConsumerState<LoginPage> with ToastMixin {
         FocusManager.instance.primaryFocus?.unfocus();
       }
       _prevPhoneLen = len;
+      if (len == 10) {
+        _refreshPinStatus();
+      } else {
+        _pinStatus = null;
+      }
       setState(() {});
     });
     _pinController.addListener(() {
@@ -180,9 +189,23 @@ class _LoginPageState extends ConsumerState<LoginPage> with ToastMixin {
   bool get _canRequestOtp =>
       _canProceedAuth && AuthRules.isValidThaiPhone(_phoneController.text);
 
+  bool get _isPinLocked => _pinStatus?.isLockedAt(DateTime.now()) ?? false;
+
   bool get _canSignInWithPin =>
       AuthRules.isValidThaiPhone(_phoneController.text) &&
-      _pinController.text.trim().length == 6;
+      _pinController.text.trim().length == 6 &&
+      !_isPinLocked;
+
+  /// โหลดสถานะการกรอก PIN ของเบอร์ที่พิมพ์ — ใช้แสดงจำนวนครั้งที่เหลือและเวลาล็อก
+  Future<void> _refreshPinStatus() async {
+    final phone = _phoneController.text.trim();
+    if (!AuthRules.isValidThaiPhone(phone)) return;
+    final status = await ref
+        .read(authControllerProvider.notifier)
+        .pinAttemptStatus(phone);
+    if (!mounted) return;
+    setState(() => _pinStatus = status);
+  }
 
   Future<void> _handleSignInWithPin(bool isEn) async {
     FocusManager.instance.primaryFocus?.unfocus();
@@ -200,10 +223,14 @@ class _LoginPageState extends ConsumerState<LoginPage> with ToastMixin {
       return;
     }
     setState(
-      () => _validationError = failure == PinSignInFailure.noPinForPhone
-          ? AuthL10n.noPinForPhoneError(isEn)
-          : AuthL10n.invalidPinError(isEn),
+      () => _validationError = switch (failure) {
+        PinSignInFailure.noPinForPhone => AuthL10n.noPinForPhoneError(isEn),
+        PinSignInFailure.wrongPin => AuthL10n.invalidPinError(isEn),
+        // ตอนล็อกการ์ดล็อกจะบอกเอง จึงไม่ต้องแสดงข้อความแจ้งซ้ำ
+        PinSignInFailure.locked => null,
+      },
     );
+    await _refreshPinStatus();
   }
 
   bool _validateCompliance(bool isEn) {
@@ -965,6 +992,15 @@ class _LoginPageState extends ConsumerState<LoginPage> with ToastMixin {
                 ),
               ),
             ],
+            PinLockNotice(
+              status: _pinStatus,
+              isEn: isEn,
+              onExpired: _refreshPinStatus,
+              onUseOtp: () => setState(() {
+                _useOtpInSignIn = true;
+                _validationError = null;
+              }),
+            ),
             const SizedBox(height: 12),
             FilledButton(
               onPressed: authState.isSubmitting || !_canSignInWithPin
