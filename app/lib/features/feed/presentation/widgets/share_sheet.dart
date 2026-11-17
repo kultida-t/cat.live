@@ -6,10 +6,14 @@ import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/config/app_config.dart';
+import '../../../../core/config/app_locale.dart';
+import '../../../../core/config/pet_species_config.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/app_avatar.dart';
 import '../../../../core/widgets/social_brand_icons.dart';
 import '../../../../core/widgets/toast_pill.dart';
+import '../../../auth/presentation/providers/auth_controller.dart';
+import '../../../auth/presentation/widgets/guest_auth_sheet.dart';
 import '../../domain/entities/feed_user.dart';
 import '../../domain/entities/post.dart';
 import '../providers/feed_providers.dart';
@@ -214,11 +218,29 @@ class _ShareSheetState extends ConsumerState<_ShareSheet> with ToastMixin {
                         return _AccountGrid(
                           accounts: shown,
                           selected: _selected,
-                          onToggle: (id) => setState(() {
-                            _selected.contains(id)
-                                ? _selected.remove(id)
-                                : _selected.add(id);
-                          }),
+                          onToggle: (id) {
+                            // ผู้เยี่ยมชมส่งหาเพื่อนในแอปไม่ได้ — แสดงชีตชวนล็อกอิน
+                            // (คัดลอกลิงก์/แชร์ออกนอกแอปยังใช้ได้ตามปกติ)
+                            if (ref.read(authControllerProvider).isGuest) {
+                              final isEn =
+                                  ref.read(appLocaleProvider) == 'en';
+                              showGuestAuthSheet(
+                                context,
+                                species:
+                                    ref.read(petSpeciesConfigProvider),
+                                isEn: isEn,
+                                actionName: isEn
+                                    ? 'Send to friends in app'
+                                    : 'ส่งให้เพื่อนในแอป',
+                              );
+                              return;
+                            }
+                            setState(() {
+                              _selected.contains(id)
+                                  ? _selected.remove(id)
+                                  : _selected.add(id);
+                            });
+                          },
                         );
                       },
                     ),
