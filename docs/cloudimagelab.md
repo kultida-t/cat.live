@@ -26,7 +26,7 @@
 
 | ตัวแปร | ความลับ | คำอธิบาย |
 |---|---|---|
-| `CLOUDIMAGELAB_BASE_URL` | ไม่ | staging: `https://stg-cloudimagelab-api.mrfox.store` · production: `https://cloudimagelab-api.mrfox.expert` (ทีมแจ้ง — คู่มือเขียน production เป็น `https://cloudimagelab-api.univerza.co` รอยืนยัน) |
+| `CLOUDIMAGELAB_BASE_URL` | ไม่ | staging: `https://stg-cloudimagelab-api.mrfox.store` · production: `https://cloudimagelab-api.univerza.co` |
 | `CLOUDIMAGELAB_API_KEY` | **ใช่** | key ของแอป (staging กับ production คนละตัว) |
 | `CLOUDIMAGELAB_CALLBACK_URL` | ไม่ | URL สาธารณะของ backend + `/webhooks/cloudimagelab` |
 | `CLOUDIMAGELAB_AVATAR_PRESET` | ไม่ | ชื่อ preset ของรูปโปรไฟล์ (ค่าเริ่มต้น `thumb_sq` 150×150 crop) |
