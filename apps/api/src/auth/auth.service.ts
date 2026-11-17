@@ -226,6 +226,28 @@ export class AuthService {
     return this.issueTokens(owner.userId);
   }
 
+  async hasPin(userId: string): Promise<boolean> {
+    const cred = await this.prisma.pinCredential.findUnique({
+      where: { userId },
+    });
+    return cred !== null;
+  }
+
+  /** ตรวจ PIN ของบัญชีที่ล็อกอินอยู่ (ใช้ก่อนเข้าขั้นเปลี่ยน PIN) — นับครั้งผิดและล็อกเหมือนหน้าเข้าสู่ระบบ */
+  async verifyPin(userId: string, pin: string): Promise<void> {
+    const result = await this.checkPin(userId, pin);
+    const cred = await this.prisma.pinCredential.findUnique({
+      where: { userId },
+    });
+    if (result === 'ok') return;
+    if (result === 'locked' || cred?.lockedUntil) {
+      throw this.lockedError('pin_locked', cred!.lockedUntil!, this.now());
+    }
+    throw authError(HttpStatus.UNAUTHORIZED, 'pin_invalid', {
+      remainingAttempts: PIN_MAX_ATTEMPTS - (cred?.failedAttempts ?? 0),
+    });
+  }
+
   /** ตั้ง PIN ใหม่ให้บัญชีที่ล็อกอินอยู่ — ต้องผูกเบอร์ก่อน */
   async setPin(userId: string, pin: string): Promise<void> {
     const owner = await this.prisma.userPrivate.findUnique({

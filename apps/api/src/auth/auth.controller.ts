@@ -55,6 +55,22 @@ export class AuthController {
     await this.auth.setPin(req.user.id, body.pin);
   }
 
+  @Get('pin/status')
+  @UseGuards(JwtAuthGuard)
+  async pinStatus(@Req() req: AuthenticatedRequest) {
+    return { hasPin: await this.auth.hasPin(req.user.id) };
+  }
+
+  @Post('pin/verify')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async verifyPin(
+    @Req() req: AuthenticatedRequest,
+    @Body({ schema: pinSetSchema }) body: PinSetDto,
+  ) {
+    await this.auth.verifyPin(req.user.id, body.pin);
+  }
+
   @Post('pin/change')
   @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.NO_CONTENT)
