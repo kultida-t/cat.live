@@ -93,8 +93,8 @@ export class MediaService {
   }
 
   /** รับผลจาก CloudImageLab — ตรวจ key ก่อนทุกครั้ง และทำซ้ำได้โดยไม่เปลี่ยนผลเดิม */
-  async handleCallback(callbackKey: string | undefined, body: CallbackBody): Promise<void> {
-    if (!this.isValidCallbackKey(callbackKey)) throw new UnauthorizedException();
+  async handleCallback(secret: string | undefined, body: CallbackBody): Promise<void> {
+    if (!this.isValidCallbackSecret(secret)) throw new UnauthorizedException();
     const upload = await this.prisma.mediaUpload.findUnique({ where: { fileId: body.fileId } });
     if (!upload) throw new NotFoundException('ไม่พบงานประมวลผลรูปนี้');
     if (upload.status !== 'processing') return;
@@ -165,18 +165,23 @@ export class MediaService {
     return status === 'submitting' ? 'processing' : status;
   }
 
+  /** ประกอบ URL ที่ CloudImageLab จะเรียกกลับ: base URL + path + ?type=&secret= */
   private requireMediaConfig(): { presetName: string; callbackUrl: string } {
     const presetName = this.config.get<string>('CLOUDIMAGELAB_AVATAR_PRESET');
-    const callbackUrl = this.config.get<string>('CLOUDIMAGELAB_CALLBACK_URL');
+    const baseUrl = this.config.get<string>('CLOUDIMAGELAB_CALLBACK_BASE_URL');
+    const type = this.config.get<string>('CLOUDIMAGELAB_CALLBACK_TYPE');
+    const secret = this.config.get<string>('CLOUDIMAGELAB_CALLBACK_SECRET');
     const bucket = this.config.get<string>('AVATAR_SOURCE_BUCKET');
-    if (!presetName || !callbackUrl || !bucket) {
+    if (!presetName || !baseUrl || !type || !secret || !bucket) {
       throw new ServiceUnavailableException('ระบบประมวลผลรูปยังไม่ได้ตั้งค่า');
     }
+    const query = new URLSearchParams({ type, secret });
+    const callbackUrl = `${baseUrl.replace(/\/+$/, '')}/api/webhooks/cloudimagelab?${query}`;
     return { presetName, callbackUrl };
   }
 
-  private isValidCallbackKey(received: string | undefined): boolean {
-    const expected = this.config.get<string>('CLOUDIMAGELAB_API_KEY');
+  private isValidCallbackSecret(received: string | undefined): boolean {
+    const expected = this.config.get<string>('CLOUDIMAGELAB_CALLBACK_SECRET');
     if (!expected || !received) return false;
     const a = Buffer.from(received);
     const b = Buffer.from(expected);

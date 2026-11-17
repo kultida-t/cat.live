@@ -10,7 +10,7 @@
 1. แอปขอ `POST /media/avatar/upload-url` (ต้องล็อกอิน) ส่ง `contentType` และ `fileSize` — backend ตอบ `uploadUrl` (อายุ 5 นาที), `uploadId`, `headers`
 2. แอปลบข้อมูลแฝง (GPS) ในรูปในเครื่อง แล้ว `PUT` ไฟล์ไปที่ `uploadUrl` ตรง ๆ โดยส่ง `Content-Type` ตรงกับที่ขอ และ **ห้ามแนบ Authorization** (จะทำให้ลายเซ็นผิด) ไฟล์ไปอยู่ที่ `catlive/avatars/<userId>/<uuid>.<ext>` ใน bucket
 3. แอปแจ้ง `POST /media/avatar/:uploadId/complete` — backend เรียก CloudImageLab `POST /api/files/process` พร้อม `s3Key`, `outputPath`, `presetNames`, `callbackUrl` (header `X-Api-Key`)
-4. CloudImageLab ประมวลผลเบื้องหลัง แล้ว **ส่งผลกลับ** มาที่ `POST /webhooks/cloudimagelab` ของเรา (header `X-Callback-Key` = key ของแอป)
+4. CloudImageLab ประมวลผลเบื้องหลัง แล้ว **ส่งผลกลับ** มาที่ `POST /api/webhooks/cloudimagelab?type=...&secret=...` ของเรา (ค่า `type` และ `secret` อยู่ใน callback URL ที่เราส่งให้ตอนขอประมวลผล)
 5. backend ตรวจ key บันทึกรูปที่ได้เป็นรูปปัจจุบันและเก็บประวัติ แอปอ่านรูปจาก `/auth/me` และ `/media/avatars`
 
 ผลประมวลผลต้องใช้ `url` จาก callback เสมอ ห้ามประกอบ path เอง รูปอ่านผ่าน CloudFront `https://d2kz9pl8iwzvcz.cloudfront.net/` (ไม่ต้องระบุ bucket ใน URL)
@@ -23,7 +23,7 @@
 | `POST /media/avatar/:id/complete` | แจ้งอัปโหลดเสร็จ สั่งประมวลผล ตอบ 202 (เรียกซ้ำได้) |
 | `GET /media/avatars` | รูปที่เคยใช้ เรียงใหม่ไปเก่า |
 | `POST /media/avatars/:id/select` | เลือกรูปเก่ากลับมาเป็นรูปปัจจุบัน |
-| `POST /webhooks/cloudimagelab` | รับผลจาก CloudImageLab (ตรวจ `X-Callback-Key`) |
+| `POST /api/webhooks/cloudimagelab` | รับผลจาก CloudImageLab (ตรวจ query `secret`) |
 
 ## ตัวแปรที่ต้องตั้ง
 
@@ -31,7 +31,9 @@
 |---|---|---|
 | `CLOUDIMAGELAB_BASE_URL` | ไม่ | staging: `https://stg-cloudimagelab-api.mrfox.store` · production: `https://cloudimagelab-api.univerza.co` |
 | `CLOUDIMAGELAB_API_KEY` | **ใช่** | key ของแอป (staging กับ production คนละตัว) |
-| `CLOUDIMAGELAB_CALLBACK_URL` | ไม่ | URL สาธารณะของ backend + `/webhooks/cloudimagelab` |
+| `CLOUDIMAGELAB_CALLBACK_BASE_URL` | ไม่ | URL สาธารณะของ backend (ไม่มี `/` ท้าย) เช่น `https://stg-chatcore-api.mrfox.store` ระบบจะต่อ `/api/webhooks/cloudimagelab?type=...&secret=...` ให้เอง |
+| `CLOUDIMAGELAB_CALLBACK_TYPE` | ไม่ | ค่า `type` ใน callback (ยังไม่มีคำยืนยันจากทีม ค่าเริ่มต้นที่ใช้: `avatar`) |
+| `CLOUDIMAGELAB_CALLBACK_SECRET` | **ใช่** | ค่า `secret` ใน callback ใช้ค่าสุ่มของเราเอง ไม่ใช่ API key (ค่าที่ทีมกำหนดต้องตรงกัน) |
 | `CLOUDIMAGELAB_AVATAR_PRESET` | ไม่ | ชื่อ preset ของรูปโปรไฟล์ (ค่าเริ่มต้น `thumb_sq` 150×150 crop) |
 | `AVATAR_SOURCE_BUCKET` | ไม่ | bucket รูปต้นฉบับ: `mf-share` |
 | `AWS_REGION` | ไม่ | `ap-southeast-7` |
@@ -43,7 +45,8 @@
 ## ความปลอดภัย
 
 - key ทั้งหมดอยู่ฝั่ง server เท่านั้น ห้ามใส่ในแอป
-- ตรวจ `X-Callback-Key` ด้วยการเทียบแบบ constant-time ก่อนทำอะไร callback ซ้ำ fileId เดิมไม่เปลี่ยนผลเดิม
+- ตรวจ `secret` ใน query ด้วยการเทียบแบบ constant-time ก่อนทำอะไร callback ซ้ำ fileId เดิมไม่เปลี่ยนผลเดิม
+- `secret` อยู่ใน URL จึงอาจโผล่ใน access log ของ proxy/เซิร์ฟเวอร์ ควรปิด/ตัด query ออกจาก log และหมุนค่าหากสงสัยว่าหลุด
 - แอปลบ GPS/EXIF ก่อนส่ง แต่ฝั่ง server ต้องไม่เชื่อฝั่งแอปอย่างเดียว
 - CloudImageLab ตัดสินชนิดไฟล์จากไบต์จริง ไฟล์ที่ไม่ใช่รูปจะล้มเหลวโดยไม่ลองซ้ำ (ได้ callback สถานะ Failed)
 

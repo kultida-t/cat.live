@@ -11,7 +11,10 @@ import { OBJECT_PRESIGNER, type PresignPutInput } from '../src/media/s3-presigne
 
 const CIL_KEY = 'test-cil-key';
 const PRESET = 'avatar_400';
-const CALLBACK_URL = 'https://callback.test/webhooks/cloudimagelab';
+const CALLBACK_BASE_URL = 'https://callback.test';
+const CALLBACK_TYPE = 'avatar';
+const CALLBACK_SECRET = 'test-callback-secret';
+const CALLBACK_URL = `${CALLBACK_BASE_URL}/api/webhooks/cloudimagelab?type=${CALLBACK_TYPE}&secret=${CALLBACK_SECRET}`;
 
 describe('Media API — รูปโปรไฟล์ (e2e)', () => {
   let app: INestApplication;
@@ -37,7 +40,9 @@ describe('Media API — รูปโปรไฟล์ (e2e)', () => {
     const port = (cil.address() as AddressInfo).port;
     process.env.CLOUDIMAGELAB_BASE_URL = `http://127.0.0.1:${port}`;
     process.env.CLOUDIMAGELAB_API_KEY = CIL_KEY;
-    process.env.CLOUDIMAGELAB_CALLBACK_URL = CALLBACK_URL;
+    process.env.CLOUDIMAGELAB_CALLBACK_BASE_URL = CALLBACK_BASE_URL;
+    process.env.CLOUDIMAGELAB_CALLBACK_TYPE = CALLBACK_TYPE;
+    process.env.CLOUDIMAGELAB_CALLBACK_SECRET = CALLBACK_SECRET;
     process.env.CLOUDIMAGELAB_AVATAR_PRESET = PRESET;
     process.env.AVATAR_SOURCE_BUCKET = 'test-bucket';
 
@@ -101,9 +106,10 @@ describe('Media API — รูปโปรไฟล์ (e2e)', () => {
     return completeUpload(token, created.body.uploadId).expect(202);
   }
 
-  function callback(fileId: string, url: string, key: string | null = CIL_KEY) {
-    const req = http().post('/webhooks/cloudimagelab');
-    if (key !== null) req.set('X-Callback-Key', key);
+  function callback(fileId: string, url: string, secret: string | null = CALLBACK_SECRET) {
+    const req = http().post('/api/webhooks/cloudimagelab');
+    if (secret !== null) req.query({ type: CALLBACK_TYPE, secret });
+    else req.query({ type: CALLBACK_TYPE });
     return req.send({
       fileId,
       status: 'Completed',
@@ -176,10 +182,10 @@ describe('Media API — รูปโปรไฟล์ (e2e)', () => {
     expect(cilCalls).toHaveLength(0);
   });
 
-  it('callback ที่ key ไม่ถูกต้องหรือไม่มี key → 401 และไม่เปลี่ยนข้อมูล', async () => {
+  it('callback ที่ secret ไม่ถูกต้องหรือไม่มี secret → 401 และไม่เปลี่ยนข้อมูล', async () => {
     const me = await createUser('ผู้ใช้');
     await uploadAvatar(me.token);
-    await callback('cil-file-1', 'https://cdn.test/a.webp', 'wrong-key').expect(401);
+    await callback('cil-file-1', 'https://cdn.test/a.webp', 'wrong-secret').expect(401);
     await callback('cil-file-1', 'https://cdn.test/a.webp', null).expect(401);
     const upload = await prisma.mediaUpload.findUniqueOrThrow({ where: { fileId: 'cil-file-1' } });
     expect(upload.status).toBe('processing');
@@ -211,8 +217,8 @@ describe('Media API — รูปโปรไฟล์ (e2e)', () => {
     await callback('cil-file-1', 'https://cdn.test/a.webp').expect(200);
     await uploadAvatar(me.token);
     await http()
-      .post('/webhooks/cloudimagelab')
-      .set('X-Callback-Key', CIL_KEY)
+      .post('/api/webhooks/cloudimagelab')
+      .query({ type: CALLBACK_TYPE, secret: CALLBACK_SECRET })
       .send({ fileId: 'cil-file-2', status: 'Failed', variants: [], error: 'unsupported image' })
       .expect(200);
 

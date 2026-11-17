@@ -3,11 +3,11 @@ import {
   Body,
   Controller,
   Get,
-  Headers,
   HttpCode,
   HttpStatus,
   Param,
   Post,
+  Query,
   Req,
   UseGuards,
 } from '@nestjs/common';
@@ -71,19 +71,16 @@ export class MediaController {
   }
 }
 
-/** รับผลประมวลผลจาก CloudImageLab — ไม่ใช้ JWT เพราะเป็น server ส่งเข้ามา ใช้ X-Callback-Key แทน */
-@Controller('webhooks')
+/** รับผลประมวลผลจาก CloudImageLab — ไม่ใช้ JWT เพราะเป็น server ส่งเข้ามา ใช้ secret ใน query string แทน */
+@Controller('api/webhooks')
 export class WebhookController {
   constructor(private readonly media: MediaService) {}
 
   @Post('cloudimagelab')
   @HttpCode(HttpStatus.OK)
-  async cloudImageLab(
-    @Headers('x-callback-key') callbackKey: string | undefined,
-    @Body() body: unknown,
-  ) {
+  async cloudImageLab(@Query('secret') secret: string | undefined, @Body() body: unknown) {
     const parsed = callbackSchema.safeParse(body);
     if (!parsed.success) throw new BadRequestException('รูปแบบ callback ไม่ถูกต้อง');
-    await this.media.handleCallback(callbackKey, parsed.data as CallbackBody);
+    await this.media.handleCallback(secret, parsed.data as CallbackBody);
   }
 }
