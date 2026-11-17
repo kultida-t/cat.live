@@ -6,6 +6,8 @@ export default defineConfig({
     globals: true,
     root: './',
     include: ['**/*.e2e-spec.ts'],
+    // ทุกไฟล์เทสใช้ฐานเดียวกันและ TRUNCATE ตาราง จึงต้องรันทีละไฟล์กันข้อมูลชนกัน
+    fileParallelism: false,
     // ใช้ฐานทดสอบเท่านั้น — ตั้งตรงนี้เพื่อไม่ให้ค่าจาก .env (ฐานพัฒนา) ถูกใช้ตอนเทส
     env: {
       DATABASE_URL: 'postgresql://kultida@localhost:5432/catlive_test',

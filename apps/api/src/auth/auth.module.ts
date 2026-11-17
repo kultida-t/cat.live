@@ -19,6 +19,6 @@ import { JwtAuthGuard } from './jwt-auth.guard.js';
   ],
   controllers: [AuthController],
   providers: [AuthService, JwtAuthGuard, clockProvider, smsSenderProvider],
-  exports: [AuthService, JwtAuthGuard],
+  exports: [AuthService, JwtAuthGuard, JwtModule],
 })
 export class AuthModule {}

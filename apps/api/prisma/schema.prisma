@@ -23,8 +23,45 @@ model User {
   private          UserPrivate?
   pin              PinCredential?
   refreshTokens    RefreshToken[]
+  cats             Cat[]
+  catCaretakers    CatCaretaker[]
 
   @@map("users")
+}
+
+model Cat {
+  id          String    @id @default(uuid()) @db.Uuid
+  ownerId     String    @map("owner_id") @db.Uuid
+  publicId    String    @unique @default(dbgenerated("'MAW' || lpad(nextval('cat_public_id_seq')::text, 6, '0')")) @map("public_id")
+  name        String
+  breed       String?
+  sex         String?
+  neutered    Boolean?
+  birthDate   DateTime? @map("birth_date") @db.Date
+  photoUrls   String[]  @default([]) @map("photo_urls")
+  qrPayload   String?   @map("qr_payload")
+  status      String    @default("normal")
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt   DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+  deletedAt   DateTime? @map("deleted_at") @db.Timestamptz
+
+  owner       User           @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  caretakers  CatCaretaker[]
+
+  @@index([ownerId])
+  @@map("cats")
+}
+
+model CatCaretaker {
+  catId   String @map("cat_id") @db.Uuid
+  userId  String @map("user_id") @db.Uuid
+  role    String
+  cat     Cat    @relation(fields: [catId], references: [id], onDelete: Cascade)
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([catId, userId])
+  @@index([userId])
+  @@map("cat_caretakers")
 }
 
 model UserPrivate {
