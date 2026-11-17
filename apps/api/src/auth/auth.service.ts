@@ -370,6 +370,7 @@ export class AuthService {
       displayName: user.displayName,
       phoneMasked: user.private ? maskThaiPhone(user.private.phone) : null,
       birthYear: user.birthYear,
+      avatarUrl: user.avatarUrl,
     };
   }
 
