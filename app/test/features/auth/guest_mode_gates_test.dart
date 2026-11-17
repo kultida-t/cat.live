@@ -161,6 +161,70 @@ void main() {
     },
   );
 
+  testWidgets('สมาชิกส่งให้เพื่อนในแอปแล้วชีตปิดอัตโนมัติหลังแจ้งผล', (
+    tester,
+  ) async {
+    const post = Post(
+      id: 'p-share',
+      type: PostType.normal,
+      categoryLabel: 'ชีวิตแมว',
+      author: FeedUser(
+        id: 'noon',
+        handle: 'noon.mochi',
+        avatar: 'asset:assets/images/avatars/1592194996308-7b43878e84a6.jpg',
+        avatarBg: 0xFFFCE7D6,
+        hasUnseenStory: false,
+      ),
+      caption: 'ทดสอบแชร์',
+      media: [
+        PostMedia(url: 'asset:x.jpg', alt: 'แมวส้ม'),
+      ],
+      likeCount: 1,
+      commentCount: 0,
+      shareCount: 0,
+      likedBy: LikedBy(handle: 'tonkla_meow', avatars: []),
+      previewComments: [],
+      postedAgoText: '1 ชม.ที่แล้ว',
+      isFollowingAuthor: false,
+      isLiked: false,
+      isSaved: false,
+      isOwn: false,
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          feedRepositoryProvider.overrideWithValue(
+            FeedRepositoryImpl(MockFeedDataSource(latency: Duration.zero)),
+          ),
+        ],
+        child: MaterialApp(
+          home: Builder(
+            builder: (context) => Scaffold(
+              body: TextButton(
+                onPressed: () => showShareSheet(context, post),
+                child: const Text('share'),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('share'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('guy.oldcat').first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('ส่ง'));
+    await tester.pump();
+
+    // toast แจ้งผลขึ้นก่อน แล้วชีตค่อยปิดเองหลัง ~1.3 วินาที
+    expect(find.text('ส่งให้ 1 คนแล้ว'), findsOneWidget);
+    await tester.pump(const Duration(milliseconds: 1500));
+    await tester.pumpAndSettle();
+    expect(find.text('แชร์'), findsNothing);
+  });
+
   testWidgets('Guest เปิด /treats ตรง ๆ เห็นการ์ดชวนเข้าสู่ระบบแทนเนื้อหาหน้า', (
     tester,
   ) async {

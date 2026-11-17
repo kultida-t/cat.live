@@ -129,6 +129,10 @@ class _ShareSheetState extends ConsumerState<_ShareSheet> with ToastMixin {
     // ส่งข้อความในแอปจริงต้องรอระบบแชต (เฟสถัดไป) — ตอนนี้แจ้งผลเหมือนเว็บ
     showToast('ส่งให้ ${_selected.length} คนแล้ว');
     setState(_selected.clear);
+    // งานส่งเสร็จแล้ว — เผื่อเวลาให้อ่าน toast สั้น ๆ ก่อนปิดชีตอัตโนมัติ
+    Future<void>.delayed(const Duration(milliseconds: 1300), () {
+      if (mounted) Navigator.of(context).pop();
+    });
   }
 
   @override
