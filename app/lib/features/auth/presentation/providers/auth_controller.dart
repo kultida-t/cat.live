@@ -294,11 +294,23 @@ class AuthController extends Notifier<AuthState> {
     }
   }
 
+  /// จำว่าผู้ใช้เพิ่ง "ออกจากระบบ" เอง — ล็อกอินครั้งถัดไปพากลับหน้าหลัก
+  /// เสมอ ไม่ย้อนไปหน้าที่เปิดลิงก์ล็อกอินไว้ (เช่น หน้าตั้งค่า)
+  bool _consumeHomeAfterLogin = false;
+
+  /// อ่าน + เคลียร์ธง "ล็อกอินครั้งนี้ให้ไปหน้าหลัก" — ใช้ครั้งเดียวแล้วทิ้ง
+  bool consumeHomeAfterLoginFlag() {
+    final value = _consumeHomeAfterLogin;
+    _consumeHomeAfterLogin = false;
+    return value;
+  }
+
   Future<void> signOut() async {
     _countdownTimer?.cancel();
     state = state.copyWith(isSubmitting: true, clearError: true);
     final repo = ref.read(authRepositoryProvider);
     final guest = await repo.signOut();
+    _consumeHomeAfterLogin = true;
     state = AuthState(session: guest, sessionResolved: true);
   }
 
@@ -360,6 +372,7 @@ class AuthController extends Notifier<AuthState> {
   Future<void> confirmPermanentDeletion() async {
     final repo = ref.read(authRepositoryProvider);
     await repo.signOut();
+    _consumeHomeAfterLogin = true;
     state = const AuthState(
       session: AuthSession.guest(),
       sessionResolved: true,

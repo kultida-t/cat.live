@@ -79,10 +79,7 @@ class ManageAccountPage extends ConsumerWidget {
         SettingsCard(
           children: [
             // แถวตั้ง/เปลี่ยน PIN — แสดงเฉพาะบัญชีที่ผูกเบอร์ไว้แล้ว
-            if (authState.session.user?.phone != null) ...[
-              _PinRow(isEn: isEn),
-              const Divider(height: 1, color: AppColors.line),
-            ],
+            if (authState.session.user?.phone != null) _PinRow(isEn: isEn),
             SettingsRow(
               icon: LucideIcons.userX,
               title: isEn ? 'Delete account' : 'ลบบัญชี',

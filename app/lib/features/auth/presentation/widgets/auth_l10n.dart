@@ -128,7 +128,7 @@ abstract final class AuthL10n {
       isEn ? '6-digit OTP' : 'กรอกรหัส OTP 6 หลัก';
 
   static String verifyOtpBtn(bool isEn) =>
-      isEn ? 'Verify & Sign in' : 'ยืนยันและเข้าสู่ระบบ';
+      isEn ? 'Verify OTP' : 'ยืนยันรหัส OTP';
 
   static String resendOtpBtn(int cooldownSeconds, bool isEn) {
     if (cooldownSeconds > 0) {

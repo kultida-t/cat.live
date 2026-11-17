@@ -104,7 +104,12 @@ class _LoginPageState extends ConsumerState<LoginPage> with ToastMixin {
   String get _afterAuthTarget => sanitizeAuthReturnTo(widget.returnTo) ?? '/';
 
   void _goAfterAuth() {
-    if (mounted) context.go(_afterAuthTarget);
+    if (!mounted) return;
+    // ถ้าเพิ่งออกจากระบบเอง ล็อกอินใหม่ให้เริ่มที่หน้าหลักเสมอ ไม่ย้อนปลายทาง
+    final toHome = ref
+        .read(authControllerProvider.notifier)
+        .consumeHomeAfterLoginFlag();
+    context.go(toHome ? '/' : _afterAuthTarget);
   }
 
   /// เรียกหลังล็อกอิน/สมัครสำเร็จ — ถ้าบัญชีค้างลบ (AUTH-05) ให้เปิดชีตเลือก

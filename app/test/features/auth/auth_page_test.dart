@@ -152,7 +152,7 @@ void main() {
 
       // ยังไม่กรอก OTP -> ปุ่มยืนยันต้อง disabled (ไม่หักสิทธิ์)
       final verifyDisabled = tester.widget<FilledButton>(
-        find.widgetWithText(FilledButton, 'ยืนยันและเข้าสู่ระบบ'),
+        find.widgetWithText(FilledButton, 'ยืนยันรหัส OTP'),
       );
       expect(verifyDisabled.onPressed, isNull);
 
@@ -160,7 +160,7 @@ void main() {
       for (var i = 1; i <= 5; i++) {
         await tester.enterText(find.byType(TextField).first, '000000');
         await tester.pump();
-        await tester.tap(find.text('ยืนยันและเข้าสู่ระบบ'));
+        await tester.tap(find.widgetWithText(FilledButton, 'ยืนยันรหัส OTP'));
         await tester.pump(const Duration(milliseconds: 50));
         await tester.pump();
       }
@@ -178,7 +178,7 @@ void main() {
 
       await tester.enterText(find.byType(TextField).first, '123456');
       await tester.pump();
-      await tester.tap(find.text('ยืนยันและเข้าสู่ระบบ'));
+      await tester.tap(find.widgetWithText(FilledButton, 'ยืนยันรหัส OTP'));
       await tester.pumpAndSettle();
 
       // เบอร์นี้ยังไม่มี PIN บนเครื่อง → ต้องเจอขั้นเสนอตั้ง PIN ก่อนเข้าแอป
