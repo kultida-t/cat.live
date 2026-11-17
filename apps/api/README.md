@@ -43,6 +43,19 @@ npx nest build && PORT=3000 node dist/main.js
 
 ขอ OTP แล้วดูรหัสใน console ของ server (บรรทัด `[DevSms] OTP ...`)
 
+## ต่อฐานข้อมูล staging (สำหรับทีม)
+
+ห้ามใส่รหัสผ่านลงในไฟล์ที่ git ติดตาม และห้ามใช้ user `postgres` ในแอป ขั้นตอน:
+
+1. ผู้ดูแลฐานข้อมูลสร้าง user ของแอปและ DB โดยให้ user เป็น owner ของ DB (ตัวอย่างชื่อ `catlive_app` / `catlive_staging`)
+2. ตั้งรหัสใหม่ที่สุ่มขึ้นมา เก็บใน password manager ของทีม
+3. ใส่ค่าในไฟล์ `apps/api/.env` บนเครื่องตัวเองเท่านั้น ในรูป URL (ถ้ารหัสมีอักขระพิเศษ ต้องแปลงด้วย URL encoding ก่อน):
+   `DATABASE_URL="postgresql://catlive_app:<รหัส-encode-แล้ว>@<host>:5432/catlive_staging?sslmode=require"`
+4. รัน `npx prisma migrate deploy` เพื่อสร้างตาราง (ทำเมื่อทีมตกลงแล้วเท่านั้น)
+5. ตรวจว่า `DATABASE_URL` ไม่ปรากฏใน `git status` เลย
+
+สำหรับเครื่องมือดูข้อมูลผ่าน MCP ให้ใช้ user แยกที่มีสิทธิ์อ่านอย่างเดียว อย่าใช้ user owner หรือ `postgres`
+
 ## ทดสอบ
 
 ```bash
