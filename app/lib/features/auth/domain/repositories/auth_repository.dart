@@ -8,18 +8,22 @@ abstract interface class AuthRepository {
 
   Future<OtpChallenge> requestOtp(String phoneNumber);
 
-  Future<({AuthSession session, OtpChallenge? updatedChallenge, String? errorCode})>
+  Future<
+    ({AuthSession session, OtpChallenge? updatedChallenge, String? errorCode})
+  >
   verifyOtp({
     required OtpChallenge challenge,
     required String code,
     required int birthYear,
     required bool guardianConsentGranted,
+    String? displayName,
   });
 
   Future<AuthSession> signInWithProvider({
     required AuthMethod method,
     required int birthYear,
     required bool guardianConsentGranted,
+    String? displayName,
   });
 
   Future<AuthSession> signOut();

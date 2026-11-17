@@ -8,18 +8,22 @@ import '../../domain/usecases/auth_rules.dart';
 abstract interface class AuthRemoteDataSource {
   Future<OtpChallenge> requestOtp(String phoneNumber);
 
-  Future<({AuthSession? session, OtpChallenge? updatedChallenge, String? errorCode})>
+  Future<
+    ({AuthSession? session, OtpChallenge? updatedChallenge, String? errorCode})
+  >
   verifyOtp({
     required OtpChallenge challenge,
     required String code,
     required int birthYear,
     required bool guardianConsentGranted,
+    String? displayName,
   });
 
   Future<AuthSession> signInWithProvider({
     required AuthMethod method,
     required int birthYear,
     required bool guardianConsentGranted,
+    String? displayName,
   });
 
   Future<void> signOut(String? accessToken);
@@ -54,12 +58,15 @@ class MockAuthRemoteDataSource implements AuthRemoteDataSource {
   }
 
   @override
-  Future<({AuthSession? session, OtpChallenge? updatedChallenge, String? errorCode})>
+  Future<
+    ({AuthSession? session, OtpChallenge? updatedChallenge, String? errorCode})
+  >
   verifyOtp({
     required OtpChallenge challenge,
     required String code,
     required int birthYear,
     required bool guardianConsentGranted,
+    String? displayName,
   }) async {
     if (latency > Duration.zero) {
       await Future<void>.delayed(latency);
@@ -98,11 +105,14 @@ class MockAuthRemoteDataSource implements AuthRemoteDataSource {
     }
 
     final masked = AuthRules.maskThaiPhone(challenge.phoneNumber);
+    final name = displayName?.trim();
     final session = AuthSession(
       mode: AuthMode.authenticated,
       user: AuthUser(
         id: 'user-lookkaew',
-        displayName: 'จุฑามาศ ลูกแก้ว',
+        displayName: (name != null && name.isNotEmpty)
+            ? name
+            : 'จุฑามาศ ลูกแก้ว',
         method: AuthMethod.phoneOtp,
         phoneMasked: masked,
         birthYear: birthYear,
@@ -120,6 +130,7 @@ class MockAuthRemoteDataSource implements AuthRemoteDataSource {
     required AuthMethod method,
     required int birthYear,
     required bool guardianConsentGranted,
+    String? displayName,
   }) async {
     if (latency > Duration.zero) {
       await Future<void>.delayed(latency);
@@ -131,18 +142,22 @@ class MockAuthRemoteDataSource implements AuthRemoteDataSource {
       AuthMethod.line => null,
       _ => null,
     };
+    final name = displayName?.trim();
 
     return AuthSession(
       mode: AuthMode.authenticated,
       user: AuthUser(
         id: 'user-lookkaew',
-        displayName: 'จุฑามาศ ลูกแก้ว',
+        displayName: (name != null && name.isNotEmpty)
+            ? name
+            : 'จุฑามาศ ลูกแก้ว',
         method: method,
         email: providerEmail,
         birthYear: birthYear,
         guardianConsentGranted: guardianConsentGranted,
       ),
-      accessToken: 'mock-access-token-${method.name}-${now.millisecondsSinceEpoch}',
+      accessToken:
+          'mock-access-token-${method.name}-${now.millisecondsSinceEpoch}',
       refreshToken: 'mock-refresh-token-${now.millisecondsSinceEpoch}',
       expiresAt: now.add(const Duration(days: 7)),
     );
@@ -187,12 +202,15 @@ class DioAuthRemoteDataSource implements AuthRemoteDataSource {
   }
 
   @override
-  Future<({AuthSession? session, OtpChallenge? updatedChallenge, String? errorCode})>
+  Future<
+    ({AuthSession? session, OtpChallenge? updatedChallenge, String? errorCode})
+  >
   verifyOtp({
     required OtpChallenge challenge,
     required String code,
     required int birthYear,
     required bool guardianConsentGranted,
+    String? displayName,
   }) async {
     try {
       final response = await _dio.post<Map<String, dynamic>>(
@@ -203,6 +221,8 @@ class DioAuthRemoteDataSource implements AuthRemoteDataSource {
           'code': code,
           'birth_year': birthYear,
           'guardian_consent': guardianConsentGranted,
+          if (displayName != null && displayName.trim().isNotEmpty)
+            'display_name': displayName.trim(),
         },
       );
       final body = response.data ?? const <String, dynamic>{};
@@ -233,6 +253,7 @@ class DioAuthRemoteDataSource implements AuthRemoteDataSource {
     required AuthMethod method,
     required int birthYear,
     required bool guardianConsentGranted,
+    String? displayName,
   }) async {
     try {
       final response = await _dio.post<Map<String, dynamic>>(
@@ -241,6 +262,8 @@ class DioAuthRemoteDataSource implements AuthRemoteDataSource {
           'provider': method.name,
           'birth_year': birthYear,
           'guardian_consent': guardianConsentGranted,
+          if (displayName != null && displayName.trim().isNotEmpty)
+            'display_name': displayName.trim(),
         },
       );
       final body = response.data ?? const <String, dynamic>{};

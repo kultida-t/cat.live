@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+
 import 'package:image_picker/image_picker.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
@@ -10,6 +11,7 @@ import '../../../../core/config/app_config.dart';
 import '../../../../core/config/app_locale.dart';
 import '../../../../core/config/pet_species_config.dart';
 import '../../../../core/media/strip_image_metadata.dart';
+import '../../../../core/router/auth_routes.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/app_avatar.dart';
 import '../../../../core/widgets/error_view.dart';
@@ -323,7 +325,8 @@ class _MyCatPageState extends ConsumerState<MyCatPage> with ToastMixin {
                       ? _GuestMyCatView(
                           species: species,
                           isEn: isEn,
-                          onSignInTap: () => context.push('/login'),
+                          onSignInTap: () =>
+                              context.push(loginLocation(returnTo: '/my-cat')),
                         )
                       : _buildBody(state),
                 ),

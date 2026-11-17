@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/network/api_client.dart';
+import '../../../../core/network/token_provider.dart';
 import '../../data/datasources/dio_treats_data_source.dart';
 import '../../data/datasources/mock_treats_data_source.dart';
 import '../../data/datasources/treats_remote_data_source.dart';
@@ -11,7 +12,9 @@ import '../../domain/usecases/load_treats_data.dart';
 
 const _useMockData = bool.fromEnvironment('USE_MOCK_DATA', defaultValue: true);
 
-final _treatsDioProvider = Provider<Dio>((ref) => createApiClient());
+final _treatsDioProvider = Provider<Dio>(
+  (ref) => createApiClient(tokens: ref.watch(appTokenProvider)),
+);
 
 final treatsRemoteDataSourceProvider = Provider<TreatsRemoteDataSource>((ref) {
   return _useMockData

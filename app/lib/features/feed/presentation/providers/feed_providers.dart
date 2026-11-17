@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/network/api_client.dart';
+import '../../../../core/network/token_provider.dart';
 import '../../data/datasources/dio_feed_data_source.dart';
 import '../../data/datasources/feed_remote_data_source.dart';
 import '../../data/datasources/mock_feed_data_source.dart';
@@ -14,7 +15,9 @@ import '../../domain/usecases/feed_usecases.dart';
 /// ช่วงยังไม่มี backend ใช้ข้อมูล mock — ต่อ API จริงด้วย `--dart-define=USE_MOCK_DATA=false`
 const useMockData = bool.fromEnvironment('USE_MOCK_DATA', defaultValue: true);
 
-final dioProvider = Provider<Dio>((ref) => createApiClient());
+final dioProvider = Provider<Dio>(
+  (ref) => createApiClient(tokens: ref.watch(appTokenProvider)),
+);
 
 final feedDataSourceProvider = Provider<FeedRemoteDataSource>((ref) {
   return useMockData

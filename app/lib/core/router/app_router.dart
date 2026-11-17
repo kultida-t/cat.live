@@ -38,7 +38,13 @@ GoRouter createAppRouter() {
         builder: (_, state) =>
             PostLinkPage(postId: state.pathParameters['id']!),
       ),
-      GoRoute(path: '/login', builder: (_, _) => const LoginPage()),
+      GoRoute(
+        path: '/login',
+        builder: (_, state) => LoginPage(
+          returnTo: state.uri.queryParameters['return'],
+          initialRegister: state.uri.queryParameters['mode'] == 'register',
+        ),
+      ),
       GoRoute(
         path: '/feature-flags',
         builder: (_, _) => const FeatureFlagsPage(),

@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/network/api_client.dart';
+import '../../../../core/network/token_provider.dart';
 import '../../data/datasources/dio_my_cat_data_source.dart';
 import '../../data/datasources/mock_my_cat_data_source.dart';
 import '../../data/datasources/my_cat_remote_data_source.dart';
@@ -12,7 +13,9 @@ import '../../domain/usecases/my_cat_usecases.dart';
 /// สลับ Mock ↔ Backend API จริงผ่าน `--dart-define=USE_MOCK_DATA=false`
 const _useMockData = bool.fromEnvironment('USE_MOCK_DATA', defaultValue: true);
 
-final myCatDioProvider = Provider<Dio>((ref) => createApiClient());
+final myCatDioProvider = Provider<Dio>(
+  (ref) => createApiClient(tokens: ref.watch(appTokenProvider)),
+);
 
 final myCatDataSourceProvider = Provider<MyCatRemoteDataSource>((ref) {
   return _useMockData

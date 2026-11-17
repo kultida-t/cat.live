@@ -30,6 +30,7 @@ class AuthState {
     this.otpChallenge,
     this.errorCode,
     this.tickSeconds = 0,
+    this.sessionResolved = false,
   });
 
   final AuthSession session;
@@ -37,6 +38,10 @@ class AuthState {
   final OtpChallenge? otpChallenge;
   final String? errorCode;
   final int tickSeconds;
+
+  /// true เมื่ออ่าน session จาก storage เสร็จแล้ว — ใช้แยกช่วงแอปเพิ่งเปิด
+  /// ที่ยังไม่รู้ว่าผู้ใช้ล็อกอินค้างไว้หรือไม่ (เช่น กันเข้า /login ซ้ำ)
+  final bool sessionResolved;
 
   bool get isAuthenticated => session.isAuthenticated;
   bool get isGuest => session.isGuest;
@@ -49,6 +54,7 @@ class AuthState {
     String? errorCode,
     bool clearError = false,
     int? tickSeconds,
+    bool? sessionResolved,
   }) {
     return AuthState(
       session: session ?? this.session,
@@ -58,6 +64,7 @@ class AuthState {
           : (otpChallenge ?? this.otpChallenge),
       errorCode: clearError ? null : (errorCode ?? this.errorCode),
       tickSeconds: tickSeconds ?? this.tickSeconds,
+      sessionResolved: sessionResolved ?? this.sessionResolved,
     );
   }
 }
@@ -87,7 +94,7 @@ class AuthController extends Notifier<AuthState> {
   Future<void> _restore() async {
     final repo = ref.read(authRepositoryProvider);
     final restored = await repo.restoreSession();
-    state = state.copyWith(session: restored);
+    state = state.copyWith(session: restored, sessionResolved: true);
   }
 
   void _startTickerIfNeeded() {
@@ -107,7 +114,7 @@ class AuthController extends Notifier<AuthState> {
     state = state.copyWith(isSubmitting: true, clearError: true);
     final repo = ref.read(authRepositoryProvider);
     final guestSession = await repo.enterGuestMode();
-    state = AuthState(session: guestSession);
+    state = AuthState(session: guestSession, sessionResolved: true);
   }
 
   Future<bool> requestOtp(String phoneNumber) async {
@@ -135,6 +142,7 @@ class AuthController extends Notifier<AuthState> {
     required String code,
     required int birthYear,
     required bool guardianConsentGranted,
+    String? displayName,
   }) async {
     final challenge = state.otpChallenge;
     if (challenge == null) return false;
@@ -147,10 +155,11 @@ class AuthController extends Notifier<AuthState> {
         code: code,
         birthYear: birthYear,
         guardianConsentGranted: guardianConsentGranted,
+        displayName: displayName,
       );
       if (result.errorCode == null && result.session.isAuthenticated) {
         _countdownTimer?.cancel();
-        state = AuthState(session: result.session);
+        state = AuthState(session: result.session, sessionResolved: true);
         return true;
       }
       state = state.copyWith(
@@ -172,6 +181,7 @@ class AuthController extends Notifier<AuthState> {
     required AuthMethod method,
     required int birthYear,
     required bool guardianConsentGranted,
+    String? displayName,
   }) async {
     state = state.copyWith(isSubmitting: true, clearError: true);
     try {
@@ -180,15 +190,13 @@ class AuthController extends Notifier<AuthState> {
         method: method,
         birthYear: birthYear,
         guardianConsentGranted: guardianConsentGranted,
+        displayName: displayName,
       );
       _countdownTimer?.cancel();
-      state = AuthState(session: session);
+      state = AuthState(session: session, sessionResolved: true);
       return true;
     } catch (_) {
-      state = state.copyWith(
-        isSubmitting: false,
-        errorCode: 'oauth_failed',
-      );
+      state = state.copyWith(isSubmitting: false, errorCode: 'oauth_failed');
       return false;
     }
   }
@@ -198,7 +206,7 @@ class AuthController extends Notifier<AuthState> {
     state = state.copyWith(isSubmitting: true, clearError: true);
     final repo = ref.read(authRepositoryProvider);
     final guest = await repo.signOut();
-    state = AuthState(session: guest);
+    state = AuthState(session: guest, sessionResolved: true);
   }
 
   void clearOtpChallenge() {

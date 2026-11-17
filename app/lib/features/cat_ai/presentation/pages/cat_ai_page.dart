@@ -4,11 +4,13 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+
 import 'package:image_picker/image_picker.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../../core/config/app_locale.dart';
 import '../../../../core/config/pet_species_config.dart';
+import '../../../../core/router/auth_routes.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/error_view.dart';
 import '../../../../core/widgets/toast_pill.dart';
@@ -139,7 +141,7 @@ class _CatAiPageState extends ConsumerState<CatAiPage> with ToastMixin {
           child: _GuestCatAiView(
             species: species,
             isEn: isEn,
-            onSignInTap: () => context.push('/login'),
+            onSignInTap: () => context.push(loginLocation(returnTo: '/cat-ai')),
           ),
         ),
       );

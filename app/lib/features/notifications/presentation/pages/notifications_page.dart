@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../../core/config/app_locale.dart';
 import '../../../../core/config/pet_species_config.dart';
+import '../../../../core/router/auth_routes.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/error_view.dart';
 import '../../../../core/widgets/toast_pill.dart';
@@ -84,7 +86,8 @@ class _NotificationsPageState extends ConsumerState<NotificationsPage>
                   subtitle: isEn
                       ? 'Get likes, comments, followers, and important\npet alerts in real time.'
                       : 'รับข่าวไลก์ คอมเมนต์ ผู้ติดตามใหม่\nและแจ้งเตือนสำคัญของน้องแมวแบบเรียลไทม์',
-                  onSignInTap: () => context.push('/login'),
+                  onSignInTap: () =>
+                      context.push(loginLocation(returnTo: '/notifications')),
                 ),
               ),
             ],

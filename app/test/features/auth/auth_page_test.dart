@@ -1,4 +1,6 @@
 import 'package:catlive/features/auth/data/datasources/auth_remote_data_source.dart';
+import 'package:catlive/features/auth/data/datasources/auth_token_storage.dart';
+import 'package:catlive/features/auth/domain/entities/auth_data.dart';
 import 'package:catlive/features/auth/domain/usecases/auth_rules.dart';
 import 'package:catlive/features/auth/presentation/pages/login_page.dart';
 import 'package:catlive/features/auth/presentation/providers/auth_controller.dart';
@@ -15,11 +17,19 @@ Widget _wrapLoginPage({
     initialLocation: '/login',
     routes: [
       GoRoute(path: '/login', builder: (_, _) => const LoginPage()),
-      GoRoute(path: '/', builder: (_, _) => const Scaffold(body: Text('Home'))),
+      GoRoute(
+        path: '/',
+        builder: (_, _) => const Scaffold(body: Text('Home')),
+      ),
     ],
   );
+  // seed session เป็น guest — ไม่อย่างนั้น mock จะ restore เป็นล็อกอินแล้ว
+  // ทำให้ guard ของหน้า /login เด้งออกก่อน test ได้ทดสอบฟอร์ม
+  final guestStorage = InMemoryAuthTokenStorage()
+    ..saveSession(const AuthSession.guest());
   return ProviderScope(
     overrides: [
+      authTokenStorageProvider.overrideWithValue(guestStorage),
       if (remoteDataSource != null)
         authRemoteDataSourceProvider.overrideWithValue(remoteDataSource),
     ],
@@ -29,6 +39,42 @@ Widget _wrapLoginPage({
         return MaterialApp.router(routerConfig: router);
       },
     ),
+  );
+}
+
+Widget _wrapRouter({required String initialLocation, bool seedGuest = true}) {
+  final router = GoRouter(
+    initialLocation: initialLocation,
+    routes: [
+      GoRoute(
+        path: '/login',
+        builder: (_, state) => LoginPage(
+          returnTo: state.uri.queryParameters['return'],
+          initialRegister: state.uri.queryParameters['mode'] == 'register',
+        ),
+      ),
+      GoRoute(
+        path: '/',
+        builder: (_, _) => const Scaffold(body: Text('Home')),
+      ),
+      GoRoute(
+        path: '/treats',
+        builder: (_, _) => const Scaffold(body: Text('Treats')),
+      ),
+    ],
+  );
+  final overrides = [
+    authRemoteDataSourceProvider.overrideWithValue(
+      MockAuthRemoteDataSource(latency: Duration.zero),
+    ),
+    if (seedGuest)
+      authTokenStorageProvider.overrideWithValue(
+        InMemoryAuthTokenStorage()..saveSession(const AuthSession.guest()),
+      ),
+  ];
+  return ProviderScope(
+    overrides: overrides,
+    child: MaterialApp.router(routerConfig: router),
   );
 }
 
@@ -191,6 +237,50 @@ void main() {
     expect(find.text('Home'), findsOneWidget);
     expect(capturedRef!.read(authControllerProvider).isAuthenticated, isTrue);
   });
+
+  testWidgets('AUTH-02: ล็อกอินด้วย PIN สำเร็จแล้วกลับไปปลายทางที่ตั้งใจไว้', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _wrapRouter(initialLocation: '/login?return=%2Ftreats%3Fto%3Dmali'),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextField).first, '0812345678');
+    await tester.enterText(find.byType(TextField).last, '123456');
+    await tester.pump();
+    await tester.tap(find.text('เข้าสู่ระบบด้วย PIN'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Treats'), findsOneWidget);
+    expect(find.text('Home'), findsNothing);
+  });
+
+  testWidgets('AUTH-02: mode=register เปิดแท็บสมัครสมาชิกให้เลย', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _wrapRouter(initialLocation: '/login?mode=register'),
+    );
+    await tester.pumpAndSettle();
+
+    // แท็บสมัครต้องแสดงช่องชื่อที่แสดงกับปีเกิดทันทีโดยไม่ต้องกดสลับแท็บ
+    expect(find.text('ชื่อที่แสดง (ไม่บังคับ)'), findsOneWidget);
+    expect(find.textContaining('ปีเกิด'), findsWidgets);
+  });
+
+  testWidgets(
+    'AUTH-02: ผู้ใช้ที่ล็อกอินอยู่แล้วเข้า /login จะถูกเด้งกลับหน้าแรก',
+    (tester) async {
+      // ไม่ seed guest — mock restore จะได้ session ล็อกอินค่าเริ่มต้น
+      await tester.pumpWidget(
+        _wrapRouter(initialLocation: '/login', seedGuest: false),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Home'), findsOneWidget);
+    },
+  );
 
   testWidgets('แท็บเข้าสู่ระบบ: กด Social Login LINE สำเร็จทันที', (
     tester,

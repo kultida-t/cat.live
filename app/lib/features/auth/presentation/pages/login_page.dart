@@ -7,6 +7,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../../core/config/app_locale.dart';
 import '../../../../core/config/pet_species_config.dart';
+import '../../../../core/router/auth_routes.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/social_brand_icons.dart';
 import '../../../../core/widgets/toast_pill.dart';
@@ -16,8 +17,12 @@ import '../providers/auth_controller.dart';
 import '../widgets/auth_l10n.dart';
 
 /// หน้าเข้าสู่ระบบ สมัครสมาชิก และ Guest Mode (/login — AUTH-01..04, PDPA-03)
+/// `returnTo` = ปลายทางหลังล็อกอินสำเร็จ (AUTH-02), `initialRegister` = เปิดแท็บสมัครเลย
 class LoginPage extends ConsumerStatefulWidget {
-  const LoginPage({super.key});
+  const LoginPage({super.key, this.returnTo, this.initialRegister = false});
+
+  final String? returnTo;
+  final bool initialRegister;
 
   @override
   ConsumerState<LoginPage> createState() => _LoginPageState();
@@ -28,7 +33,7 @@ class _LoginPageState extends ConsumerState<LoginPage> with ToastMixin {
   final _phoneController = TextEditingController();
   final _pinController = TextEditingController();
   final _otpController = TextEditingController();
-  bool _isRegisterMode = false;
+  late bool _isRegisterMode = widget.initialRegister;
   bool _useOtpInSignIn = false;
   int _selectedBirthYear = 1995;
   bool _guardianConsent = false;
@@ -56,6 +61,13 @@ class _LoginPageState extends ConsumerState<LoginPage> with ToastMixin {
       }
       setState(() {});
     });
+  }
+
+  /// ปลายทางหลังล็อกอิน/สมัครสำเร็จ — ค่าเริ่มต้นคือหน้าแรก (AUTH-02)
+  String get _afterAuthTarget => sanitizeAuthReturnTo(widget.returnTo) ?? '/';
+
+  void _goAfterAuth() {
+    if (mounted) context.go(_afterAuthTarget);
   }
 
   @override
@@ -112,7 +124,7 @@ class _LoginPageState extends ConsumerState<LoginPage> with ToastMixin {
         );
     if (ok && mounted) {
       showToast(isEn ? 'Signed in successfully' : 'เข้าสู่ระบบสำเร็จแล้ว');
-      context.go('/');
+      _goAfterAuth();
     }
   }
 
@@ -177,8 +189,7 @@ class _LoginPageState extends ConsumerState<LoginPage> with ToastMixin {
                       ),
                     ),
                     TextButton(
-                      onPressed: () =>
-                          Navigator.of(ctx).pop(years[tempIndex]),
+                      onPressed: () => Navigator.of(ctx).pop(years[tempIndex]),
                       child: Text(
                         AuthL10n.pickerDone(isEn),
                         style: const TextStyle(
@@ -367,10 +378,11 @@ class _LoginPageState extends ConsumerState<LoginPage> with ToastMixin {
           code: code,
           birthYear: _selectedBirthYear,
           guardianConsentGranted: _guardianConsent,
+          displayName: _isRegisterMode ? _nameController.text.trim() : null,
         );
     if (ok && mounted) {
       showToast(isEn ? 'Signed in successfully' : 'เข้าสู่ระบบสำเร็จแล้ว');
-      context.go('/');
+      _goAfterAuth();
     }
   }
 
@@ -382,17 +394,18 @@ class _LoginPageState extends ConsumerState<LoginPage> with ToastMixin {
           method: method,
           birthYear: _selectedBirthYear,
           guardianConsentGranted: _guardianConsent,
+          displayName: _isRegisterMode ? _nameController.text.trim() : null,
         );
     if (ok && mounted) {
       showToast(isEn ? 'Signed in successfully' : 'เข้าสู่ระบบสำเร็จแล้ว');
-      context.go('/');
+      _goAfterAuth();
     }
   }
 
   Future<void> _handleGuestMode(bool isEn) async {
     await ref.read(authControllerProvider.notifier).continueAsGuest();
     if (mounted) {
-      context.go('/');
+      _goAfterAuth();
     }
   }
 
@@ -402,6 +415,18 @@ class _LoginPageState extends ConsumerState<LoginPage> with ToastMixin {
     final isEn = ref.watch(appLocaleProvider) == 'en';
     final species = ref.watch(petSpeciesConfigProvider);
     final challenge = authState.otpChallenge;
+
+    // ล็อกอินอยู่แล้วไม่ควรเห็นหน้านี้ (เช่น กด deep link /login มาตรง ๆ)
+    // รอให้อ่าน session จาก storage เสร็จก่อนค่อยตัดสินใจเด้งกลับปลายทาง
+    if (authState.sessionResolved && authState.isAuthenticated) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) context.go(_afterAuthTarget);
+      });
+      return const Scaffold(
+        backgroundColor: AppColors.page,
+        body: SizedBox.shrink(),
+      );
+    }
 
     return GestureDetector(
       behavior: HitTestBehavior.translucent,
@@ -428,123 +453,125 @@ class _LoginPageState extends ConsumerState<LoginPage> with ToastMixin {
                       ),
                       keyboardDismissBehavior:
                           ScrollViewKeyboardDismissBehavior.onDrag,
-                    padding: EdgeInsets.fromLTRB(
-                      20,
-                      challenge == null ? 24 : 8,
-                      20,
-                      32,
-                    ),
-                    children: [
-                      Center(
-                        child: Image.asset(
-                          'assets/brand/maew-logo.png',
-                          width: 132,
-                          height: 38,
-                          semanticLabel: species.brandName(isEn),
-                        ),
+                      padding: EdgeInsets.fromLTRB(
+                        20,
+                        challenge == null ? 24 : 8,
+                        20,
+                        32,
                       ),
-                      const SizedBox(height: 12),
-                      Text(
-                        challenge == null
-                            ? AuthL10n.headline(species, isEn)
-                            : AuthL10n.otpTitle(isEn),
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.text,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        challenge == null
-                            ? AuthL10n.subheadline(species, isEn)
-                            : AuthL10n.otpSubtitle(
-                                AuthRules.maskThaiPhone(challenge.phoneNumber),
-                                challenge.refCode,
-                                isEn,
-                              ),
-                        textAlign: TextAlign.center,
-                        maxLines: challenge == null ? 1 : 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: 13,
-                          color: AppColors.muted,
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      if (challenge == null) ...[
-                        _AuthModeTabs(
-                          isRegisterMode: _isRegisterMode,
-                          signInLabel: AuthL10n.tabSignIn(isEn),
-                          registerLabel: AuthL10n.tabRegister(isEn),
-                          onChanged: (register) => setState(() {
-                            _isRegisterMode = register;
-                            _useOtpInSignIn = false;
-                            _validationError = null;
-                          }),
-                        ),
-                        const SizedBox(height: 14),
-                        _buildLoginMethodsCard(
-                          authState: authState,
-                          species: species,
-                          isEn: isEn,
-                        ),
-                      ] else
-                        _buildOtpVerifyCard(
-                          authState: authState,
-                          challenge: challenge,
-                          isEn: isEn,
-                        ),
-                      const SizedBox(height: 18),
-                      OutlinedButton.icon(
-                        onPressed: authState.isSubmitting
-                            ? null
-                            : () => _handleGuestMode(isEn),
-                        icon: const Icon(LucideIcons.compass, size: 17),
-                        label: Text(
-                          AuthL10n.guestBtn(isEn),
-                          style: const TextStyle(
-                            fontSize: 13.5,
-                            fontWeight: FontWeight.w700,
+                      children: [
+                        Center(
+                          child: Image.asset(
+                            'assets/brand/maew-logo.png',
+                            width: 132,
+                            height: 38,
+                            semanticLabel: species.brandName(isEn),
                           ),
                         ),
-                        style: OutlinedButton.styleFrom(
-                          backgroundColor: AppColors.card,
-                          foregroundColor: AppColors.text,
-                          side: const BorderSide(color: AppColors.line2),
-                          shape: const StadiumBorder(),
-                          padding: const EdgeInsets.symmetric(vertical: 13),
+                        const SizedBox(height: 12),
+                        Text(
+                          challenge == null
+                              ? AuthL10n.headline(species, isEn)
+                              : AuthL10n.otpTitle(isEn),
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.text,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        AuthL10n.guestHint(isEn),
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: AppColors.muted,
-                          height: 1.4,
+                        const SizedBox(height: 4),
+                        Text(
+                          challenge == null
+                              ? AuthL10n.subheadline(species, isEn)
+                              : AuthL10n.otpSubtitle(
+                                  AuthRules.maskThaiPhone(
+                                    challenge.phoneNumber,
+                                  ),
+                                  challenge.refCode,
+                                  isEn,
+                                ),
+                          textAlign: TextAlign.center,
+                          maxLines: challenge == null ? 1 : 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: AppColors.muted,
+                          ),
                         ),
-                      ),
-                    ],
+                        const SizedBox(height: 20),
+                        if (challenge == null) ...[
+                          _AuthModeTabs(
+                            isRegisterMode: _isRegisterMode,
+                            signInLabel: AuthL10n.tabSignIn(isEn),
+                            registerLabel: AuthL10n.tabRegister(isEn),
+                            onChanged: (register) => setState(() {
+                              _isRegisterMode = register;
+                              _useOtpInSignIn = false;
+                              _validationError = null;
+                            }),
+                          ),
+                          const SizedBox(height: 14),
+                          _buildLoginMethodsCard(
+                            authState: authState,
+                            species: species,
+                            isEn: isEn,
+                          ),
+                        ] else
+                          _buildOtpVerifyCard(
+                            authState: authState,
+                            challenge: challenge,
+                            isEn: isEn,
+                          ),
+                        const SizedBox(height: 18),
+                        OutlinedButton.icon(
+                          onPressed: authState.isSubmitting
+                              ? null
+                              : () => _handleGuestMode(isEn),
+                          icon: const Icon(LucideIcons.compass, size: 17),
+                          label: Text(
+                            AuthL10n.guestBtn(isEn),
+                            style: const TextStyle(
+                              fontSize: 13.5,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          style: OutlinedButton.styleFrom(
+                            backgroundColor: AppColors.card,
+                            foregroundColor: AppColors.text,
+                            side: const BorderSide(color: AppColors.line2),
+                            shape: const StadiumBorder(),
+                            padding: const EdgeInsets.symmetric(vertical: 13),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          AuthL10n.guestHint(isEn),
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: AppColors.muted,
+                            height: 1.4,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              if (toastMessage != null)
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: 24,
+                  child: IgnorePointer(
+                    child: Center(child: ToastPill(message: toastMessage!)),
                   ),
                 ),
-              ],
-            ),
-            if (toastMessage != null)
-              Positioned(
-                left: 0,
-                right: 0,
-                bottom: 24,
-                child: IgnorePointer(
-                  child: Center(child: ToastPill(message: toastMessage!)),
-                ),
-              ),
-          ],
+            ],
+          ),
         ),
       ),
-    ),
     );
   }
 
@@ -1081,9 +1108,7 @@ class _LoginPageState extends ConsumerState<LoginPage> with ToastMixin {
               TextButton(
                 onPressed: () {
                   _otpController.clear();
-                  ref
-                      .read(authControllerProvider.notifier)
-                      .clearOtpChallenge();
+                  ref.read(authControllerProvider.notifier).clearOtpChallenge();
                 },
                 child: Text(
                   AuthL10n.changePhoneBtn(isEn),
@@ -1215,8 +1240,7 @@ class _PdpaConsentInlineRowState extends State<_PdpaConsentInlineRow> {
   @override
   void initState() {
     super.initState();
-    _readMoreRecognizer = TapGestureRecognizer()
-      ..onTap = widget.onReadMore;
+    _readMoreRecognizer = TapGestureRecognizer()..onTap = widget.onReadMore;
   }
 
   @override

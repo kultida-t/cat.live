@@ -46,26 +46,26 @@ class AuthRepositoryImpl implements AuthRepository {
       _remote.requestOtp(phoneNumber);
 
   @override
-  Future<({AuthSession session, OtpChallenge? updatedChallenge, String? errorCode})>
+  Future<
+    ({AuthSession session, OtpChallenge? updatedChallenge, String? errorCode})
+  >
   verifyOtp({
     required OtpChallenge challenge,
     required String code,
     required int birthYear,
     required bool guardianConsentGranted,
+    String? displayName,
   }) async {
     final res = await _remote.verifyOtp(
       challenge: challenge,
       code: code,
       birthYear: birthYear,
       guardianConsentGranted: guardianConsentGranted,
+      displayName: displayName,
     );
     if (res.session != null) {
       await _storage.saveSession(res.session!);
-      return (
-        session: res.session!,
-        updatedChallenge: null,
-        errorCode: null,
-      );
+      return (session: res.session!, updatedChallenge: null, errorCode: null);
     }
     final current = await restoreSession();
     return (
@@ -80,11 +80,13 @@ class AuthRepositoryImpl implements AuthRepository {
     required AuthMethod method,
     required int birthYear,
     required bool guardianConsentGranted,
+    String? displayName,
   }) async {
     final session = await _remote.signInWithProvider(
       method: method,
       birthYear: birthYear,
       guardianConsentGranted: guardianConsentGranted,
+      displayName: displayName,
     );
     await _storage.saveSession(session);
     return session;
