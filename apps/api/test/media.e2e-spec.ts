@@ -7,7 +7,7 @@ import request from 'supertest';
 import { AppModule } from '../src/app.module.js';
 import { configureApp } from '../src/app.setup.js';
 import { PrismaService } from '../src/prisma/prisma.service.js';
-import { OBJECT_UPLOADER } from '../src/media/s3-uploader.js';
+import { OBJECT_PRESIGNER, type PresignPutInput } from '../src/media/s3-presigner.js';
 
 const CIL_KEY = 'test-cil-key';
 const PRESET = 'avatar_400';
@@ -20,7 +20,7 @@ describe('Media API — รูปโปรไฟล์ (e2e)', () => {
   let cil: Server;
   let cilCalls: { body: { s3Key: string; outputPath: string; presetNames: string[]; callbackUrl: string }; headers: IncomingHttpHeaders }[] = [];
   let cilFileSeq = 0;
-  const s3Puts: { key: string; contentType: string }[] = [];
+  const presigns: PresignPutInput[] = [];
 
   beforeAll(async () => {
     cil = createServer((req, res) => {
@@ -42,10 +42,11 @@ describe('Media API — รูปโปรไฟล์ (e2e)', () => {
     process.env.AVATAR_SOURCE_BUCKET = 'test-bucket';
 
     const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
-      .overrideProvider(OBJECT_UPLOADER)
+      .overrideProvider(OBJECT_PRESIGNER)
       .useValue({
-        put: async (key: string, _body: Buffer, contentType: string) => {
-          s3Puts.push({ key, contentType });
+        presignPut: async (input: PresignPutInput) => {
+          presigns.push(input);
+          return `https://s3.test/${input.key}?signature=fake`;
         },
       })
       .compile();
@@ -58,7 +59,7 @@ describe('Media API — รูปโปรไฟล์ (e2e)', () => {
   beforeEach(async () => {
     cilCalls = [];
     cilFileSeq = 0;
-    s3Puts.length = 0;
+    presigns.length = 0;
     await prisma.$executeRawUnsafe(
       'TRUNCATE users, user_private, cats, cat_caretakers, refresh_tokens, user_avatars, media_uploads RESTART IDENTITY CASCADE',
     );
@@ -84,13 +85,20 @@ describe('Media API — รูปโปรไฟล์ (e2e)', () => {
     return { id: user.id, token: await jwt.signAsync({ sub: user.id }) };
   }
 
-  const jpeg = () => Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0x00]);
+  /** ขั้นที่ 1 — ขอ presigned URL */
+  function requestUpload(token: string, body: Record<string, unknown> = { contentType: 'image/png', fileSize: 2048 }) {
+    return http().post('/media/avatar/upload-url').set('Authorization', `Bearer ${token}`).send(body);
+  }
 
-  function uploadAvatar(token: string) {
-    return http()
-      .post('/media/avatar')
-      .set('Authorization', `Bearer ${token}`)
-      .attach('file', jpeg(), { filename: 'me.jpg', contentType: 'image/jpeg' });
+  /** ขั้นที่ 3 — แจ้งว่าอัปโหลดเสร็จ */
+  function completeUpload(token: string, uploadId: string) {
+    return http().post(`/media/avatar/${uploadId}/complete`).set('Authorization', `Bearer ${token}`);
+  }
+
+  /** ทำครบทั้งสองขั้น ได้ fileId ของ CloudImageLab กลับมา */
+  async function uploadAvatar(token: string) {
+    const created = await requestUpload(token).expect(201);
+    return completeUpload(token, created.body.uploadId).expect(202);
   }
 
   function callback(fileId: string, url: string, key: string | null = CIL_KEY) {
@@ -104,43 +112,73 @@ describe('Media API — รูปโปรไฟล์ (e2e)', () => {
     });
   }
 
-  it('อัปโหลดรูป → เก็บไฟล์ที่ S3 แล้วส่งงานให้ CloudImageLab ด้วยค่าที่ถูกต้อง', async () => {
+  it('ขอ URL อัปโหลด → ได้ presigned URL ที่ผูกกับโฟลเดอร์ของผู้ใช้เท่านั้น และอายุสั้น', async () => {
     const me = await createUser('ผู้ใช้');
-    const res = await uploadAvatar(me.token).expect(202);
+    const res = await requestUpload(me.token).expect(201);
 
-    expect(res.body).toEqual({ fileId: 'cil-file-1', status: 'processing' });
-    expect(s3Puts).toHaveLength(1);
-    expect(s3Puts[0]!.key).toMatch(new RegExp(`^avatars/${me.id}/[0-9a-f-]+\\.jpg$`));
-    expect(s3Puts[0]!.contentType).toBe('image/jpeg');
+    expect(res.body).toEqual({
+      uploadId: expect.any(String),
+      uploadUrl: expect.stringContaining('https://s3.test/'),
+      expiresInSeconds: 300,
+      headers: { 'Content-Type': 'image/png' },
+    });
+    expect(presigns).toHaveLength(1);
+    expect(presigns[0]!.key).toMatch(new RegExp(`^catlive/avatars/${me.id}/[0-9a-f-]+\\.png$`));
+    expect(presigns[0]).toMatchObject({ contentType: 'image/png', contentLength: 2048, expiresInSeconds: 300 });
+    expect(cilCalls).toHaveLength(0);
+  });
+
+  it('แจ้งอัปโหลดเสร็จ → สั่ง CloudImageLab ด้วย s3Key เดียวกันและค่าที่ถูกต้อง', async () => {
+    const me = await createUser('ผู้ใช้');
+    const res = await uploadAvatar(me.token);
+
+    expect(res.body).toEqual({ uploadId: expect.any(String), status: 'processing' });
     expect(cilCalls).toHaveLength(1);
     expect(cilCalls[0]!.headers['x-api-key']).toBe(CIL_KEY);
     expect(cilCalls[0]!.body).toEqual({
-      s3Key: s3Puts[0]!.key,
+      s3Key: presigns[0]!.key,
       outputPath: `avatars/${me.id}`,
       presetNames: [PRESET],
       callbackUrl: CALLBACK_URL,
     });
+    const upload = await prisma.mediaUpload.findFirstOrThrow({ where: { userId: me.id } });
+    expect(upload).toMatchObject({ status: 'processing', fileId: 'cil-file-1' });
   });
 
-  it('ไฟล์ที่ไม่ใช่รูปที่รองรับ → 415 และไม่ส่งงานไป CloudImageLab', async () => {
+  it('แจ้งเสร็จซ้ำ → ไม่สั่งประมวลผลซ้ำ', async () => {
     const me = await createUser('ผู้ใช้');
-    await http()
-      .post('/media/avatar')
-      .set('Authorization', `Bearer ${me.token}`)
-      .attach('file', Buffer.from('hello'), { filename: 'a.txt', contentType: 'text/plain' })
-      .expect(415);
+    const created = await requestUpload(me.token).expect(201);
+    await completeUpload(me.token, created.body.uploadId).expect(202);
+    const again = await completeUpload(me.token, created.body.uploadId).expect(202);
+    expect(again.body.status).toBe('processing');
+    expect(cilCalls).toHaveLength(1);
+  });
+
+  it('ชนิดไฟล์ที่ไม่รองรับหรือขนาดเกินกำหนด → 400 และไม่ออก URL', async () => {
+    const me = await createUser('ผู้ใช้');
+    await requestUpload(me.token, { contentType: 'text/plain', fileSize: 100 }).expect(400);
+    await requestUpload(me.token, { contentType: 'image/png', fileSize: 10 * 1024 * 1024 + 1 }).expect(400);
+    await requestUpload(me.token, { contentType: 'image/png', fileSize: 0 }).expect(400);
+    expect(presigns).toHaveLength(0);
+  });
+
+  it('ไม่มี token → 401', async () => {
+    await http().post('/media/avatar/upload-url').send({ contentType: 'image/png', fileSize: 10 }).expect(401);
+    await http().post('/media/avatar/00000000-0000-4000-8000-000000000000/complete').expect(401);
+  });
+
+  it('แจ้งเสร็จของรายการคนอื่น หรือ id ที่ไม่ถูกรูปแบบ → 404 / 400 และไม่สั่งประมวลผล', async () => {
+    const me = await createUser('ผู้ใช้');
+    const other = await createUser('คนอื่น');
+    const created = await requestUpload(me.token).expect(201);
+    await completeUpload(other.token, created.body.uploadId).expect(404);
+    await completeUpload(me.token, 'not-a-uuid').expect(400);
     expect(cilCalls).toHaveLength(0);
-    expect(s3Puts).toHaveLength(0);
-  });
-
-  it('ไม่แนบไฟล์ → 400', async () => {
-    const me = await createUser('ผู้ใช้');
-    await http().post('/media/avatar').set('Authorization', `Bearer ${me.token}`).expect(400);
   });
 
   it('callback ที่ key ไม่ถูกต้องหรือไม่มี key → 401 และไม่เปลี่ยนข้อมูล', async () => {
     const me = await createUser('ผู้ใช้');
-    await uploadAvatar(me.token).expect(202);
+    await uploadAvatar(me.token);
     await callback('cil-file-1', 'https://cdn.test/a.webp', 'wrong-key').expect(401);
     await callback('cil-file-1', 'https://cdn.test/a.webp', null).expect(401);
     const upload = await prisma.mediaUpload.findUniqueOrThrow({ where: { fileId: 'cil-file-1' } });
@@ -150,7 +188,7 @@ describe('Media API — รูปโปรไฟล์ (e2e)', () => {
 
   it('callback สำเร็จ → บันทึกรูปปัจจุบัน ประวัติรูป และแสดงใน /auth/me', async () => {
     const me = await createUser('ผู้ใช้');
-    await uploadAvatar(me.token).expect(202);
+    await uploadAvatar(me.token);
     await callback('cil-file-1', 'https://cdn.test/a.webp').expect(200);
 
     const list = await http().get('/media/avatars').set('Authorization', `Bearer ${me.token}`).expect(200);
@@ -161,7 +199,7 @@ describe('Media API — รูปโปรไฟล์ (e2e)', () => {
 
   it('callback ซ้ำ fileId เดิม → ไม่เพิ่มรูปซ้ำ', async () => {
     const me = await createUser('ผู้ใช้');
-    await uploadAvatar(me.token).expect(202);
+    await uploadAvatar(me.token);
     await callback('cil-file-1', 'https://cdn.test/a.webp').expect(200);
     await callback('cil-file-1', 'https://cdn.test/a.webp').expect(200);
     expect(await prisma.userAvatar.count({ where: { userId: me.id } })).toBe(1);
@@ -169,9 +207,9 @@ describe('Media API — รูปโปรไฟล์ (e2e)', () => {
 
   it('ประมวลผลไม่สำเร็จ → ไม่เปลี่ยนรูปปัจจุบัน และบันทึกสถานะล้มเหลว', async () => {
     const me = await createUser('ผู้ใช้');
-    await uploadAvatar(me.token).expect(202);
+    await uploadAvatar(me.token);
     await callback('cil-file-1', 'https://cdn.test/a.webp').expect(200);
-    await uploadAvatar(me.token).expect(202);
+    await uploadAvatar(me.token);
     await http()
       .post('/webhooks/cloudimagelab')
       .set('X-Callback-Key', CIL_KEY)
@@ -187,9 +225,9 @@ describe('Media API — รูปโปรไฟล์ (e2e)', () => {
   it('เลือกรูปที่เคยใช้กลับมาเป็นรูปปัจจุบันได้ และรูปของคนอื่นเลือกไม่ได้', async () => {
     const me = await createUser('ผู้ใช้');
     const other = await createUser('คนอื่น');
-    await uploadAvatar(me.token).expect(202);
+    await uploadAvatar(me.token);
     await callback('cil-file-1', 'https://cdn.test/first.webp').expect(200);
-    await uploadAvatar(me.token).expect(202);
+    await uploadAvatar(me.token);
     await callback('cil-file-2', 'https://cdn.test/second.webp').expect(200);
 
     const list = await http().get('/media/avatars').set('Authorization', `Bearer ${me.token}`).expect(200);

@@ -9,16 +9,19 @@ import {
   Param,
   Post,
   Req,
-  UploadedFile,
   UseGuards,
-  UseInterceptors,
 } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
 import { z } from 'zod';
 import { JwtAuthGuard, type AuthenticatedRequest } from '../auth/jwt-auth.guard.js';
-import { MediaService, type CallbackBody } from './media.service.js';
+import { AVATAR_EXTENSIONS, MAX_AVATAR_BYTES, MediaService, type CallbackBody } from './media.service.js';
 
-const MAX_AVATAR_BYTES = 10 * 1024 * 1024;
+const idSchema = z.uuid();
+
+const avatarUploadSchema = z.object({
+  contentType: z.enum(Object.keys(AVATAR_EXTENSIONS) as [string, ...string[]]),
+  fileSize: z.number().int().min(1).max(MAX_AVATAR_BYTES),
+});
+type AvatarUploadDto = z.infer<typeof avatarUploadSchema>;
 
 const callbackSchema = z.object({
   fileId: z.string().min(1),
@@ -34,15 +37,23 @@ const callbackSchema = z.object({
 export class MediaController {
   constructor(private readonly media: MediaService) {}
 
-  @Post('avatar')
-  @HttpCode(HttpStatus.ACCEPTED)
-  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: MAX_AVATAR_BYTES } }))
-  uploadAvatar(
+  /** ขั้นที่ 1: ขอ presigned URL เพื่ออัปโหลดรูปโปรไฟล์ตรงไปที่ S3 */
+  @Post('avatar/upload-url')
+  createAvatarUpload(
     @Req() req: AuthenticatedRequest,
-    @UploadedFile() file: { buffer: Buffer; mimetype: string } | undefined,
+    @Body({ schema: avatarUploadSchema }) body: AvatarUploadDto,
   ) {
-    if (!file) throw new BadRequestException('ไม่พบไฟล์รูป');
-    return this.media.uploadAvatar(req.user.id, file);
+    return this.media.createAvatarUpload(req.user.id, body);
+  }
+
+  /** ขั้นที่ 3: อัปโหลดเสร็จแล้ว ให้ระบบสั่งประมวลผล */
+  @Post('avatar/:id/complete')
+  @HttpCode(HttpStatus.ACCEPTED)
+  completeAvatarUpload(
+    @Req() req: AuthenticatedRequest,
+    @Param('id', { schema: idSchema }) id: string,
+  ) {
+    return this.media.completeAvatarUpload(req.user.id, id);
   }
 
   @Get('avatars')
@@ -52,7 +63,10 @@ export class MediaController {
 
   @Post('avatars/:id/select')
   @HttpCode(HttpStatus.NO_CONTENT)
-  async selectAvatar(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
+  async selectAvatar(
+    @Req() req: AuthenticatedRequest,
+    @Param('id', { schema: idSchema }) id: string,
+  ) {
     await this.media.selectAvatar(req.user.id, id);
   }
 }

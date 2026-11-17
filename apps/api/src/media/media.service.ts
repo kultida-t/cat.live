@@ -10,13 +10,16 @@ import { ConfigService } from '@nestjs/config';
 import { randomUUID, timingSafeEqual } from 'node:crypto';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { CloudImageLabClient } from './cloudimagelab.client.js';
-import { OBJECT_UPLOADER, type ObjectUploader } from './s3-uploader.js';
+import { OBJECT_PRESIGNER, type ObjectPresigner } from './s3-presigner.js';
 
-const AVATAR_EXTENSIONS: Record<string, string> = {
+export const AVATAR_EXTENSIONS: Record<string, string> = {
   'image/jpeg': 'jpg',
   'image/png': 'png',
   'image/webp': 'webp',
 };
+
+export const MAX_AVATAR_BYTES = 10 * 1024 * 1024;
+const UPLOAD_URL_TTL_SECONDS = 300;
 
 export interface CallbackBody {
   fileId: string;
@@ -31,29 +34,62 @@ export class MediaService {
     private readonly prisma: PrismaService,
     private readonly cil: CloudImageLabClient,
     private readonly config: ConfigService,
-    @Inject(OBJECT_UPLOADER) private readonly objects: ObjectUploader,
+    @Inject(OBJECT_PRESIGNER) private readonly presigner: ObjectPresigner,
   ) {}
 
-  /** รับรูปโปรไฟล์ เก็บไว้ที่ S3 แล้วสั่ง CloudImageLab ประมวลผล (Flow B) ผลจะกลับมาทาง callback */
-  async uploadAvatar(userId: string, file: { buffer: Buffer; mimetype: string }) {
-    const ext = AVATAR_EXTENSIONS[file.mimetype];
+  /** ออก presigned URL ให้แอปอัปโหลดรูปตรงไปที่ S3 — ไฟล์อยู่ใต้ `<โปรเจกต์>/avatars/<userId>/` ของผู้ใช้คนนั้นเท่านั้น */
+  async createAvatarUpload(userId: string, input: { contentType: string; fileSize: number }) {
+    const ext = AVATAR_EXTENSIONS[input.contentType];
     if (!ext) throw new UnsupportedMediaTypeException('รองรับเฉพาะไฟล์ JPEG, PNG และ WebP');
-    const presetName = this.config.get<string>('CLOUDIMAGELAB_AVATAR_PRESET');
-    const callbackUrl = this.config.get<string>('CLOUDIMAGELAB_CALLBACK_URL');
-    if (!presetName || !callbackUrl) {
-      throw new ServiceUnavailableException('ระบบประมวลผลรูปยังไม่ได้ตั้งค่า');
-    }
+    this.requireMediaConfig();
 
-    const s3Key = `avatars/${userId}/${randomUUID()}.${ext}`;
-    await this.objects.put(s3Key, file.buffer, file.mimetype);
-    const { fileId } = await this.cil.processExternalFile({
-      s3Key,
-      outputPath: `avatars/${userId}`,
-      presetNames: [presetName],
-      callbackUrl,
+    const s3Key = `${this.keyPrefix()}/avatars/${userId}/${randomUUID()}.${ext}`;
+    const uploadUrl = await this.presigner.presignPut({
+      key: s3Key,
+      contentType: input.contentType,
+      contentLength: input.fileSize,
+      expiresInSeconds: UPLOAD_URL_TTL_SECONDS,
     });
-    await this.prisma.mediaUpload.create({ data: { userId, fileId, s3Key } });
-    return { fileId, status: 'processing' as const };
+    const upload = await this.prisma.mediaUpload.create({ data: { userId, s3Key } });
+    return {
+      uploadId: upload.id,
+      uploadUrl,
+      expiresInSeconds: UPLOAD_URL_TTL_SECONDS,
+      headers: { 'Content-Type': input.contentType },
+    };
+  }
+
+  /** แอปอัปโหลดเสร็จแล้ว — สั่ง CloudImageLab ประมวลผล (Flow B) ผลจะกลับมาทาง callback เรียกซ้ำได้โดยไม่สั่งซ้ำ */
+  async completeAvatarUpload(userId: string, uploadId: string) {
+    const upload = await this.prisma.mediaUpload.findFirst({ where: { id: uploadId, userId } });
+    if (!upload) throw new NotFoundException('ไม่พบรายการอัปโหลดนี้');
+    const { presetName, callbackUrl } = this.requireMediaConfig();
+
+    const claimed = await this.prisma.mediaUpload.updateMany({
+      where: { id: upload.id, status: 'awaiting_upload' },
+      data: { status: 'submitting' },
+    });
+    if (claimed.count === 0) return { uploadId, status: this.publicStatus(upload.status) };
+
+    try {
+      const { fileId } = await this.cil.processExternalFile({
+        s3Key: upload.s3Key,
+        outputPath: `avatars/${userId}`,
+        presetNames: [presetName],
+        callbackUrl,
+      });
+      await this.prisma.mediaUpload.update({
+        where: { id: upload.id },
+        data: { fileId, status: 'processing' },
+      });
+    } catch (error) {
+      await this.prisma.mediaUpload.update({
+        where: { id: upload.id },
+        data: { status: 'awaiting_upload' },
+      });
+      throw error;
+    }
+    return { uploadId, status: 'processing' as const };
   }
 
   /** รับผลจาก CloudImageLab — ตรวจ key ก่อนทุกครั้ง และทำซ้ำได้โดยไม่เปลี่ยนผลเดิม */
@@ -119,6 +155,24 @@ export class MediaService {
       this.prisma.userAvatar.update({ where: { id: avatar.id }, data: { isCurrent: true } }),
       this.prisma.user.update({ where: { id: userId }, data: { avatarUrl: avatar.url } }),
     ]);
+  }
+
+  private keyPrefix(): string {
+    return this.config.get<string>('MEDIA_KEY_PREFIX') ?? 'catlive';
+  }
+
+  private publicStatus(status: string): string {
+    return status === 'submitting' ? 'processing' : status;
+  }
+
+  private requireMediaConfig(): { presetName: string; callbackUrl: string } {
+    const presetName = this.config.get<string>('CLOUDIMAGELAB_AVATAR_PRESET');
+    const callbackUrl = this.config.get<string>('CLOUDIMAGELAB_CALLBACK_URL');
+    const bucket = this.config.get<string>('AVATAR_SOURCE_BUCKET');
+    if (!presetName || !callbackUrl || !bucket) {
+      throw new ServiceUnavailableException('ระบบประมวลผลรูปยังไม่ได้ตั้งค่า');
+    }
+    return { presetName, callbackUrl };
   }
 
   private isValidCallbackKey(received: string | undefined): boolean {

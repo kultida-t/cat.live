@@ -47,9 +47,9 @@ model UserAvatar {
 model MediaUpload {
   id          String    @id @default(uuid()) @db.Uuid
   userId      String    @map("user_id") @db.Uuid
-  fileId      String    @unique @map("file_id")
+  fileId      String?   @unique @map("file_id")
   s3Key       String    @unique @map("s3_key")
-  status      String    @default("processing")
+  status      String    @default("awaiting_upload")
   variantUrl  String?   @map("variant_url")
   error       String?
   createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz

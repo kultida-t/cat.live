@@ -5,19 +5,22 @@
 
 ## ภาพรวมการทำงาน (Flow B: ไฟล์อยู่บน S3 แล้วค่อยสั่งประมวลผล)
 
-1. แอปลบข้อมูลแฝง (GPS) ในรูปในเครื่อง แล้วส่งรูปไป `POST /media/avatar` ของ backend เรา (ต้องล็อกอิน)
-2. backend เขียนรูปต้นฉบับลง S3 ที่ `avatars/<userId>/<uuid>.<ext>`
-3. backend เรียก CloudImageLab `POST /api/files/process` พร้อม `s3Key`, `outputPath`, `presetNames`, `callbackUrl` (header `X-Api-Key`)
-4. CloudImageLab ประมวลผลเบื้องหลัง แล้ว **ส่งผลกลับ** มาที่ `POST /webhooks/cloudimagelab` ของเรา (header `X-Callback-Key` = key ของแอป)
-5. backend ตรวจ key, บันทึกรูปที่ได้เป็นรูปปัจจุบันและเก็บประวัติ แอปอ่านรูปจาก `/auth/me` และ `/media/avatars`
+ทีมกำหนดให้ **อัปโหลดด้วย presigned URL เท่านั้น** และไฟล์ต้องอยู่ใต้โฟลเดอร์ชื่อโปรเจกต์ (`catlive/`)
 
-ผลประมวลผลต้องใช้ `url` จาก callback เสมอ ห้ามประกอบ path เอง
+1. แอปขอ `POST /media/avatar/upload-url` (ต้องล็อกอิน) ส่ง `contentType` และ `fileSize` — backend ตอบ `uploadUrl` (อายุ 5 นาที), `uploadId`, `headers`
+2. แอปลบข้อมูลแฝง (GPS) ในรูปในเครื่อง แล้ว `PUT` ไฟล์ไปที่ `uploadUrl` ตรง ๆ โดยส่ง `Content-Type` ตรงกับที่ขอ และ **ห้ามแนบ Authorization** (จะทำให้ลายเซ็นผิด) ไฟล์ไปอยู่ที่ `catlive/avatars/<userId>/<uuid>.<ext>` ใน bucket
+3. แอปแจ้ง `POST /media/avatar/:uploadId/complete` — backend เรียก CloudImageLab `POST /api/files/process` พร้อม `s3Key`, `outputPath`, `presetNames`, `callbackUrl` (header `X-Api-Key`)
+4. CloudImageLab ประมวลผลเบื้องหลัง แล้ว **ส่งผลกลับ** มาที่ `POST /webhooks/cloudimagelab` ของเรา (header `X-Callback-Key` = key ของแอป)
+5. backend ตรวจ key บันทึกรูปที่ได้เป็นรูปปัจจุบันและเก็บประวัติ แอปอ่านรูปจาก `/auth/me` และ `/media/avatars`
+
+ผลประมวลผลต้องใช้ `url` จาก callback เสมอ ห้ามประกอบ path เอง รูปอ่านผ่าน CloudFront `https://d2kz9pl8iwzvcz.cloudfront.net/` (ไม่ต้องระบุ bucket ใน URL)
 
 ## Endpoint ฝั่งเรา
 
 | Endpoint | หน้าที่ |
 |---|---|
-| `POST /media/avatar` | รับรูป (multipart ฟิลด์ `file`, JPEG/PNG/WebP, ไม่เกิน 10 MB) ตอบ 202 |
+| `POST /media/avatar/upload-url` | ขอ presigned URL (JPEG/PNG/WebP, ไม่เกิน 10 MB) ตอบ 201 |
+| `POST /media/avatar/:id/complete` | แจ้งอัปโหลดเสร็จ สั่งประมวลผล ตอบ 202 (เรียกซ้ำได้) |
 | `GET /media/avatars` | รูปที่เคยใช้ เรียงใหม่ไปเก่า |
 | `POST /media/avatars/:id/select` | เลือกรูปเก่ากลับมาเป็นรูปปัจจุบัน |
 | `POST /webhooks/cloudimagelab` | รับผลจาก CloudImageLab (ตรวจ `X-Callback-Key`) |
@@ -30,9 +33,10 @@
 | `CLOUDIMAGELAB_API_KEY` | **ใช่** | key ของแอป (staging กับ production คนละตัว) |
 | `CLOUDIMAGELAB_CALLBACK_URL` | ไม่ | URL สาธารณะของ backend + `/webhooks/cloudimagelab` |
 | `CLOUDIMAGELAB_AVATAR_PRESET` | ไม่ | ชื่อ preset ของรูปโปรไฟล์ (ค่าเริ่มต้น `thumb_sq` 150×150 crop) |
-| `AVATAR_SOURCE_BUCKET` | ไม่ | bucket ที่ backend เขียนรูปต้นฉบับ |
-| `AWS_REGION` | ไม่ | region ของ bucket |
-| `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` | **ใช่** | สิทธิ์เขียน bucket นี้เท่านั้น (จำกัดที่ prefix `avatars/`) |
+| `AVATAR_SOURCE_BUCKET` | ไม่ | bucket รูปต้นฉบับ: `mf-share` |
+| `AWS_REGION` | ไม่ | `ap-southeast-7` |
+| `MEDIA_KEY_PREFIX` | ไม่ | โฟลเดอร์โปรเจกต์ใน bucket (ค่าเริ่มต้น `catlive`) |
+| `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` | **ใช่** | IAM user `share-s3-b-mf-share` ใช้ออก presigned URL เท่านั้น |
 
 ถ้าตัวแปรที่จำเป็นขาด `POST /media/avatar` จะตอบ 503 และไม่เขียนไฟล์
 
@@ -45,7 +49,8 @@
 
 ## สิ่งที่ต้องมีก่อนใช้งานบน staging
 
-1. ค่าตัวแปรตามตารางด้านบนตั้งใน CI/CD
+1. ค่าตัวแปรตามตารางด้านบนตั้งใน CI/CD (รวม AWS key ของ IAM user)
 2. migration `20261117150000_avatar_media` รันบนฐาน staging แล้ว
 3. backend ที่ deploy แล้วและเข้าถึงจากอินเทอร์เน็ตได้ (CloudImageLab ต้องเรียก callback ได้)
 4. preset `thumb_sq` มีอยู่ในการตั้งค่าแอปของเราที่ CloudImageLab
+5. ผู้ดูแล CloudImageLab ตั้ง storage profile ของแอปเรา (bucket `mf-share`, prefix `catlive/`, `cdnBaseUrl` เป็น CloudFront ข้างบน) เพื่อให้อ่านรูปต้นฉบับและเขียนรูปที่ประมวลผลแล้วได้
