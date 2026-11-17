@@ -1,0 +1,15 @@
+node_modules
+# Keep environment variables out of version control
+.env
+
+/src/generated/prisma
+.env.*
+
+# build output และไฟล์ที่เครื่องมือสร้างให้
+/dist
+*.tsbuildinfo
+/.agents/
+/.windsurf/
+/.claude/
+/skills-lock.json
+!.env.example
