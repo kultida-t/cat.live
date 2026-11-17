@@ -2,7 +2,10 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/network/api_client.dart';
 import '../../data/datasources/auth_pin_storage.dart';
+import '../../data/datasources/dio_auth_api.dart';
+import '../../data/repositories/remote_auth_repository_impl.dart';
 import '../../data/datasources/auth_remote_data_source.dart';
 import '../../data/datasources/auth_token_storage.dart';
 import '../../data/repositories/auth_repository_impl.dart';
@@ -22,7 +25,16 @@ final authRemoteDataSourceProvider = Provider<AuthRemoteDataSource>(
   (ref) => MockAuthRemoteDataSource(),
 );
 
+const _useMockAuth = bool.fromEnvironment('USE_MOCK_DATA', defaultValue: true);
+
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
+  if (!_useMockAuth) {
+    final tokens = ref.read(authTokenStorageProvider);
+    return RemoteAuthRepositoryImpl(
+      api: DioAuthApi(createApiClient(tokens: tokens)),
+      storage: tokens,
+    );
+  }
   return AuthRepositoryImpl(
     remoteDataSource: ref.read(authRemoteDataSourceProvider),
     tokenStorage: ref.read(authTokenStorageProvider),
