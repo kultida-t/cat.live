@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'app.dart';
 import 'core/network/token_provider.dart';
+import 'features/auth/data/datasources/secure_auth_pin_storage.dart';
 import 'features/auth/data/datasources/secure_auth_token_storage.dart';
 import 'features/auth/presentation/providers/auth_controller.dart';
 
@@ -29,6 +30,7 @@ void main() {
         overrides: [
           authTokenStorageProvider.overrideWithValue(tokenStorage),
           appTokenProvider.overrideWithValue(tokenStorage),
+          authPinStorageProvider.overrideWithValue(SecureAuthPinStorage()),
         ],
         child: const CatLiveApp(),
       ),

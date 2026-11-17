@@ -10,6 +10,7 @@ import '../../../../core/widgets/app_avatar.dart';
 import '../../../../core/widgets/error_view.dart';
 import '../../../auth/domain/entities/auth_data.dart';
 import '../../../auth/presentation/providers/auth_controller.dart';
+import '../../../auth/presentation/widgets/auth_l10n.dart';
 import '../../domain/entities/settings_data.dart';
 import '../providers/settings_controller.dart';
 import '../widgets/settings_l10n.dart';
@@ -77,6 +78,11 @@ class ManageAccountPage extends ConsumerWidget {
         SettingsSectionHeader(title: isEn ? 'Account' : 'บัญชี'),
         SettingsCard(
           children: [
+            // แถวตั้ง/เปลี่ยน PIN — แสดงเฉพาะบัญชีที่ผูกเบอร์ไว้แล้ว
+            if (authState.session.user?.phone != null) ...[
+              _PinRow(isEn: isEn),
+              const Divider(height: 1, color: AppColors.line),
+            ],
             SettingsRow(
               icon: LucideIcons.userX,
               title: isEn ? 'Delete account' : 'ลบบัญชี',
@@ -318,6 +324,31 @@ class _GuestGate extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// แถวจัดการ PIN — ชื่อตามสถานะจริงจาก storage (ตั้ง / เปลี่ยน)
+class _PinRow extends ConsumerWidget {
+  const _PinRow({required this.isEn});
+
+  final bool isEn;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final hasPin = ref.watch(accountPinStatusProvider).value ?? false;
+    return SettingsRow(
+      icon: LucideIcons.lockKeyhole,
+      title: AuthL10n.pinManageTitle(hasPin, isEn),
+      subtitle: isEn
+          ? '6-digit PIN for signing in on this device'
+          : 'รหัส 6 หลักสำหรับเข้าสู่ระบบบนเครื่องนี้',
+      trailing: const Icon(
+        LucideIcons.chevronRight,
+        size: 18,
+        color: AppColors.muted,
+      ),
+      onTap: () => context.push('/settings/account/pin'),
     );
   }
 }

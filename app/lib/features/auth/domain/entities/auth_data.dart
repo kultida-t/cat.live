@@ -12,6 +12,7 @@ class AuthUser extends Equatable {
     required this.id,
     required this.displayName,
     required this.method,
+    this.phone,
     this.phoneMasked,
     this.email,
     this.birthYear,
@@ -21,6 +22,9 @@ class AuthUser extends Equatable {
   final String id;
   final String displayName;
   final AuthMethod method;
+
+  /// เบอร์โทรแบบตัวเลขล้วนของบัญชี (เก็บใน secure storage) — ใช้ผูก PIN กับบัญชี
+  final String? phone;
   final String? phoneMasked;
   final String? email;
   final int? birthYear;
@@ -31,6 +35,7 @@ class AuthUser extends Equatable {
     id,
     displayName,
     method,
+    phone,
     phoneMasked,
     email,
     birthYear,

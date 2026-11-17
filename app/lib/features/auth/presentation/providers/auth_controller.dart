@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../data/datasources/auth_pin_storage.dart';
 import '../../data/datasources/auth_remote_data_source.dart';
 import '../../data/datasources/auth_token_storage.dart';
 import '../../data/repositories/auth_repository_impl.dart';
@@ -13,6 +14,10 @@ final authTokenStorageProvider = Provider<AuthTokenStorage>(
   (ref) => InMemoryAuthTokenStorage(),
 );
 
+final authPinStorageProvider = Provider<AuthPinStorage>(
+  (ref) => InMemoryAuthPinStorage(),
+);
+
 final authRemoteDataSourceProvider = Provider<AuthRemoteDataSource>(
   (ref) => MockAuthRemoteDataSource(),
 );
@@ -21,6 +26,7 @@ final authRepositoryProvider = Provider<AuthRepository>((ref) {
   return AuthRepositoryImpl(
     remoteDataSource: ref.read(authRemoteDataSourceProvider),
     tokenStorage: ref.read(authTokenStorageProvider),
+    pinStorage: ref.read(authPinStorageProvider),
   );
 });
 
@@ -32,6 +38,7 @@ class AuthState {
     this.errorCode,
     this.tickSeconds = 0,
     this.sessionResolved = false,
+    this.pinRevision = 0,
   });
 
   final AuthSession session;
@@ -39,6 +46,10 @@ class AuthState {
   final OtpChallenge? otpChallenge;
   final String? errorCode;
   final int tickSeconds;
+
+  /// ตัวนับที่เพิ่มทุกครั้งที่ตั้ง/เปลี่ยน PIN — หน้าจัดการบัญชีใช้ watch
+  /// เพื่อสลับข้อความ ตั้งรหัส PIN ↔ เปลี่ยนรหัส PIN ให้ตรงสถานะล่าสุด
+  final int pinRevision;
 
   /// true เมื่ออ่าน session จาก storage เสร็จแล้ว — ใช้แยกช่วงแอปเพิ่งเปิด
   /// ที่ยังไม่รู้ว่าผู้ใช้ล็อกอินค้างไว้หรือไม่ (เช่น กันเข้า /login ซ้ำ)
@@ -59,6 +70,7 @@ class AuthState {
     bool clearError = false,
     int? tickSeconds,
     bool? sessionResolved,
+    int? pinRevision,
   }) {
     return AuthState(
       session: session ?? this.session,
@@ -69,6 +81,7 @@ class AuthState {
       errorCode: clearError ? null : (errorCode ?? this.errorCode),
       tickSeconds: tickSeconds ?? this.tickSeconds,
       sessionResolved: sessionResolved ?? this.sessionResolved,
+      pinRevision: pinRevision ?? this.pinRevision,
     );
   }
 }
@@ -87,6 +100,7 @@ class AuthController extends Notifier<AuthState> {
           id: 'user-lookkaew',
           displayName: 'จุฑามาศ ลูกแก้ว',
           method: AuthMethod.phoneOtp,
+          phone: '0812344567',
           phoneMasked: '081-xxx-4567',
           birthYear: 1995,
         ),
@@ -177,6 +191,81 @@ class AuthController extends Notifier<AuthState> {
         isSubmitting: false,
         errorCode: 'otp_verify_failed',
       );
+      return false;
+    }
+  }
+
+  /// ล็อกอินด้วยเบอร์ + PIN — คืน null เมื่อสำเร็จ, หรือเหตุผลที่ล้มเหลว
+  /// (เบอร์ยังไม่มี PIN บนเครื่องนี้ / PIN ผิด) เพื่อให้หน้าจอแจ้งตรงจุด
+  Future<PinSignInFailure?> signInWithPin({
+    required String phone,
+    required String pin,
+  }) async {
+    state = state.copyWith(isSubmitting: true, clearError: true);
+    try {
+      final repo = ref.read(authRepositoryProvider);
+      final result = await repo.signInWithPin(phone: phone, pin: pin);
+      if (result.session != null) {
+        _countdownTimer?.cancel();
+        state = AuthState(session: result.session!, sessionResolved: true);
+        return null;
+      }
+      state = state.copyWith(isSubmitting: false);
+      return result.failure ?? PinSignInFailure.wrongPin;
+    } catch (_) {
+      state = state.copyWith(isSubmitting: false, errorCode: 'pin_failed');
+      return PinSignInFailure.wrongPin;
+    }
+  }
+
+  /// เช็กว่าเบอร์นี้เคยตั้ง PIN ไว้บนเครื่องนี้หรือยัง — ใช้ตัดสินว่าจะเสนอ
+  /// ขั้นตั้ง PIN หลังยืนยัน OTP ไหม (สมัครใหม่ / เครื่องใหม่ / ลืม PIN)
+  Future<bool> hasPinForPhone(String phone) {
+    final repo = ref.read(authRepositoryProvider);
+    return repo.hasPinForPhone(phone);
+  }
+
+  /// ตั้ง PIN ให้บัญชีที่ล็อกอินอยู่ — คืน false ถ้าบัญชีไม่มีเบอร์ผูก
+  Future<bool> setPinForCurrentAccount(String pin) async {
+    final user = state.session.user;
+    if (user == null || user.phone == null) return false;
+    try {
+      final repo = ref.read(authRepositoryProvider);
+      await repo.setPin(user: user, pin: pin);
+      state = state.copyWith(pinRevision: state.pinRevision + 1);
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// ตรวจ PIN เดิมก่อนเริ่มขั้นเปลี่ยนในหน้าจัดการบัญชี
+  Future<bool> verifyCurrentPin(String pin) {
+    final user = state.session.user;
+    if (user == null) return Future.value(false);
+    final repo = ref.read(authRepositoryProvider);
+    return repo.verifyCurrentPin(user: user, pin: pin);
+  }
+
+  /// เปลี่ยน PIN — ต้องยืนยัน PIN เดิมก่อน คืน false ถ้า PIN เดิมผิด
+  Future<bool> changePinForCurrentAccount({
+    required String currentPin,
+    required String newPin,
+  }) async {
+    final user = state.session.user;
+    if (user == null) return false;
+    try {
+      final repo = ref.read(authRepositoryProvider);
+      final ok = await repo.changePin(
+        user: user,
+        currentPin: currentPin,
+        newPin: newPin,
+      );
+      if (ok) {
+        state = state.copyWith(pinRevision: state.pinRevision + 1);
+      }
+      return ok;
+    } catch (_) {
       return false;
     }
   }
@@ -290,3 +379,12 @@ class AuthController extends Notifier<AuthState> {
 final authControllerProvider = NotifierProvider<AuthController, AuthState>(
   AuthController.new,
 );
+
+/// สถานะ PIN ของบัญชีปัจจุบันสำหรับหน้าจัดการบัญชี — re-fetch อัตโนมัติเมื่อ
+/// pinRevision เปลี่ยน (ตั้ง/เปลี่ยน PIN) บัญชีไม่มีเบอร์ผูกคืน false เสมอ
+final accountPinStatusProvider = FutureProvider.autoDispose<bool>((ref) async {
+  final authState = ref.watch(authControllerProvider);
+  final phone = authState.session.user?.phone;
+  if (phone == null) return false;
+  return ref.read(authRepositoryProvider).hasPinForPhone(phone);
+});

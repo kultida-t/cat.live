@@ -1,3 +1,4 @@
+import 'package:catlive/features/auth/data/datasources/auth_pin_storage.dart';
 import 'package:catlive/features/auth/data/datasources/auth_remote_data_source.dart';
 import 'package:catlive/features/auth/data/datasources/auth_token_storage.dart';
 import 'package:catlive/features/auth/data/repositories/auth_repository_impl.dart';
@@ -138,6 +139,7 @@ void main() {
         final repo = AuthRepositoryImpl(
           remoteDataSource: MockAuthRemoteDataSource(latency: Duration.zero),
           tokenStorage: storage,
+          pinStorage: InMemoryAuthPinStorage(),
         );
 
         await repo.requestAccountDeletion(
@@ -318,7 +320,7 @@ void main() {
         await tester.pumpAndSettle();
 
         // ล็อกอินด้วย PIN — mock คืน session ค้างลบ → เจอชีตแทนการเข้าแอป
-        await tester.enterText(find.byType(TextField).first, '0812345678');
+        await tester.enterText(find.byType(TextField).first, '0812344567');
         await tester.enterText(find.byType(TextField).last, '123456');
         await tester.pump();
         await tester.tap(find.text('เข้าสู่ระบบด้วย PIN'));
@@ -376,7 +378,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      await tester.enterText(find.byType(TextField).first, '0812345678');
+      await tester.enterText(find.byType(TextField).first, '0812344567');
       await tester.enterText(find.byType(TextField).last, '123456');
       await tester.pump();
       await tester.tap(find.text('เข้าสู่ระบบด้วย PIN'));

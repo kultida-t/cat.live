@@ -181,6 +181,12 @@ void main() {
       await tester.tap(find.text('ยืนยันและเข้าสู่ระบบ'));
       await tester.pumpAndSettle();
 
+      // เบอร์นี้ยังไม่มี PIN บนเครื่อง → ต้องเจอขั้นเสนอตั้ง PIN ก่อนเข้าแอป
+      expect(find.text('ตั้งรหัส PIN 6 หลัก'), findsWidgets);
+      await tester.ensureVisible(find.text('ไว้ทีหลัง'));
+      await tester.tap(find.text('ไว้ทีหลัง'));
+      await tester.pumpAndSettle();
+
       expect(find.text('Home'), findsOneWidget);
       expect(capturedRef!.read(authControllerProvider).isAuthenticated, isTrue);
     },
@@ -227,7 +233,8 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.enterText(find.byType(TextField).first, '0812345678');
+    // เบอร์เดโมที่ seed PIN ไว้ (จุฑามาศ) — ตัวจริงคือ 0812344567
+    await tester.enterText(find.byType(TextField).first, '0812344567');
     await tester.enterText(find.byType(TextField).last, '123456');
     await tester.pump();
 
@@ -246,7 +253,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.enterText(find.byType(TextField).first, '0812345678');
+    await tester.enterText(find.byType(TextField).first, '0812344567');
     await tester.enterText(find.byType(TextField).last, '123456');
     await tester.pump();
     await tester.tap(find.text('เข้าสู่ระบบด้วย PIN'));

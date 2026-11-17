@@ -3,11 +3,20 @@ import 'package:dio/dio.dart';
 import '../../../../core/network/dio_failure_mapper.dart';
 import '../../domain/entities/auth_data.dart';
 import '../../domain/entities/deletion_data.dart';
+import '../../domain/entities/pin_account_record.dart';
 import '../../domain/usecases/auth_rules.dart';
 
 /// สัญญาแหล่งข้อมูล Remote สำหรับ Auth (AUTH-01..05)
 abstract interface class AuthRemoteDataSource {
   Future<OtpChallenge> requestOtp(String phoneNumber);
+
+  /// ออก session หลัง PIN ผ่านการยืนยันแล้ว — mock ใช้โปรไฟล์บัญชีที่เก็บไว้
+  /// บนเครื่อง (`localAccount`) ส่วน API จริงส่ง phone + pin ไปยืนยันกับเซิร์ฟเวอร์
+  Future<AuthSession> signInWithPin({
+    required String phone,
+    required String pin,
+    PinAccountRecord? localAccount,
+  });
 
   Future<
     ({AuthSession? session, OtpChallenge? updatedChallenge, String? errorCode})
@@ -142,6 +151,7 @@ class MockAuthRemoteDataSource implements AuthRemoteDataSource {
             ? name
             : 'จุฑามาศ ลูกแก้ว',
         method: AuthMethod.phoneOtp,
+        phone: challenge.phoneNumber,
         phoneMasked: masked,
         birthYear: birthYear,
         guardianConsentGranted: guardianConsentGranted,
@@ -190,6 +200,40 @@ class MockAuthRemoteDataSource implements AuthRemoteDataSource {
       ),
       accessToken:
           'mock-access-token-${method.name}-${now.millisecondsSinceEpoch}',
+      refreshToken: 'mock-refresh-token-${now.millisecondsSinceEpoch}',
+      expiresAt: now.add(const Duration(days: 7)),
+    );
+  }
+
+  @override
+  Future<AuthSession> signInWithPin({
+    required String phone,
+    required String pin,
+    PinAccountRecord? localAccount,
+  }) async {
+    if (latency > Duration.zero) {
+      await Future<void>.delayed(latency);
+    }
+    final now = _now();
+
+    // เข้าสู่ระบบใหม่ระหว่างรอลบ → เจอ session ค้างลบแทนบัญชีใหม่ (AUTH-05)
+    final pending = _pendingDeletionIfValid();
+    if (pending != null) return pending;
+
+    final user =
+        localAccount?.toAuthUser() ??
+        const AuthUser(
+          id: 'user-lookkaew',
+          displayName: 'จุฑามาศ ลูกแก้ว',
+          method: AuthMethod.phoneOtp,
+          phone: '0812344567',
+          phoneMasked: '081-xxx-4567',
+          birthYear: 1995,
+        );
+    return AuthSession(
+      mode: AuthMode.authenticated,
+      user: user,
+      accessToken: 'mock-access-token-pin-${now.millisecondsSinceEpoch}',
       refreshToken: 'mock-refresh-token-${now.millisecondsSinceEpoch}',
       expiresAt: now.add(const Duration(days: 7)),
     );
@@ -277,6 +321,7 @@ class MockAuthRemoteDataSource implements AuthRemoteDataSource {
         id: 'user-lookkaew',
         displayName: 'จุฑามาศ ลูกแก้ว',
         method: AuthMethod.phoneOtp,
+        phone: '0812344567',
         phoneMasked: '081-xxx-4567',
         birthYear: 1995,
       ),
@@ -401,6 +446,40 @@ class DioAuthRemoteDataSource implements AuthRemoteDataSource {
           displayName: userJson['display_name'] as String? ?? '',
           method: method,
           email: userJson['email'] as String?,
+          birthYear: userJson['birth_year'] as int?,
+          guardianConsentGranted:
+              userJson['guardian_consent_granted'] as bool? ?? false,
+        ),
+        accessToken: body['access_token'] as String?,
+        refreshToken: body['refresh_token'] as String?,
+        expiresAt: DateTime.tryParse(body['expires_at'] as String? ?? ''),
+      );
+    } on DioException catch (e) {
+      throw mapDioException(e);
+    }
+  }
+
+  @override
+  Future<AuthSession> signInWithPin({
+    required String phone,
+    required String pin,
+    PinAccountRecord? localAccount,
+  }) async {
+    try {
+      final response = await _dio.post<Map<String, dynamic>>(
+        '/api/v1/auth/pin/login',
+        data: {'phone_number': phone, 'pin': pin},
+      );
+      final body = response.data ?? const <String, dynamic>{};
+      final userJson = body['user'] as Map<String, dynamic>? ?? const {};
+      return AuthSession(
+        mode: AuthMode.authenticated,
+        user: AuthUser(
+          id: userJson['id'] as String? ?? '',
+          displayName: userJson['display_name'] as String? ?? '',
+          method: AuthMethod.phoneOtp,
+          phone: userJson['phone'] as String?,
+          phoneMasked: userJson['phone_masked'] as String?,
           birthYear: userJson['birth_year'] as int?,
           guardianConsentGranted:
               userJson['guardian_consent_granted'] as bool? ?? false,
