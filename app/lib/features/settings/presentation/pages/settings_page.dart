@@ -260,6 +260,21 @@ class _SettingsPageState extends ConsumerState<SettingsPage> with ToastMixin {
               ),
               onTap: () => showPdpaSheet(context, onToast: showToast),
             ),
+            if (authState.isAuthenticated)
+              SettingsRow(
+                icon: LucideIcons.userX,
+                title: isEn ? 'Delete account' : 'ลบบัญชี',
+                subtitle: isEn
+                    ? 'Data is kept 30 days before permanent deletion'
+                    : 'ข้อมูลถูกเก็บไว้ 30 วันก่อนลบถาวร กู้คืนได้ภายในกำหนด',
+                trailing: const Icon(
+                  LucideIcons.chevronRight,
+                  size: 18,
+                  color: AppColors.muted,
+                ),
+                danger: true,
+                onTap: () => context.push('/settings/delete-account'),
+              ),
           ],
         ),
         SettingsSectionHeader(title: SettingsL10n.sectionSupport(isEn)),

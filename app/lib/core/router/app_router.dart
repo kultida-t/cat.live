@@ -1,5 +1,6 @@
 import 'package:go_router/go_router.dart';
 
+import '../../features/auth/presentation/pages/delete_account_page.dart';
 import '../../features/auth/presentation/pages/login_page.dart';
 import '../../features/cat_ai/presentation/pages/cat_ai_page.dart';
 import '../../features/cat_ai/presentation/pages/cat_face_check_page.dart';
@@ -54,6 +55,10 @@ GoRouter createAppRouter() {
         path: '/settings',
         builder: (_, state) =>
             SettingsPage(initialSection: state.uri.queryParameters['section']),
+      ),
+      GoRoute(
+        path: '/settings/delete-account',
+        builder: (_, _) => const DeleteAccountPage(),
       ),
       GoRoute(
         path: '/settings/guidelines',

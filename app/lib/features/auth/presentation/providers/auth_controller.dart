@@ -6,6 +6,7 @@ import '../../data/datasources/auth_remote_data_source.dart';
 import '../../data/datasources/auth_token_storage.dart';
 import '../../data/repositories/auth_repository_impl.dart';
 import '../../domain/entities/auth_data.dart';
+import '../../domain/entities/deletion_data.dart';
 import '../../domain/repositories/auth_repository.dart';
 
 final authTokenStorageProvider = Provider<AuthTokenStorage>(
@@ -45,6 +46,9 @@ class AuthState {
 
   bool get isAuthenticated => session.isAuthenticated;
   bool get isGuest => session.isGuest;
+
+  /// true เมื่อบัญชีอยู่ในช่วงรอลบ 30 วัน — ผู้ใช้เลือกกู้คืนหรือลบต่อได้ (AUTH-05)
+  bool get isPendingDeletion => session.isPendingDeletion;
 
   AuthState copyWith({
     AuthSession? session,
@@ -207,6 +211,70 @@ class AuthController extends Notifier<AuthState> {
     final repo = ref.read(authRepositoryProvider);
     final guest = await repo.signOut();
     state = AuthState(session: guest, sessionResolved: true);
+  }
+
+  /// โหลดรายการแมวที่ผู้ใช้เป็นเจ้าของพร้อมผู้ดูแลร่วม สำหรับ flow ลบบัญชี (AUTH-05)
+  Future<List<CatDeletionRequirement>> loadDeletionRequirements() {
+    final repo = ref.read(authRepositoryProvider);
+    return repo.loadDeletionRequirements();
+  }
+
+  /// ขอลบบัญชี — ระบบเก็บข้อมูลไว้ 30 วันก่อนลบถาวร และบังคับออกจากระบบทันที
+  Future<bool> requestAccountDeletion({
+    required Map<String, String?> transferDecisions,
+  }) async {
+    state = state.copyWith(isSubmitting: true, clearError: true);
+    try {
+      final repo = ref.read(authRepositoryProvider);
+      await repo.requestAccountDeletion(transferDecisions: transferDecisions);
+      state = const AuthState(
+        session: AuthSession.guest(),
+        sessionResolved: true,
+      );
+      return true;
+    } catch (_) {
+      state = state.copyWith(
+        isSubmitting: false,
+        errorCode: 'account_delete_failed',
+      );
+      return false;
+    }
+  }
+
+  /// กู้คืนบัญชีที่อยู่ในช่วงรอลบ 30 วัน — คืน true ถ้ากู้สำเร็จ
+  Future<bool> restorePendingDeletion() async {
+    state = state.copyWith(isSubmitting: true, clearError: true);
+    try {
+      final repo = ref.read(authRepositoryProvider);
+      final restored = await repo.restorePendingDeletion();
+      if (restored == null) {
+        // ไม่มีบัญชีค้างลบหรือเลยกำหนด 30 วัน → ถือว่าบัญชีถูกลบถาวรแล้ว
+        state = const AuthState(
+          session: AuthSession.guest(),
+          sessionResolved: true,
+        );
+        return false;
+      }
+      state = AuthState(session: restored, sessionResolved: true);
+      return true;
+    } catch (_) {
+      state = state.copyWith(
+        isSubmitting: false,
+        errorCode: 'account_restore_failed',
+      );
+      return false;
+    }
+  }
+
+  /// ยืนยันลบบัญชีถาวรจากสถานะค้างลบ — เซิร์ฟเวอร์ mock จะลบตามกำหนด
+  /// ฝั่งแอปแค่ล้าง session กลับเป็น guest เพื่อจบ flow
+  Future<void> confirmPermanentDeletion() async {
+    final repo = ref.read(authRepositoryProvider);
+    await repo.signOut();
+    state = const AuthState(
+      session: AuthSession.guest(),
+      sessionResolved: true,
+    );
   }
 
   void clearOtpChallenge() {

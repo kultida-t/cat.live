@@ -58,6 +58,7 @@ class SecureAuthTokenStorage implements AuthTokenStorage {
       'access_token': session.accessToken,
       'refresh_token': session.refreshToken,
       'expires_at': session.expiresAt?.toIso8601String(),
+      'deletion_scheduled_at': session.deletionScheduledAt?.toIso8601String(),
     };
   }
 
@@ -87,6 +88,9 @@ class SecureAuthTokenStorage implements AuthTokenStorage {
       accessToken: json['access_token'] as String?,
       refreshToken: json['refresh_token'] as String?,
       expiresAt: DateTime.tryParse(json['expires_at'] as String? ?? ''),
+      deletionScheduledAt: DateTime.tryParse(
+        json['deletion_scheduled_at'] as String? ?? '',
+      ),
     );
   }
 

@@ -15,6 +15,7 @@ import '../../domain/entities/auth_data.dart';
 import '../../domain/usecases/auth_rules.dart';
 import '../providers/auth_controller.dart';
 import '../widgets/auth_l10n.dart';
+import '../widgets/pending_deletion_sheet.dart';
 
 /// หน้าเข้าสู่ระบบ สมัครสมาชิก และ Guest Mode (/login — AUTH-01..04, PDPA-03)
 /// `returnTo` = ปลายทางหลังล็อกอินสำเร็จ (AUTH-02), `initialRegister` = เปิดแท็บสมัครเลย
@@ -70,6 +71,39 @@ class _LoginPageState extends ConsumerState<LoginPage> with ToastMixin {
     if (mounted) context.go(_afterAuthTarget);
   }
 
+  /// เรียกหลังล็อกอิน/สมัครสำเร็จ — ถ้าบัญชีค้างลบ (AUTH-05) ให้เปิดชีตเลือก
+  /// กู้คืน/ลบต่อก่อน ไม่เช่นนั้นจึงแจ้งเตือนแล้วพาไปปลายทางเดิม
+  Future<void> _finishAfterSignIn(bool isEn) async {
+    final authState = ref.read(authControllerProvider);
+    if (authState.isPendingDeletion) {
+      final scheduledAt = authState.session.deletionScheduledAt;
+      final deadline = scheduledAt?.add(const Duration(days: 30));
+      final daysRemaining = deadline == null
+          ? 30
+          : deadline.difference(DateTime.now()).inDays;
+      final restored = await showPendingDeletionSheet(
+        context,
+        daysRemaining: daysRemaining,
+      );
+      if (!mounted) return;
+      if (restored == true) {
+        showToast(isEn ? 'Account restored' : 'กู้คืนบัญชีเรียบร้อยแล้ว');
+        _goAfterAuth();
+      } else if (restored == false) {
+        showToast(
+          isEn
+              ? 'Account will be permanently deleted'
+              : 'บัญชีจะถูกลบถาวรตามกำหนด',
+        );
+        context.go('/');
+      }
+      // restored == null → ผู้ใช้ปิดชีตไป ค้างอยู่หน้าล็อกอินเดิม
+      return;
+    }
+    showToast(isEn ? 'Signed in successfully' : 'เข้าสู่ระบบสำเร็จแล้ว');
+    _goAfterAuth();
+  }
+
   @override
   void dispose() {
     _nameController.dispose();
@@ -123,8 +157,7 @@ class _LoginPageState extends ConsumerState<LoginPage> with ToastMixin {
           guardianConsentGranted: _guardianConsent,
         );
     if (ok && mounted) {
-      showToast(isEn ? 'Signed in successfully' : 'เข้าสู่ระบบสำเร็จแล้ว');
-      _goAfterAuth();
+      await _finishAfterSignIn(isEn);
     }
   }
 
@@ -381,8 +414,7 @@ class _LoginPageState extends ConsumerState<LoginPage> with ToastMixin {
           displayName: _isRegisterMode ? _nameController.text.trim() : null,
         );
     if (ok && mounted) {
-      showToast(isEn ? 'Signed in successfully' : 'เข้าสู่ระบบสำเร็จแล้ว');
-      _goAfterAuth();
+      await _finishAfterSignIn(isEn);
     }
   }
 
@@ -397,8 +429,7 @@ class _LoginPageState extends ConsumerState<LoginPage> with ToastMixin {
           displayName: _isRegisterMode ? _nameController.text.trim() : null,
         );
     if (ok && mounted) {
-      showToast(isEn ? 'Signed in successfully' : 'เข้าสู่ระบบสำเร็จแล้ว');
-      _goAfterAuth();
+      await _finishAfterSignIn(isEn);
     }
   }
 
@@ -418,7 +449,10 @@ class _LoginPageState extends ConsumerState<LoginPage> with ToastMixin {
 
     // ล็อกอินอยู่แล้วไม่ควรเห็นหน้านี้ (เช่น กด deep link /login มาตรง ๆ)
     // รอให้อ่าน session จาก storage เสร็จก่อนค่อยตัดสินใจเด้งกลับปลายทาง
-    if (authState.sessionResolved && authState.isAuthenticated) {
+    // ยกเว้น session ค้างลบ (AUTH-05) — ต้องอยู่หน้านี้เพื่อให้ชีตกู้คืนแสดงได้
+    if (authState.sessionResolved &&
+        authState.isAuthenticated &&
+        !authState.isPendingDeletion) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) context.go(_afterAuthTarget);
       });

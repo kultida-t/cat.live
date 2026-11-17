@@ -62,6 +62,7 @@ class SettingsRow extends StatelessWidget {
     this.subtitle,
     this.trailing,
     this.onTap,
+    this.danger = false,
   });
 
   final IconData icon;
@@ -69,6 +70,9 @@ class SettingsRow extends StatelessWidget {
   final String? subtitle;
   final Widget? trailing;
   final VoidCallback? onTap;
+
+  /// แถวคำสั่งทำลายข้อมูล (เช่น ลบบัญชี) — ไอคอนและหัวข้อเป็นสีแดงเตือน
+  final bool danger;
 
   @override
   Widget build(BuildContext context) {
@@ -85,10 +89,16 @@ class SettingsRow extends StatelessWidget {
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: AppColors.settingsIconBox,
+                  color: danger
+                      ? AppColors.logoutBg
+                      : AppColors.settingsIconBox,
                   borderRadius: BorderRadius.circular(13),
                 ),
-                child: Icon(icon, size: 19, color: AppColors.ink),
+                child: Icon(
+                  icon,
+                  size: 19,
+                  color: danger ? AppColors.logoutText : AppColors.ink,
+                ),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -98,10 +108,10 @@ class SettingsRow extends StatelessWidget {
                   children: [
                     Text(
                       title,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
-                        color: AppColors.text,
+                        color: danger ? AppColors.logoutText : AppColors.text,
                       ),
                     ),
                     if (subtitle != null) ...[
@@ -117,10 +127,7 @@ class SettingsRow extends StatelessWidget {
                   ],
                 ),
               ),
-              if (trailing != null) ...[
-                const SizedBox(width: 8),
-                trailing!,
-              ],
+              if (trailing != null) ...[const SizedBox(width: 8), trailing!],
             ],
           ),
         ),
@@ -183,10 +190,7 @@ class SettingsSegmentGroup<T> extends StatelessWidget {
               onTap: () => onChanged(item),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 160),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 8,
-                  vertical: 5,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
                 decoration: BoxDecoration(
                   color: item == selected ? Colors.white : Colors.transparent,
                   borderRadius: BorderRadius.circular(11),

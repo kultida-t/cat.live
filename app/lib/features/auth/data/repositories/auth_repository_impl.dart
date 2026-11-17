@@ -1,4 +1,5 @@
 import '../../domain/entities/auth_data.dart';
+import '../../domain/entities/deletion_data.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../datasources/auth_remote_data_source.dart';
 import '../datasources/auth_token_storage.dart';
@@ -100,5 +101,35 @@ class AuthRepositoryImpl implements AuthRepository {
     const guest = AuthSession.guest();
     await _storage.saveSession(guest);
     return guest;
+  }
+
+  @override
+  Future<List<CatDeletionRequirement>> loadDeletionRequirements() async {
+    final token = await _storage.readAccessToken();
+    return _remote.loadDeletionRequirements(token);
+  }
+
+  @override
+  Future<void> requestAccountDeletion({
+    required Map<String, String?> transferDecisions,
+  }) async {
+    final token = await _storage.readAccessToken();
+    await _remote.requestAccountDeletion(
+      accessToken: token,
+      transferDecisions: transferDecisions,
+    );
+    // ขอลบสำเร็จ → บังคับออกจากระบบทันที บัญชีเข้าสถานะรอลบ 30 วัน
+    await _storage.clearSession();
+    await _storage.saveSession(const AuthSession.guest());
+  }
+
+  @override
+  Future<AuthSession?> restorePendingDeletion() async {
+    final token = await _storage.readAccessToken();
+    final restored = await _remote.restorePendingDeletion(token);
+    if (restored != null) {
+      await _storage.saveSession(restored);
+    }
+    return restored;
   }
 }

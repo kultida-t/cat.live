@@ -123,6 +123,7 @@ class AuthSession extends Equatable {
     this.accessToken,
     this.refreshToken,
     this.expiresAt,
+    this.deletionScheduledAt,
   });
 
   const AuthSession.guest()
@@ -130,7 +131,8 @@ class AuthSession extends Equatable {
       user = null,
       accessToken = null,
       refreshToken = null,
-      expiresAt = null;
+      expiresAt = null,
+      deletionScheduledAt = null;
 
   final AuthMode mode;
   final AuthUser? user;
@@ -138,9 +140,33 @@ class AuthSession extends Equatable {
   final String? refreshToken;
   final DateTime? expiresAt;
 
+  /// เวลาที่ขอลบบัญชี (AUTH-05) — ไม่เป็น null = บัญชีอยู่ในช่วงรอลบ 30 วัน กู้คืนได้
+  final DateTime? deletionScheduledAt;
+
   bool get isAuthenticated => mode == AuthMode.authenticated && user != null;
   bool get isGuest => !isAuthenticated;
+  bool get isPendingDeletion => deletionScheduledAt != null;
+
+  AuthSession copyWith({bool clearDeletionScheduledAt = false}) {
+    return AuthSession(
+      mode: mode,
+      user: user,
+      accessToken: accessToken,
+      refreshToken: refreshToken,
+      expiresAt: expiresAt,
+      deletionScheduledAt: clearDeletionScheduledAt
+          ? null
+          : deletionScheduledAt,
+    );
+  }
 
   @override
-  List<Object?> get props => [mode, user, accessToken, refreshToken, expiresAt];
+  List<Object?> get props => [
+    mode,
+    user,
+    accessToken,
+    refreshToken,
+    expiresAt,
+    deletionScheduledAt,
+  ];
 }
