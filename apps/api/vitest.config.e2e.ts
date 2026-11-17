@@ -10,6 +10,7 @@ export default defineConfig({
     env: {
       DATABASE_URL: 'postgresql://kultida@localhost:5432/catlive_test',
       JWT_SECRET: 'test-only-secret',
+      DB_SSL_CA_FILE: '',
     },
   },
 });
