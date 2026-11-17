@@ -1,6 +1,6 @@
 import 'package:dio/dio.dart';
 
-/// เรียก API Auth ของ backend (apps/api) ตรง ๆ — ใช้เมื่อ USE_MOCK_DATA=false
+/// เรียก API Auth ของ backend (apps/api) ตรง ๆ — ใช้เมื่อ USE_REAL_AUTH=true
 /// ข้อผิดพลาดยังเป็น DioException ให้ชั้น repository อ่านรหัส `code` จาก response เอง
 class DioAuthApi {
   const DioAuthApi(this._dio);

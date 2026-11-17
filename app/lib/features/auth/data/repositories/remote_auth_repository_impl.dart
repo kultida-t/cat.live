@@ -7,7 +7,7 @@ import '../../domain/usecases/auth_rules.dart';
 import '../datasources/auth_token_storage.dart';
 import '../datasources/dio_auth_api.dart';
 
-/// Repository ที่คุยกับ backend จริง (ใช้เมื่อ USE_MOCK_DATA=false)
+/// Repository ที่คุยกับ backend จริง (ใช้เมื่อ USE_REAL_AUTH=true)
 /// PIN ตัดสินที่ server ทั้งหมด — ไม่เช็กกับ PIN บนเครื่องอีก
 /// เมธอดที่ backend ยังไม่มี (โซเชียลล็อกอิน, ลบบัญชี) คืนข้อผิดพลาดชัดเจนแทนการจำลองผลลัพธ์
 class RemoteAuthRepositoryImpl implements AuthRepository {

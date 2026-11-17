@@ -25,10 +25,12 @@ final authRemoteDataSourceProvider = Provider<AuthRemoteDataSource>(
   (ref) => MockAuthRemoteDataSource(),
 );
 
-const _useMockAuth = bool.fromEnvironment('USE_MOCK_DATA', defaultValue: true);
+/// เปิดเมื่อจะทดสอบการเข้าสู่ระบบกับ backend จริง (`--dart-define=USE_REAL_AUTH=true`)
+/// แยกจาก USE_MOCK_DATA เพื่อให้หน้าอื่นยังใช้ข้อมูลตัวอย่างได้
+const _useRealAuth = bool.fromEnvironment('USE_REAL_AUTH', defaultValue: false);
 
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
-  if (!_useMockAuth) {
+  if (_useRealAuth) {
     final tokens = ref.read(authTokenStorageProvider);
     return RemoteAuthRepositoryImpl(
       api: DioAuthApi(createApiClient(tokens: tokens)),
