@@ -560,9 +560,14 @@ class _HealthCalendarTabState extends State<HealthCalendarTab> {
         ),
         const SizedBox(height: 10),
         if (events.isEmpty)
-          Text(
-            isEn ? 'No upcoming items yet' : 'ยังไม่มีรายการที่กำลังจะถึง',
-            style: const TextStyle(fontSize: 13.5, color: AppColors.muted),
+          HealthEmptyStateCard(
+            icon: LucideIcons.calendarCheck,
+            title: isEn
+                ? 'No upcoming items yet'
+                : 'ยังไม่มีรายการที่กำลังจะถึง',
+            subtitle: isEn
+                ? 'Vaccine and deworming reminders will appear here.'
+                : 'รายการนัดวัคซีนและถ่ายพยาธิจะขึ้นที่นี่เมื่อมีข้อมูล',
           )
         else
           HealthCard(

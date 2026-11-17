@@ -6,6 +6,7 @@ import '../../../../core/widgets/app_avatar.dart';
 import '../../../../core/widgets/app_image.dart';
 import '../../domain/entities/my_cat_data.dart';
 import '../providers/my_cat_controller.dart';
+import 'health_shared_widgets.dart';
 import 'my_cat_l10n.dart';
 
 /// แถบ 4 แท็บของแมว (รูปภาพ / ดูแลวันนี้ / สุขภาพ / ผู้ดูแล) และเนื้อหาภายในแท็บ
@@ -317,9 +318,12 @@ class _CareTodayList extends StatelessWidget {
           ),
           const SizedBox(height: 14),
           if (cat.careTasks.isEmpty)
-            Text(
-              isEn ? 'No care tasks today' : 'ยังไม่มีงานดูแลวันนี้',
-              style: const TextStyle(fontSize: 13.5, color: AppColors.muted),
+            HealthEmptyStateCard(
+              icon: LucideIcons.heartPulse,
+              title: isEn ? 'No care tasks today' : 'ยังไม่มีงานดูแลวันนี้',
+              subtitle: isEn
+                  ? 'Daily care tasks will appear here.'
+                  : 'งานดูแลประจำวันจะขึ้นที่นี่เมื่อมีรายการ',
             )
           else
             for (var i = 0; i < cat.careTasks.length; i++) ...[
@@ -621,9 +625,12 @@ class _HealthTabBody extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           if (cat.healthHighlights.isEmpty)
-            Text(
-              isEn ? 'No recent logs yet' : 'ยังไม่มีบันทึกล่าสุด',
-              style: const TextStyle(fontSize: 13.5, color: AppColors.muted),
+            HealthEmptyStateCard(
+              icon: LucideIcons.notebookPen,
+              title: isEn ? 'No recent logs yet' : 'ยังไม่มีบันทึกล่าสุด',
+              subtitle: isEn
+                  ? 'Health logs will show up here after you add them.'
+                  : 'บันทึกสุขภาพจะแสดงที่นี่หลังจากเพิ่มข้อมูล',
             )
           else
             for (var i = 0; i < cat.healthHighlights.length; i++) ...[
@@ -757,9 +764,12 @@ class _CaregiversTabBody extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           if (caregivers.isEmpty)
-            Text(
-              isEn ? 'No co-caregivers yet' : 'ยังไม่มีผู้ดูแลร่วม',
-              style: const TextStyle(fontSize: 13.5, color: AppColors.muted),
+            HealthEmptyStateCard(
+              icon: LucideIcons.users,
+              title: isEn ? 'No co-caregivers yet' : 'ยังไม่มีผู้ดูแลร่วม',
+              subtitle: isEn
+                  ? 'Co-caregivers you invite will show up here.'
+                  : 'ผู้ดูแลร่วมที่เชิญมาจะแสดงที่นี่',
             )
           else
             for (var i = 0; i < caregivers.length; i++) ...[
