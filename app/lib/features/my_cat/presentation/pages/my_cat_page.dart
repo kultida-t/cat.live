@@ -20,6 +20,7 @@ import '../../../auth/presentation/providers/auth_controller.dart';
 import '../../../auth/presentation/widgets/guest_auth_sheet.dart';
 import '../../domain/entities/my_cat_data.dart';
 import '../providers/my_cat_controller.dart';
+import '../providers/my_cat_providers.dart';
 import '../widgets/cat_forms_sheets.dart';
 import '../widgets/cat_photo_feed_modal.dart';
 import '../widgets/cat_profile_hero.dart';
@@ -272,6 +273,8 @@ class _MyCatPageState extends ConsumerState<MyCatPage> with ToastMixin {
         return failure == null;
       },
     );
+    if (!mounted || !ref.read(useRealMyCatProvider)) return;
+    await ref.read(myCatControllerProvider.notifier).load();
   }
 
   Future<void> _toggleCareTask(String taskId) async {

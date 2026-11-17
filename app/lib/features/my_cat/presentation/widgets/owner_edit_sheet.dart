@@ -1,9 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
+import '../../../../core/error/failure.dart';
+import '../../../../core/media/strip_image_metadata.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/app_avatar.dart';
+import '../../data/datasources/avatar_api.dart';
 import '../../domain/entities/my_cat_data.dart';
+import '../providers/my_cat_providers.dart';
 import 'sheet_chrome.dart';
 
 const _ownerAvatarChoices = [
@@ -29,7 +35,7 @@ Future<void> showOwnerEditSheet(
   );
 }
 
-class _OwnerEditPage extends StatefulWidget {
+class _OwnerEditPage extends ConsumerStatefulWidget {
   const _OwnerEditPage({
     required this.owner,
     required this.onSave,
@@ -41,10 +47,10 @@ class _OwnerEditPage extends StatefulWidget {
   final bool isEn;
 
   @override
-  State<_OwnerEditPage> createState() => _OwnerEditPageState();
+  ConsumerState<_OwnerEditPage> createState() => _OwnerEditPageState();
 }
 
-class _OwnerEditPageState extends State<_OwnerEditPage> {
+class _OwnerEditPageState extends ConsumerState<_OwnerEditPage> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _nameCtrl;
   late final TextEditingController _bioCtrl;
@@ -59,10 +65,13 @@ class _OwnerEditPageState extends State<_OwnerEditPage> {
   late DonationMethod _donationMethod;
   bool _showTreatAddress = false;
   bool _saving = false;
+  bool _uploading = false;
+  List<AvatarHistoryItem> _history = const [];
 
   @override
   void initState() {
     super.initState();
+    _loadHistory();
     final o = widget.owner;
     _nameCtrl = TextEditingController(text: o.displayName);
     _bioCtrl = TextEditingController(text: o.bio);
@@ -90,6 +99,186 @@ class _OwnerEditPageState extends State<_OwnerEditPage> {
     _accountNameCtrl.dispose();
     _treatAddressCtrl.dispose();
     super.dispose();
+  }
+
+  /// โหลดรูปที่เคยใช้จาก Backend (โหมดตัวอย่างใช้รูปในแอปแทน)
+  Future<void> _loadHistory() async {
+    if (!ref.read(useRealMyCatProvider)) return;
+    try {
+      final items = await ref.read(avatarApiProvider).listAvatars();
+      if (mounted) setState(() => _history = items);
+    } on Failure catch (f) {
+      _showMessage(f.message);
+    }
+  }
+
+  /// ถ่ายรูปหรือเลือกจากคลัง → ลบข้อมูลแฝงในเครื่อง → ส่งขึ้นระบบ
+  Future<void> _pickAndUpload(ImageSource source) async {
+    try {
+      final picked = await ImagePicker().pickImage(
+        source: source,
+        maxWidth: 1600,
+        imageQuality: 85,
+      );
+      if (picked == null || !mounted) return;
+      setState(() => _uploading = true);
+      final clean = await stripImageMetadata(await picked.readAsBytes());
+      await ref.read(avatarApiProvider).uploadAvatar(clean);
+      if (!mounted) return;
+      setState(() => _uploading = false);
+      _showMessage(
+        widget.isEn
+            ? 'Photo sent. It will appear in a few seconds.'
+            : 'ส่งรูปแล้ว รูปใหม่จะขึ้นในไม่กี่วินาที',
+      );
+      await Future<void>.delayed(const Duration(seconds: 5));
+      await _loadHistory();
+    } on Failure catch (f) {
+      if (mounted) setState(() => _uploading = false);
+      _showMessage(f.message);
+    } catch (_) {
+      if (mounted) setState(() => _uploading = false);
+      _showMessage(
+        widget.isEn ? 'Could not open the photo' : 'เปิดรูปไม่สำเร็จ ลองใหม่อีกครั้ง',
+      );
+    }
+  }
+
+  /// เลือกรูปที่เคยใช้กลับมาเป็นรูปปัจจุบัน
+  Future<void> _selectHistory(String id, String src) async {
+    if (!ref.read(useRealMyCatProvider)) {
+      setState(() => _avatar = src);
+      return;
+    }
+    try {
+      await ref.read(avatarApiProvider).selectAvatar(id);
+      if (!mounted) return;
+      setState(() => _avatar = src);
+      await _loadHistory();
+    } on Failure catch (f) {
+      _showMessage(f.message);
+    }
+  }
+
+  void _showMessage(String text) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(text)));
+  }
+
+  Widget _buildAvatarSection(bool isEn) {
+    final real = ref.watch(useRealMyCatProvider);
+    final history = real
+        ? [for (final h in _history) (id: h.id, src: h.url)]
+        : [for (final s in _ownerAvatarChoices) (id: s, src: s)];
+    final canUpload = real && !_uploading;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          isEn ? 'Profile photo' : 'รูปโปรไฟล์',
+          style: const TextStyle(
+            fontSize: 13.5,
+            fontWeight: FontWeight.w700,
+            color: AppColors.text,
+          ),
+        ),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            AppAvatar(source: _avatar, bg: widget.owner.avatarBg, size: 72),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  OutlinedButton.icon(
+                    onPressed: canUpload
+                        ? () => _pickAndUpload(ImageSource.camera)
+                        : null,
+                    icon: const Icon(LucideIcons.camera, size: 16),
+                    label: Text(isEn ? 'Take photo' : 'ถ่ายรูป'),
+                  ),
+                  OutlinedButton.icon(
+                    onPressed: canUpload
+                        ? () => _pickAndUpload(ImageSource.gallery)
+                        : null,
+                    icon: const Icon(LucideIcons.image, size: 16),
+                    label: Text(isEn ? 'Choose photo' : 'เลือกจากคลัง'),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        if (_uploading) ...[
+          const SizedBox(height: 8),
+          Text(
+            isEn ? 'Sending photo...' : 'กำลังส่งรูป...',
+            style: const TextStyle(fontSize: 12.5, color: AppColors.muted),
+          ),
+        ],
+        const SizedBox(height: 14),
+        Text(
+          isEn ? 'Previously used' : 'รูปที่เคยใช้',
+          style: const TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: AppColors.text,
+          ),
+        ),
+        const SizedBox(height: 8),
+        if (history.isEmpty)
+          Text(
+            isEn ? 'No previous photos yet' : 'ยังไม่มีรูปที่เคยใช้',
+            style: const TextStyle(fontSize: 13, color: AppColors.muted),
+          )
+        else
+          SizedBox(
+            height: 58,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: history.length,
+              separatorBuilder: (_, _) => const SizedBox(width: 10),
+              itemBuilder: (_, i) {
+                final item = history[i];
+                final selected = item.src == _avatar;
+                return Semantics(
+                  button: true,
+                  selected: selected,
+                  label: isEn
+                      ? 'Use previous photo ${i + 1}'
+                      : 'ใช้รูปที่เคยใช้ ${i + 1}',
+                  child: InkWell(
+                    onTap: () => _selectHistory(item.id, item.src),
+                    customBorder: const CircleBorder(),
+                    child: Container(
+                      padding: const EdgeInsets.all(2),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: selected
+                              ? AppColors.ownerTealRing
+                              : AppColors.line,
+                          width: selected ? 2.5 : 1,
+                        ),
+                      ),
+                      child: AppAvatar(
+                        source: item.src,
+                        bg: widget.owner.avatarBg,
+                        size: 50,
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+      ],
+    );
   }
 
   Future<void> _submit() async {
@@ -175,46 +364,7 @@ class _OwnerEditPageState extends State<_OwnerEditPage> {
                     ),
                   ),
                   const SizedBox(height: 10),
-                  SizedBox(
-                    height: 58,
-                    child: ListView.separated(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: _ownerAvatarChoices.length,
-                      separatorBuilder: (_, _) => const SizedBox(width: 10),
-                      itemBuilder: (_, i) {
-                        final src = _ownerAvatarChoices[i];
-                        final selected = src == _avatar;
-                        return Semantics(
-                          button: true,
-                          selected: selected,
-                          label: isEn
-                              ? 'Select profile photo ${i + 1}'
-                              : 'เลือกรูปโปรไฟล์ที่ ${i + 1}',
-                          child: InkWell(
-                            onTap: () => setState(() => _avatar = src),
-                            customBorder: const CircleBorder(),
-                            child: Container(
-                              padding: const EdgeInsets.all(2),
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: selected
-                                      ? AppColors.ownerTealRing
-                                      : AppColors.line,
-                                  width: selected ? 2.5 : 1,
-                                ),
-                              ),
-                              child: AppAvatar(
-                                source: src,
-                                bg: widget.owner.avatarBg,
-                                size: 50,
-                              ),
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
+                  _buildAvatarSection(isEn),
                   const SizedBox(height: 16),
                   _OwnerTextField(
                     label: isEn ? 'Display name *' : 'ชื่อที่แสดง *',

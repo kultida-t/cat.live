@@ -40,7 +40,7 @@ class DioMyCatDataSource implements MyCatRemoteDataSource {
     'bio': '',
     'district': '',
     'member_since': '',
-    'avatar_url': '',
+    'avatar_url': me['avatarUrl'] ?? '',
     'user_private': {
       'phone_verified': me['phoneMasked'] != null,
       'donation_account': {

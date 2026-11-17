@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/network/api_client.dart';
 import '../../../../core/network/token_provider.dart';
+import '../../data/datasources/avatar_api.dart';
 import '../../data/datasources/dio_my_cat_data_source.dart';
 import '../../data/datasources/mock_my_cat_data_source.dart';
 import '../../data/datasources/my_cat_remote_data_source.dart';
@@ -25,6 +26,13 @@ final myCatDataSourceProvider = Provider<MyCatRemoteDataSource>((ref) {
       ? DioMyCatDataSource(ref.watch(myCatDioProvider))
       : MockMyCatDataSource();
 });
+
+/// เปิดหน้าแมวและฉันกับ Backend จริงหรือไม่ — ใช้ตัดสินว่าจะเปิดการอัปโหลดรูปโปรไฟล์หรือไม่
+final useRealMyCatProvider = Provider<bool>((ref) => _useRealMyCat);
+
+final avatarApiProvider = Provider<AvatarApi>(
+  (ref) => AvatarApi(ref.watch(myCatDioProvider)),
+);
 
 final myCatRepositoryProvider = Provider<MyCatRepository>(
   (ref) => MyCatRepositoryImpl(ref.watch(myCatDataSourceProvider)),
