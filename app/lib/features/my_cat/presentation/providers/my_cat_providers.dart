@@ -11,7 +11,10 @@ import '../../domain/repositories/my_cat_repository.dart';
 import '../../domain/usecases/my_cat_usecases.dart';
 
 /// สลับหน้าแมวและฉันไป Backend จริงด้วย `--dart-define=USE_REAL_MY_CAT=true` (ค่าเริ่มต้นเป็นข้อมูลตัวอย่าง)
-const _useRealMyCat = bool.fromEnvironment('USE_REAL_MY_CAT', defaultValue: false);
+const _useRealMyCat = bool.fromEnvironment(
+  'USE_REAL_MY_CAT',
+  defaultValue: false,
+);
 
 final myCatDioProvider = Provider<Dio>(
   (ref) => createApiClient(tokens: ref.watch(appTokenProvider)),

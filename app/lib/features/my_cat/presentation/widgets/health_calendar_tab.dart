@@ -25,7 +25,8 @@ class HealthCalendarTab extends StatefulWidget {
     String title,
     String dateTh,
     String dateEn,
-  ) onQuickAddForDate;
+  )
+  onQuickAddForDate;
 
   @override
   State<HealthCalendarTab> createState() => _HealthCalendarTabState();
@@ -252,7 +253,8 @@ class _HealthCalendarTabState extends State<HealthCalendarTab> {
 
     final selectedShortDateTh =
         '$_selectedDay ${_thShortMonths[_month]} ${_year + 543}';
-    final selectedShortDateEn = '$_selectedDay ${_enShortMonths[_month]} $_year';
+    final selectedShortDateEn =
+        '$_selectedDay ${_enShortMonths[_month]} $_year';
     final noteHint = isEn
         ? 'Write note for $_selectedDay ${_enMonths[_month]}...'
         : 'เขียนบันทึกวันที่ $_selectedDay ${_thMonths[_month]}...';
@@ -260,31 +262,11 @@ class _HealthCalendarTabState extends State<HealthCalendarTab> {
     final weekdays = isEn ? _enWeekdays : _thWeekdays;
 
     final quickActions = [
-      (
-        cat: HealthRecordCategory.other,
-        th: 'บันทึก',
-        en: 'Note',
-      ),
-      (
-        cat: HealthRecordCategory.vaccine,
-        th: 'วัคซีน',
-        en: 'Vaccine',
-      ),
-      (
-        cat: HealthRecordCategory.deworming,
-        th: 'ถ่ายพยาธิ',
-        en: 'Deworm',
-      ),
-      (
-        cat: HealthRecordCategory.bloodTest,
-        th: 'ตรวจเลือด',
-        en: 'Blood test',
-      ),
-      (
-        cat: HealthRecordCategory.checkup,
-        th: 'ตรวจประจำปี',
-        en: 'Checkup',
-      ),
+      (cat: HealthRecordCategory.other, th: 'บันทึก', en: 'Note'),
+      (cat: HealthRecordCategory.vaccine, th: 'วัคซีน', en: 'Vaccine'),
+      (cat: HealthRecordCategory.deworming, th: 'ถ่ายพยาธิ', en: 'Deworm'),
+      (cat: HealthRecordCategory.bloodTest, th: 'ตรวจเลือด', en: 'Blood test'),
+      (cat: HealthRecordCategory.checkup, th: 'ตรวจประจำปี', en: 'Checkup'),
     ];
 
     return Column(
@@ -425,7 +407,9 @@ class _HealthCalendarTabState extends State<HealthCalendarTab> {
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      isEn ? 'in ${ev.daysLeft} days' : 'อีก ${ev.daysLeft} วัน',
+                      isEn
+                          ? 'in ${ev.daysLeft} days'
+                          : 'อีก ${ev.daysLeft} วัน',
                       style: const TextStyle(
                         fontSize: 12.5,
                         color: AppColors.muted,
@@ -575,88 +559,94 @@ class _HealthCalendarTabState extends State<HealthCalendarTab> {
           ],
         ),
         const SizedBox(height: 10),
-        HealthCard(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              for (var i = 0; i < events.length; i++) ...[
-                if (i > 0)
-                  const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 10),
-                    child: Divider(height: 1, color: AppColors.line),
+        if (events.isEmpty)
+          Text(
+            isEn ? 'No upcoming items yet' : 'ยังไม่มีรายการที่กำลังจะถึง',
+            style: const TextStyle(fontSize: 13.5, color: AppColors.muted),
+          )
+        else
+          HealthCard(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                for (var i = 0; i < events.length; i++) ...[
+                  if (i > 0)
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 10),
+                      child: Divider(height: 1, color: AppColors.line),
+                    ),
+                  Row(
+                    children: [
+                      Container(
+                        width: 9,
+                        height: 9,
+                        decoration: BoxDecoration(
+                          color: _dotColor(events[i].type),
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              isEn ? events[i].titleEn : events[i].titleTh,
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.text,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text.rich(
+                              TextSpan(
+                                children: [
+                                  TextSpan(
+                                    text:
+                                        '${isEn ? events[i].catNameEn : events[i].catNameTh} · ',
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      color: AppColors.muted,
+                                    ),
+                                  ),
+                                  TextSpan(
+                                    text: _typeLabel(events[i].type, isEn),
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                      color: _dotColor(events[i].type),
+                                    ),
+                                  ),
+                                  TextSpan(
+                                    text:
+                                        ' · ${isEn ? events[i].dateEn : events[i].dateTh}',
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      color: AppColors.muted,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      HealthTagPill(
+                        label: isEn
+                            ? 'in ${events[i].daysLeft} days'
+                            : 'อีก ${events[i].daysLeft} วัน',
+                        backgroundColor: AppColors.soft,
+                        textColor: AppColors.ink,
+                      ),
+                    ],
                   ),
-                Row(
-                  children: [
-                    Container(
-                      width: 9,
-                      height: 9,
-                      decoration: BoxDecoration(
-                        color: _dotColor(events[i].type),
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            isEn ? events[i].titleEn : events[i].titleTh,
-                            style: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.text,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text.rich(
-                            TextSpan(
-                              children: [
-                                TextSpan(
-                                  text:
-                                      '${isEn ? events[i].catNameEn : events[i].catNameTh} · ',
-                                  style: const TextStyle(
-                                    fontSize: 12,
-                                    color: AppColors.muted,
-                                  ),
-                                ),
-                                TextSpan(
-                                  text: _typeLabel(events[i].type, isEn),
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
-                                    color: _dotColor(events[i].type),
-                                  ),
-                                ),
-                                TextSpan(
-                                  text:
-                                      ' · ${isEn ? events[i].dateEn : events[i].dateTh}',
-                                  style: const TextStyle(
-                                    fontSize: 12,
-                                    color: AppColors.muted,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    HealthTagPill(
-                      label: isEn
-                          ? 'in ${events[i].daysLeft} days'
-                          : 'อีก ${events[i].daysLeft} วัน',
-                      backgroundColor: AppColors.soft,
-                      textColor: AppColors.ink,
-                    ),
-                  ],
-                ),
+                ],
               ],
-            ],
+            ),
           ),
-        ),
         const SizedBox(height: 10),
         Text(
           isEn

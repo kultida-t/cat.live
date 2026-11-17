@@ -423,8 +423,10 @@ abstract final class MockHealthBooks {
       dateTh: '3 พ.ย. 2569',
       dateEn: '3 Nov 2026',
     ),
-    primaryConcernTh: 'ค่าไตสูงเล็กน้อย (แมวสูงวัย) · ทานอาหารสูตรโรคไตต่อเนื่อง',
-    primaryConcernEn: 'Slightly elevated kidney values (senior) · on renal diet',
+    primaryConcernTh:
+        'ค่าไตสูงเล็กน้อย (แมวสูงวัย) · ทานอาหารสูตรโรคไตต่อเนื่อง',
+    primaryConcernEn:
+        'Slightly elevated kidney values (senior) · on renal diet',
     records: [
       HealthRecordEntry(
         id: 'thua-rec-1',
@@ -445,7 +447,8 @@ abstract final class MockHealthBooks {
         dateEn: '3 Aug 2026',
         titleTh: 'ผลตรวจเลือดค่าไต (แมวสูงวัย)',
         titleEn: 'Senior kidney blood panel',
-        detailsTh: 'ค่าไตสูงเล็กน้อย แนะนำอาหารสูตรโรคไตและนัดตรวจซ้ำใน 3 เดือน',
+        detailsTh:
+            'ค่าไตสูงเล็กน้อย แนะนำอาหารสูตรโรคไตและนัดตรวจซ้ำใน 3 เดือน',
         detailsEn: 'Slightly high kidney values; renal diet & recheck in 3 mos',
         clinicTh: 'โรงพยาบาลสัตว์อารีย์',
         clinicEn: 'Ari Animal Hospital',
@@ -473,10 +476,8 @@ abstract final class MockHealthBooks {
       BodyOrganReport(
         organ: BodyOrganId.kidneyLiver,
         status: BodyOrganStatus.abnormal,
-        summaryTh:
-            'ค่าไตสูงเล็กน้อย แนะนำอาหารสูตรโรคไตและตรวจซ้ำใน 3 เดือน (ดื่มน้ำบ่อยขึ้น)',
-        summaryEn:
-            'Slightly high kidney values; renal diet and recheck in 3 months recommended',
+        summaryTh: 'ค่าไตสูงเล็กน้อย แนะนำอาหารสูตรโรคไตและตรวจซ้ำใน 3 เดือน (ดื่มน้ำบ่อยขึ้น)',
+        summaryEn: 'Slightly high kidney values; renal diet and recheck in 3 months recommended',
         sourceTh: 'ผลตรวจเลือด 3 ส.ค. 2569',
         sourceEn: 'Blood results 3 Aug 2026',
       ),

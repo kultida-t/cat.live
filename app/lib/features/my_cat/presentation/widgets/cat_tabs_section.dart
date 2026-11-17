@@ -316,14 +316,20 @@ class _CareTodayList extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 14),
-          for (var i = 0; i < cat.careTasks.length; i++) ...[
-            if (i > 0) const SizedBox(height: 10),
-            _CareTaskCard(
-              task: cat.careTasks[i],
-              isEn: isEn,
-              onTap: () => onToggle(cat.careTasks[i].id),
-            ),
-          ],
+          if (cat.careTasks.isEmpty)
+            Text(
+              isEn ? 'No care tasks today' : 'ยังไม่มีงานดูแลวันนี้',
+              style: const TextStyle(fontSize: 13.5, color: AppColors.muted),
+            )
+          else
+            for (var i = 0; i < cat.careTasks.length; i++) ...[
+              if (i > 0) const SizedBox(height: 10),
+              _CareTaskCard(
+                task: cat.careTasks[i],
+                isEn: isEn,
+                onTap: () => onToggle(cat.careTasks[i].id),
+              ),
+            ],
         ],
       ),
     );
@@ -614,62 +620,71 @@ class _HealthTabBody extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 10),
-          for (var i = 0; i < cat.healthHighlights.length; i++) ...[
-            if (i > 0) const SizedBox(height: 8),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-              decoration: BoxDecoration(
-                color: AppColors.card,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppColors.line),
-              ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    width: 10,
-                    height: 10,
-                    margin: const EdgeInsets.only(top: 5),
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: _dotColor(cat.healthHighlights[i]),
+          if (cat.healthHighlights.isEmpty)
+            Text(
+              isEn ? 'No recent logs yet' : 'ยังไม่มีบันทึกล่าสุด',
+              style: const TextStyle(fontSize: 13.5, color: AppColors.muted),
+            )
+          else
+            for (var i = 0; i < cat.healthHighlights.length; i++) ...[
+              if (i > 0) const SizedBox(height: 8),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 10,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.card,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppColors.line),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 10,
+                      height: 10,
+                      margin: const EdgeInsets.only(top: 5),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: _dotColor(cat.healthHighlights[i]),
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          MyCatL10n.healthHighlightTitle(
-                            cat.healthHighlights[i].title,
-                            isEn,
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            MyCatL10n.healthHighlightTitle(
+                              cat.healthHighlights[i].title,
+                              isEn,
+                            ),
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.text,
+                            ),
                           ),
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.text,
+                          const SizedBox(height: 2),
+                          Text(
+                            MyCatL10n.healthHighlightDate(
+                              cat.healthHighlights[i].dateLabel,
+                              isEn,
+                            ),
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: AppColors.muted,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          MyCatL10n.healthHighlightDate(
-                            cat.healthHighlights[i].dateLabel,
-                            isEn,
-                          ),
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: AppColors.muted,
-                          ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
           const SizedBox(height: 10),
           Center(
             child: TextButton(
@@ -741,92 +756,101 @@ class _CaregiversTabBody extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 12),
-          for (var i = 0; i < caregivers.length; i++) ...[
-            if (i > 0) const SizedBox(height: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-              decoration: BoxDecoration(
-                color: AppColors.card,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppColors.line),
-              ),
-              child: Row(
-                children: [
-                  Semantics(
-                    button: true,
-                    label: isEn
-                        ? 'Change photo of ${MyCatL10n.caregiverName(caregivers[i].name, true)}'
-                        : 'เปลี่ยนรูปของ${caregivers[i].name}',
-                    child: InkWell(
-                      onTap: () => onAvatarTap(caregivers[i]),
-                      customBorder: const CircleBorder(),
-                      child: SizedBox(
-                        width: 48,
-                        height: 48,
-                        child: Stack(
-                          clipBehavior: Clip.none,
-                          children: [
-                            AppAvatar(
-                              source: caregivers[i].avatarSource,
-                              bg: caregivers[i].avatarBg,
-                              size: 48,
-                            ),
-                            Positioned(
-                              bottom: -2,
-                              right: -2,
-                              child: Container(
-                                width: 20,
-                                height: 20,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: AppColors.btn,
-                                  border: Border.all(
-                                    color: AppColors.card,
-                                    width: 2,
+          if (caregivers.isEmpty)
+            Text(
+              isEn ? 'No co-caregivers yet' : 'ยังไม่มีผู้ดูแลร่วม',
+              style: const TextStyle(fontSize: 13.5, color: AppColors.muted),
+            )
+          else
+            for (var i = 0; i < caregivers.length; i++) ...[
+              if (i > 0) const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 10,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.card,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppColors.line),
+                ),
+                child: Row(
+                  children: [
+                    Semantics(
+                      button: true,
+                      label: isEn
+                          ? 'Change photo of ${MyCatL10n.caregiverName(caregivers[i].name, true)}'
+                          : 'เปลี่ยนรูปของ${caregivers[i].name}',
+                      child: InkWell(
+                        onTap: () => onAvatarTap(caregivers[i]),
+                        customBorder: const CircleBorder(),
+                        child: SizedBox(
+                          width: 48,
+                          height: 48,
+                          child: Stack(
+                            clipBehavior: Clip.none,
+                            children: [
+                              AppAvatar(
+                                source: caregivers[i].avatarSource,
+                                bg: caregivers[i].avatarBg,
+                                size: 48,
+                              ),
+                              Positioned(
+                                bottom: -2,
+                                right: -2,
+                                child: Container(
+                                  width: 20,
+                                  height: 20,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: AppColors.btn,
+                                    border: Border.all(
+                                      color: AppColors.card,
+                                      width: 2,
+                                    ),
+                                  ),
+                                  child: const Icon(
+                                    LucideIcons.camera,
+                                    size: 10,
+                                    color: AppColors.ink,
                                   ),
                                 ),
-                                child: const Icon(
-                                  LucideIcons.camera,
-                                  size: 10,
-                                  color: AppColors.ink,
-                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          MyCatL10n.caregiverName(caregivers[i].name, isEn),
-                          style: const TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.text,
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            MyCatL10n.caregiverName(caregivers[i].name, isEn),
+                            style: const TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.text,
+                            ),
                           ),
-                        ),
-                        Text(
-                          MyCatL10n.caregiverRole(
-                            caregivers[i].roleLabel,
-                            isEn,
+                          Text(
+                            MyCatL10n.caregiverRole(
+                              caregivers[i].roleLabel,
+                              isEn,
+                            ),
+                            style: const TextStyle(
+                              fontSize: 13,
+                              color: AppColors.muted,
+                            ),
                           ),
-                          style: const TextStyle(
-                            fontSize: 13,
-                            color: AppColors.muted,
-                          ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
           const SizedBox(height: 12),
           SizedBox(
             width: double.infinity,

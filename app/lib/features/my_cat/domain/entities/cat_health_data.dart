@@ -219,9 +219,7 @@ class VaccineRecord extends Equatable {
   final String licenseNumber;
 
   bool get hasSticker =>
-      manufacturer.isNotEmpty ||
-      productName.isNotEmpty ||
-      lotNumber.isNotEmpty;
+      manufacturer.isNotEmpty || productName.isNotEmpty || lotNumber.isNotEmpty;
 
   @override
   List<Object?> get props => [
