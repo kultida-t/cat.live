@@ -10,17 +10,17 @@ import '../../data/repositories/my_cat_repository_impl.dart';
 import '../../domain/repositories/my_cat_repository.dart';
 import '../../domain/usecases/my_cat_usecases.dart';
 
-/// สลับ Mock ↔ Backend API จริงผ่าน `--dart-define=USE_MOCK_DATA=false`
-const _useMockData = bool.fromEnvironment('USE_MOCK_DATA', defaultValue: true);
+/// สลับหน้าแมวและฉันไป Backend จริงด้วย `--dart-define=USE_REAL_MY_CAT=true` (ค่าเริ่มต้นเป็นข้อมูลตัวอย่าง)
+const _useRealMyCat = bool.fromEnvironment('USE_REAL_MY_CAT', defaultValue: false);
 
 final myCatDioProvider = Provider<Dio>(
   (ref) => createApiClient(tokens: ref.watch(appTokenProvider)),
 );
 
 final myCatDataSourceProvider = Provider<MyCatRemoteDataSource>((ref) {
-  return _useMockData
-      ? MockMyCatDataSource()
-      : DioMyCatDataSource(ref.watch(myCatDioProvider));
+  return _useRealMyCat
+      ? DioMyCatDataSource(ref.watch(myCatDioProvider))
+      : MockMyCatDataSource();
 });
 
 final myCatRepositoryProvider = Provider<MyCatRepository>(
