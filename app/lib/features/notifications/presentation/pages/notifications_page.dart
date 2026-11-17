@@ -4,9 +4,12 @@ import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../../core/config/app_locale.dart';
+import '../../../../core/config/pet_species_config.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/error_view.dart';
 import '../../../../core/widgets/toast_pill.dart';
+import '../../../auth/presentation/providers/auth_controller.dart';
+import '../../../auth/presentation/widgets/guest_locked_view.dart';
 import '../../domain/entities/app_notification.dart';
 import '../l10n/notifications_l10n.dart';
 import '../providers/notifications_controller.dart';
@@ -55,7 +58,40 @@ class _NotificationsPageState extends ConsumerState<NotificationsPage>
     final state = ref.watch(notificationsControllerProvider);
     final controller = ref.read(notificationsControllerProvider.notifier);
     final isEn = ref.watch(appLocaleProvider) == 'en';
+    final isGuest = ref.watch(authControllerProvider).isGuest;
     final l10n = NotificationsL10n(isEn);
+
+    // ผู้เยี่ยมชมที่หลุดเข้ามาทาง deep link เห็นเฉพาะการ์ดชวนเข้าสู่ระบบ
+    if (isGuest) {
+      return Scaffold(
+        backgroundColor: AppColors.page,
+        body: SafeArea(
+          child: Column(
+            children: [
+              _Header(
+                l10n: l10n,
+                unreadCount: 0,
+                onBack: () => context.pop(),
+                onMarkAll: null,
+              ),
+              Expanded(
+                child: GuestLockedView(
+                  species: ref.watch(petSpeciesConfigProvider),
+                  isEn: isEn,
+                  title: isEn
+                      ? 'Sign in to see notifications'
+                      : 'เข้าสู่ระบบเพื่อดูการแจ้งเตือน',
+                  subtitle: isEn
+                      ? 'Get likes, comments, followers, and important\npet alerts in real time.'
+                      : 'รับข่าวไลก์ คอมเมนต์ ผู้ติดตามใหม่\nและแจ้งเตือนสำคัญของน้องแมวแบบเรียลไทม์',
+                  onSignInTap: () => context.push('/login'),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
 
     return Scaffold(
       backgroundColor: AppColors.page,

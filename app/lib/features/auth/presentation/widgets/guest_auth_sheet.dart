@@ -60,18 +60,6 @@ Future<void> showGuestAuthSheet(
                 height: 1.35,
               ),
             ),
-            const SizedBox(height: 8),
-            Text(
-              isEn
-                  ? 'Sign in with Phone/OTP, Apple, Google, or LINE to unlock your ${species.petNoun(true).toLowerCase()} account.'
-                  : 'เข้าสู่ระบบได้ทันทีด้วยเบอร์โทร / OTP,\nApple, Google หรือ LINE บน ${species.brandName(false)}',
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 13.5,
-                color: AppColors.muted,
-                height: 1.45,
-              ),
-            ),
             const SizedBox(height: 16),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),

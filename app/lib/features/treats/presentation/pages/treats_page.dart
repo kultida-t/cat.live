@@ -4,9 +4,12 @@ import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../../core/config/app_locale.dart';
+import '../../../../core/config/pet_species_config.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/app_avatar.dart';
 import '../../../../core/widgets/error_view.dart';
+import '../../../auth/presentation/providers/auth_controller.dart';
+import '../../../auth/presentation/widgets/guest_locked_view.dart';
 import '../../domain/entities/treat_item.dart';
 import '../../domain/entities/treat_recipient.dart';
 import '../l10n/treats_l10n.dart';
@@ -47,9 +50,42 @@ class _TreatsPageState extends ConsumerState<TreatsPage> {
   @override
   Widget build(BuildContext context) {
     final isEn = ref.watch(appLocaleProvider) == 'en';
+    final isGuest = ref.watch(authControllerProvider).isGuest;
     final provider = treatsControllerProvider(widget.initialRecipientId);
     final state = ref.watch(provider);
     final controller = ref.read(provider.notifier);
+
+    // ผู้เยี่ยมชมที่หลุดเข้ามาทาง deep link เห็นเฉพาะการ์ดชวนเข้าสู่ระบบ
+    if (isGuest) {
+      return Scaffold(
+        backgroundColor: AppColors.page,
+        body: SafeArea(
+          bottom: false,
+          child: Column(
+            children: [
+              _TreatsHeader(
+                title: TreatsL10n.pageTitle(isEn),
+                backLabel: TreatsL10n.backLabel(isEn),
+                onBack: _navigateBack,
+              ),
+              Expanded(
+                child: GuestLockedView(
+                  species: ref.watch(petSpeciesConfigProvider),
+                  isEn: isEn,
+                  title: isEn
+                      ? 'Sign in to send treats'
+                      : 'เข้าสู่ระบบเพื่อเลี้ยงขนม',
+                  subtitle: isEn
+                      ? 'Send snacks with a sweet note to cats you love\nand cheer up their owners in a few taps.'
+                      : 'ส่งขนมพร้อมข้อความกำลังใจถึงน้องแมว\nและเจ้าของที่คุณชื่นชอบได้ในไม่กี่ขั้นตอน',
+                  onSignInTap: () => context.push('/login'),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
 
     if (state.status == TreatsStatus.ready &&
         state.step == TreatsStep.payment) {
