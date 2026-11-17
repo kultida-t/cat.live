@@ -24,6 +24,7 @@ import '../../features/notifications/presentation/pages/notification_post_detail
 import '../../features/notifications/presentation/pages/notifications_page.dart';
 import '../../features/notifications/presentation/pages/received_treats_page.dart';
 import '../../features/search/presentation/pages/search_page.dart';
+import '../../features/settings/presentation/pages/manage_account_page.dart';
 import '../../features/settings/presentation/pages/settings_page.dart';
 import '../../features/shell/presentation/main_shell.dart';
 import '../../features/tag/presentation/pages/tag_page.dart';
@@ -55,6 +56,10 @@ GoRouter createAppRouter() {
         path: '/settings',
         builder: (_, state) =>
             SettingsPage(initialSection: state.uri.queryParameters['section']),
+      ),
+      GoRoute(
+        path: '/settings/account',
+        builder: (_, _) => const ManageAccountPage(),
       ),
       GoRoute(
         path: '/settings/delete-account',

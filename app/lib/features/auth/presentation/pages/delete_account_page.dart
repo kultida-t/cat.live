@@ -269,8 +269,8 @@ class _DeleteAccountPageState extends ConsumerState<DeleteAccountPage>
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
       children: [
         const SizedBox(height: 4),
-        const _RoundIconBadge(
-          icon: LucideIcons.triangleAlert,
+        const _CatIconBadge(
+          badge: LucideIcons.triangleAlert,
           bg: AppColors.logoutBg,
           color: AppColors.danger,
         ),
@@ -421,8 +421,8 @@ class _DeleteAccountPageState extends ConsumerState<DeleteAccountPage>
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
       children: [
-        const _RoundIconBadge(
-          icon: LucideIcons.users,
+        const _CatIconBadge(
+          badge: LucideIcons.users,
           bg: AppColors.ownerPillBg,
           color: AppColors.ownerTeal,
         ),
@@ -623,8 +623,8 @@ class _DeleteAccountPageState extends ConsumerState<DeleteAccountPage>
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
       children: [
-        const _RoundIconBadge(
-          icon: LucideIcons.circleAlert,
+        const _CatIconBadge(
+          badge: LucideIcons.circleAlert,
           bg: AppColors.logoutBg,
           color: AppColors.danger,
         ),
@@ -657,9 +657,7 @@ class _DeleteAccountPageState extends ConsumerState<DeleteAccountPage>
             children: [
               _ConfirmSummaryRow(
                 icon: LucideIcons.userX,
-                label: isEn
-                    ? 'Your account and data'
-                    : 'บัญชีและข้อมูลทั้งหมดของคุณ',
+                label: isEn ? 'Your account and data' : 'บัญชีและข้อมูลทั้งหมด',
                 value: isEn ? 'Deleted after 30 days' : 'ลบถาวรหลัง 30 วัน',
                 isFirst: true,
               ),
@@ -765,18 +763,11 @@ class _DeleteAccountPageState extends ConsumerState<DeleteAccountPage>
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              width: 84,
-              height: 84,
-              decoration: const BoxDecoration(
-                color: AppColors.ownerPillBg,
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                LucideIcons.checkCheck,
-                size: 38,
-                color: AppColors.ownerTeal,
-              ),
+            const _CatIconBadge(
+              badge: LucideIcons.checkCheck,
+              bg: AppColors.ownerPillBg,
+              color: AppColors.ownerTeal,
+              size: 84,
             ),
             const SizedBox(height: 16),
             Text(
@@ -890,25 +881,53 @@ class _DeleteAccountPageState extends ConsumerState<DeleteAccountPage>
 // ---------- widgets ย่อย ----------
 
 /// วงกลมไอคอนกลางจอของแต่ละขั้น
-class _RoundIconBadge extends StatelessWidget {
-  const _RoundIconBadge({
-    required this.icon,
+/// ไอคอนแมวกลม ๆ ตามสไตล์แอป พร้อม badge เล็กมุมขวาล่างบอกบริบทของแต่ละขั้น
+class _CatIconBadge extends StatelessWidget {
+  const _CatIconBadge({
+    required this.badge,
     required this.bg,
     required this.color,
+    this.size = 76,
   });
 
-  final IconData icon;
+  final IconData badge;
   final Color bg;
   final Color color;
+  final double size;
 
   @override
   Widget build(BuildContext context) {
+    final badgeSize = size * 0.36;
     return Center(
-      child: Container(
-        width: 76,
-        height: 76,
-        decoration: BoxDecoration(color: bg, shape: BoxShape.circle),
-        child: Icon(icon, size: 32, color: color),
+      child: SizedBox(
+        width: size + 8,
+        height: size + 8,
+        child: Stack(
+          children: [
+            Center(
+              child: Container(
+                width: size,
+                height: size,
+                decoration: BoxDecoration(color: bg, shape: BoxShape.circle),
+                child: Icon(LucideIcons.cat, size: size * 0.46, color: color),
+              ),
+            ),
+            Positioned(
+              right: 0,
+              bottom: 0,
+              child: Container(
+                width: badgeSize,
+                height: badgeSize,
+                decoration: BoxDecoration(
+                  color: AppColors.card,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: AppColors.line, width: 1.5),
+                ),
+                child: Icon(badge, size: badgeSize * 0.55, color: color),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

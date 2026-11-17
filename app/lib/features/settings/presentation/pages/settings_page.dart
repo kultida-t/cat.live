@@ -147,28 +147,11 @@ class _SettingsPageState extends ConsumerState<SettingsPage> with ToastMixin {
           authState: authState,
           isEn: isEn,
           onSignInTap: () => context.push(loginLocation(returnTo: '/settings')),
+          // การ์ดบัญชีพาเข้าหน้าจัดการบัญชี (ลบบัญชีอยู่ด้านใน)
+          onCardTap: authState.isAuthenticated
+              ? () => context.push('/settings/account')
+              : null,
         ),
-        if (authState.isAuthenticated) ...[
-          const SizedBox(height: 10),
-          SettingsCard(
-            children: [
-              SettingsRow(
-                icon: LucideIcons.userX,
-                title: isEn ? 'Delete account' : 'ลบบัญชี',
-                subtitle: isEn
-                    ? 'Data is kept 30 days before permanent deletion'
-                    : 'ข้อมูลถูกเก็บไว้ 30 วันก่อนลบถาวร กู้คืนได้ภายในกำหนด',
-                trailing: const Icon(
-                  LucideIcons.chevronRight,
-                  size: 18,
-                  color: AppColors.muted,
-                ),
-                danger: true,
-                onTap: () => context.push('/settings/delete-account'),
-              ),
-            ],
-          ),
-        ],
         SettingsSectionHeader(title: SettingsL10n.sectionAccount(isEn)),
         SettingsCard(
           children: [
@@ -468,12 +451,16 @@ class _AccountSummaryCard extends StatelessWidget {
     required this.authState,
     required this.isEn,
     required this.onSignInTap,
+    required this.onCardTap,
   });
 
   final SettingsData data;
   final AuthState authState;
   final bool isEn;
   final VoidCallback onSignInTap;
+
+  /// แตะการ์ดเพื่อเข้าหน้าจัดการบัญชี (เฉพาะสมาชิก — guest เป็น null)
+  final VoidCallback? onCardTap;
 
   @override
   Widget build(BuildContext context) {
@@ -491,7 +478,7 @@ class _AccountSummaryCard extends StatelessWidget {
       _ => data.accountHandle,
     };
 
-    return Container(
+    final card = Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: AppColors.card,
@@ -575,7 +562,29 @@ class _AccountSummaryCard extends StatelessWidget {
                 ),
               ),
             ),
+          if (onCardTap != null) ...[
+            const SizedBox(width: 6),
+            const Icon(
+              LucideIcons.chevronRight,
+              size: 18,
+              color: AppColors.muted,
+            ),
+          ],
         ],
+      ),
+    );
+
+    if (onCardTap == null) return card;
+    return Semantics(
+      button: true,
+      label: isEn ? 'Manage account' : 'จัดการบัญชี',
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onCardTap,
+          borderRadius: BorderRadius.circular(18),
+          child: card,
+        ),
       ),
     );
   }
