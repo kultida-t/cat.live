@@ -237,6 +237,74 @@ describe('Auth API (e2e)', () => {
         .expect(200);
     });
 
+    it('pin/status บอกว่าบัญชีตั้ง PIN แล้วหรือยัง', async () => {
+      const { body } = await loginWithOtp();
+      const auth = `Bearer ${body.accessToken}`;
+      expect(
+        (
+          await http()
+            .get('/auth/pin/status')
+            .set('Authorization', auth)
+            .expect(200)
+        ).body,
+      ).toEqual({ hasPin: false });
+      await setupPin(body.accessToken);
+      expect(
+        (
+          await http()
+            .get('/auth/pin/status')
+            .set('Authorization', auth)
+            .expect(200)
+        ).body,
+      ).toEqual({ hasPin: true });
+    });
+
+    it('ตรวจ PIN ของบัญชีที่ล็อกอินอยู่ ผิดครบเกณฑ์ก็ล็อก', async () => {
+      const { body } = await loginWithOtp();
+      const auth = `Bearer ${body.accessToken}`;
+      await setupPin(body.accessToken);
+
+      await http()
+        .post('/auth/pin/verify')
+        .set('Authorization', auth)
+        .send({ pin: '123456' })
+        .expect(204);
+      const wrong = await http()
+        .post('/auth/pin/verify')
+        .set('Authorization', auth)
+        .send({ pin: '000000' })
+        .expect(401);
+      expect(wrong.body).toMatchObject({
+        code: 'pin_invalid',
+        remainingAttempts: 4,
+      });
+      await http()
+        .post('/auth/pin/verify')
+        .set('Authorization', auth)
+        .send({ pin: '000000' })
+        .expect(401);
+      await http()
+        .post('/auth/pin/verify')
+        .set('Authorization', auth)
+        .send({ pin: '000000' })
+        .expect(401);
+      await http()
+        .post('/auth/pin/verify')
+        .set('Authorization', auth)
+        .send({ pin: '000000' })
+        .expect(401);
+      await http()
+        .post('/auth/pin/verify')
+        .set('Authorization', auth)
+        .send({ pin: '000000' })
+        .expect(423);
+      await http()
+        .post('/auth/pin/verify')
+        .set('Authorization', auth)
+        .send({ pin: '123456' })
+        .expect(423);
+    });
+
     it('เปลี่ยน PIN ต้องยืนยัน PIN เดิม และผิดครบเกณฑ์ก็ล็อก', async () => {
       const { body } = await loginWithOtp();
       const auth = `Bearer ${body.accessToken}`;
