@@ -434,6 +434,7 @@ class CatHealthBook extends Equatable {
     this.documents = const [],
     this.primaryConcernTh = 'ยังไม่มีข้อกังวลเร่งด่วน',
     this.primaryConcernEn = 'No urgent concerns recorded',
+    this.calendarEvents = const [],
   });
 
   final HealthNextAppointment? nextAppointment;
@@ -457,6 +458,7 @@ class CatHealthBook extends Equatable {
   final List<HealthDocumentItem> documents;
   final String primaryConcernTh;
   final String primaryConcernEn;
+  final List<HealthCalendarEvent> calendarEvents;
 
   bool get isEmpty =>
       nextAppointment == null &&
@@ -464,7 +466,8 @@ class CatHealthBook extends Equatable {
       vaccines.isEmpty &&
       medications.isEmpty &&
       weightHistory.isEmpty &&
-      documents.isEmpty;
+      documents.isEmpty &&
+      calendarEvents.isEmpty;
 
   BodyOrganReport reportFor(BodyOrganId organ) {
     for (final r in bodyReports) {
@@ -495,6 +498,7 @@ class CatHealthBook extends Equatable {
     List<HealthDocumentItem>? documents,
     String? primaryConcernTh,
     String? primaryConcernEn,
+    List<HealthCalendarEvent>? calendarEvents,
   }) {
     return CatHealthBook(
       nextAppointment: nextAppointment ?? this.nextAppointment,
@@ -518,6 +522,7 @@ class CatHealthBook extends Equatable {
       documents: documents ?? this.documents,
       primaryConcernTh: primaryConcernTh ?? this.primaryConcernTh,
       primaryConcernEn: primaryConcernEn ?? this.primaryConcernEn,
+      calendarEvents: calendarEvents ?? this.calendarEvents,
     );
   }
 
@@ -544,5 +549,6 @@ class CatHealthBook extends Equatable {
     documents,
     primaryConcernTh,
     primaryConcernEn,
+    calendarEvents,
   ];
 }

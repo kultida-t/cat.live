@@ -566,6 +566,12 @@ abstract final class MockHealthBooks {
     ],
   );
 
+  /// นัดหมายของแมวแต่ละตัวจากรายการรวม — ผูกกับแมวตัวนั้นเพื่อให้ปฏิทินอ่านจากข้อมูลแมวที่เลือก
+  static List<HealthCalendarEvent> calendarFor(String catNameTh) => [
+    for (final e in sharedCalendarEvents)
+      if (e.catNameTh == catNameTh) e,
+  ];
+
   /// รายการนัดหมายรวมในปฏิทินของบ้าน (ตรงตามแท็บปฏิทินของเว็บจริง)
   static const sharedCalendarEvents = <HealthCalendarEvent>[
     HealthCalendarEvent(

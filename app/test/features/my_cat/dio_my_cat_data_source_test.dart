@@ -65,6 +65,7 @@ void main() {
     expect(cat.photos, isEmpty);
     expect(cat.careTasks, isEmpty);
     expect(cat.healthHighlights, isEmpty);
+    expect(cat.healthBook.calendarEvents, isEmpty);
   });
 
   test('ยังไม่มีแมวเลย → ได้รายการว่าง', () async {

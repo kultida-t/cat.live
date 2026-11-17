@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../../core/theme/app_colors.dart';
-import '../../data/datasources/mock_health_books.dart';
 import '../../domain/entities/my_cat_data.dart';
 import 'health_shared_widgets.dart';
 import 'my_cat_l10n.dart';
@@ -231,7 +230,10 @@ class _HealthCalendarTabState extends State<HealthCalendarTab> {
   @override
   Widget build(BuildContext context) {
     final isEn = widget.isEn;
-    final events = [...MockHealthBooks.sharedCalendarEvents, ..._addedEvents];
+    final events = [
+      for (final cat in widget.cats) ...cat.healthBook.calendarEvents,
+      ..._addedEvents,
+    ];
     final daysInMonth = DateUtils.getDaysInMonth(_year, _month);
     final firstWeekday = DateTime(_year, _month, 1).weekday % 7;
     final monthEvents = events

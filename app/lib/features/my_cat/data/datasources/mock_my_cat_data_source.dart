@@ -305,7 +305,7 @@ class MockMyCatDataSource implements MyCatRemoteDataSource {
       ),
     );
 
-    return const MyCatBundle(
+    return MyCatBundle(
       owner: owner,
       cats: [
         CatProfile(
@@ -390,7 +390,9 @@ class MockMyCatDataSource implements MyCatRemoteDataSource {
               serialCode: 'MLG-24A-0123',
             ),
           ),
-          healthBook: MockHealthBooks.mali,
+          healthBook: MockHealthBooks.mali.copyWith(
+            calendarEvents: MockHealthBooks.calendarFor('มะลิ'),
+          ),
         ),
         CatProfile(
           id: 'cat-somjeed',
@@ -474,7 +476,9 @@ class MockMyCatDataSource implements MyCatRemoteDataSource {
               serialCode: 'MLG-24A-0124',
             ),
           ),
-          healthBook: MockHealthBooks.somjeed,
+          healthBook: MockHealthBooks.somjeed.copyWith(
+            calendarEvents: MockHealthBooks.calendarFor('ส้มจี๊ด'),
+          ),
         ),
         CatProfile(
           id: 'cat-thuadam',
@@ -513,7 +517,9 @@ class MockMyCatDataSource implements MyCatRemoteDataSource {
             issuedDateLabel: '15 มิ.ย. 2563',
             defaultSkin: CatIdSkin.night,
           ),
-          healthBook: MockHealthBooks.thuaDam,
+          healthBook: MockHealthBooks.thuaDam.copyWith(
+            calendarEvents: MockHealthBooks.calendarFor('ถั่วดำ'),
+          ),
         ),
       ],
     );
