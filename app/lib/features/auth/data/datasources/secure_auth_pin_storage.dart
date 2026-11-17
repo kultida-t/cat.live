@@ -50,7 +50,7 @@ class SecureAuthPinStorage implements AuthPinStorage {
 
   @override
   Future<void> saveRecord(PinAccountRecord record) async {
-    final records = await readAll();
+    final records = [...await readAll()];
     records.removeWhere((r) => r.phone == record.phone);
     records.add(record);
     await _write(records);
@@ -58,7 +58,7 @@ class SecureAuthPinStorage implements AuthPinStorage {
 
   @override
   Future<void> deleteForUser(String userId) async {
-    final records = await readAll();
+    final records = [...await readAll()];
     records.removeWhere((r) => r.userId == userId);
     await _write(records);
   }
