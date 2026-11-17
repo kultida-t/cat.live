@@ -136,7 +136,7 @@ void main() {
     await tester.tap(find.text('จุฑามาศ ลูกแก้ว'));
     await tester.pumpAndSettle();
 
-    expect(find.text('จัดการบัญชี'), findsOneWidget);
+    expect(find.text('บัญชี แมว.live ของคุณ'), findsOneWidget);
     expect(find.text('ลบบัญชี'), findsOneWidget);
     expect(find.text('ตั้งค่าและช่วยเหลือ'), findsNothing);
   });

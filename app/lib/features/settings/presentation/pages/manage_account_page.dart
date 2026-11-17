@@ -34,7 +34,7 @@ class ManageAccountPage extends ConsumerWidget {
         child: Column(
           children: [
             _ManageAccountHeader(
-              title: isEn ? 'Manage account' : 'จัดการบัญชี',
+              title: isEn ? 'Your แมว.live account' : 'บัญชี แมว.live ของคุณ',
               backLabel: SettingsL10n.backLabel(isEn),
               onBack: () =>
                   context.canPop() ? context.pop() : context.go('/settings'),

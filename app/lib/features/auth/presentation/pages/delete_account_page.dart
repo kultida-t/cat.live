@@ -798,11 +798,15 @@ class _DeleteAccountPageState extends ConsumerState<DeleteAccountPage>
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(
-                    LucideIcons.clock,
-                    size: 20,
-                    color: AppColors.ownerTeal,
+                  const Padding(
+                    padding: EdgeInsets.only(top: 1),
+                    child: Icon(
+                      LucideIcons.clock,
+                      size: 18,
+                      color: AppColors.ownerTeal,
+                    ),
                   ),
                   const SizedBox(width: 10),
                   Expanded(
