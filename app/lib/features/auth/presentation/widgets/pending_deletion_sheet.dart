@@ -5,8 +5,8 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../providers/auth_controller.dart';
 
-/// ชีตแจ้งบัญชีที่กำลังรอลบ (AUTH-05) — ผู้ใช้เลือกกู้คืน หรือลบถาวรต่อ
-/// คืนค่า true = กู้คืนสำเร็จ, false = เลือกลบถาวรต่อไป, null = ปิดชีตเฉย ๆ
+/// ชีตแจ้งบัญชีที่กำลังรอลบ (AUTH-05) — ผู้ใช้เลือกกู้คืน หรือลบถาวรตามกำหนด
+/// คืนค่า true = กู้คืนสำเร็จ, false = เลือกปล่อยให้ลบตามกำหนด, null = ปิดชีตเฉย ๆ
 Future<bool?> showPendingDeletionSheet(
   BuildContext context, {
   required int daysRemaining,
@@ -80,35 +80,60 @@ class _PendingDeletionSheetState extends ConsumerState<_PendingDeletionSheet> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              width: 64,
-              height: 64,
+              width: 76,
+              height: 76,
               decoration: const BoxDecoration(
-                color: AppColors.logoutBg,
+                color: AppColors.healthReminderBg,
                 shape: BoxShape.circle,
               ),
               child: const Icon(
-                LucideIcons.triangleAlert,
-                size: 30,
-                color: AppColors.danger,
+                LucideIcons.clock,
+                size: 32,
+                color: AppColors.healthReminderClockInk,
               ),
             ),
             const SizedBox(height: 14),
             const Text(
               'บัญชีนี้กำลังรอลบ',
               style: TextStyle(
-                fontSize: 18,
+                fontSize: 19,
                 fontWeight: FontWeight.w800,
                 color: AppColors.text,
               ),
             ),
-            const SizedBox(height: 8),
-            Text(
-              'บัญชีของคุณอยู่ในช่วงรอลบ 30 วัน เหลือเวลากู้คืนอีก $days วัน\n'
-              'หากไม่กู้คืนภายในกำหนด ข้อมูลทั้งหมดจะถูกลบถาวร',
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: AppColors.healthReminderBg,
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Text(
+                'เหลือเวลากู้คืนอีก $days วัน',
+                style: const TextStyle(
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.healthReminderClockInk,
+                ),
+              ),
+            ),
+            const SizedBox(height: 14),
+            const Text(
+              'บัญชีของคุณอยู่ในระหว่างรอลบตามคำขอ\nข้อมูลทั้งหมดยังเก็บไว้อย่างปลอดภัย',
               textAlign: TextAlign.center,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 13.5,
-                height: 1.55,
+                height: 1.6,
+                color: AppColors.text2,
+              ),
+            ),
+            const SizedBox(height: 6),
+            const Text(
+              'ถ้าเปลี่ยนใจ เพียงกดกู้คืนบัญชีด้านล่าง\nทุกอย่างจะกลับมาเหมือนเดิมทันที',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 13,
+                height: 1.6,
                 color: AppColors.muted,
               ),
             ),
@@ -124,10 +149,10 @@ class _PendingDeletionSheetState extends ConsumerState<_PendingDeletionSheet> {
                 ),
               ),
             ],
-            const SizedBox(height: 18),
+            const SizedBox(height: 20),
             SizedBox(
               width: double.infinity,
-              height: 50,
+              height: 52,
               child: FilledButton.icon(
                 onPressed: _busy ? null : _restore,
                 icon: const Icon(LucideIcons.rotateCcw, size: 17),
@@ -148,18 +173,16 @@ class _PendingDeletionSheetState extends ConsumerState<_PendingDeletionSheet> {
             const SizedBox(height: 10),
             SizedBox(
               width: double.infinity,
-              height: 50,
-              child: OutlinedButton(
+              height: 52,
+              child: TextButton(
                 onPressed: _busy ? null : _continueDeletion,
-                style: OutlinedButton.styleFrom(
-                  backgroundColor: AppColors.logoutBg,
+                style: TextButton.styleFrom(
                   foregroundColor: AppColors.logoutText,
-                  side: const BorderSide(color: AppColors.logoutBorder),
                   shape: const StadiumBorder(),
                 ),
                 child: const Text(
-                  'ลบบัญชีถาวรต่อไป',
-                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+                  'ลบถาวรตามกำหนด',
+                  style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.w700),
                 ),
               ),
             ),

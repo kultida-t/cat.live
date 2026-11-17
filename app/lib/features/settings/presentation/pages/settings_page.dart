@@ -6,6 +6,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../../core/config/app_locale.dart';
 import '../../../../core/config/app_text_scale.dart';
+import '../../../../core/config/pet_species_config.dart';
 import '../../../../core/router/auth_routes.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/app_avatar.dart';
@@ -13,6 +14,7 @@ import '../../../../core/widgets/error_view.dart';
 import '../../../../core/widgets/toast_pill.dart';
 import '../../../auth/domain/entities/auth_data.dart';
 import '../../../auth/presentation/providers/auth_controller.dart';
+import '../../../auth/presentation/widgets/guest_auth_sheet.dart';
 import '../../domain/entities/settings_data.dart';
 import '../providers/settings_controller.dart';
 import '../widgets/settings_l10n.dart';
@@ -146,6 +148,27 @@ class _SettingsPageState extends ConsumerState<SettingsPage> with ToastMixin {
           isEn: isEn,
           onSignInTap: () => context.push(loginLocation(returnTo: '/settings')),
         ),
+        if (authState.isAuthenticated) ...[
+          const SizedBox(height: 10),
+          SettingsCard(
+            children: [
+              SettingsRow(
+                icon: LucideIcons.userX,
+                title: isEn ? 'Delete account' : 'ลบบัญชี',
+                subtitle: isEn
+                    ? 'Data is kept 30 days before permanent deletion'
+                    : 'ข้อมูลถูกเก็บไว้ 30 วันก่อนลบถาวร กู้คืนได้ภายในกำหนด',
+                trailing: const Icon(
+                  LucideIcons.chevronRight,
+                  size: 18,
+                  color: AppColors.muted,
+                ),
+                danger: true,
+                onTap: () => context.push('/settings/delete-account'),
+              ),
+            ],
+          ),
+        ],
         SettingsSectionHeader(title: SettingsL10n.sectionAccount(isEn)),
         SettingsCard(
           children: [
@@ -260,21 +283,6 @@ class _SettingsPageState extends ConsumerState<SettingsPage> with ToastMixin {
               ),
               onTap: () => showPdpaSheet(context, onToast: showToast),
             ),
-            if (authState.isAuthenticated)
-              SettingsRow(
-                icon: LucideIcons.userX,
-                title: isEn ? 'Delete account' : 'ลบบัญชี',
-                subtitle: isEn
-                    ? 'Data is kept 30 days before permanent deletion'
-                    : 'ข้อมูลถูกเก็บไว้ 30 วันก่อนลบถาวร กู้คืนได้ภายในกำหนด',
-                trailing: const Icon(
-                  LucideIcons.chevronRight,
-                  size: 18,
-                  color: AppColors.muted,
-                ),
-                danger: true,
-                onTap: () => context.push('/settings/delete-account'),
-              ),
           ],
         ),
         SettingsSectionHeader(title: SettingsL10n.sectionSupport(isEn)),
@@ -289,7 +297,22 @@ class _SettingsPageState extends ConsumerState<SettingsPage> with ToastMixin {
                 size: 18,
                 color: AppColors.muted,
               ),
-              onTap: () => context.push('/settings/tracker'),
+              // อุปกรณ์ Tag ผูกกับบัญชีสมาชิก — guest เข้าไม่ได้ ชวนล็อกอินแทน
+              onTap: () {
+                if (authState.isGuest) {
+                  showGuestAuthSheet(
+                    context,
+                    species: ref.read(petSpeciesConfigProvider),
+                    isEn: isEn,
+                    actionName: isEn
+                        ? 'manage Tag devices'
+                        : 'จัดการอุปกรณ์แมว.live Tag',
+                    returnTo: '/settings/tracker',
+                  );
+                  return;
+                }
+                context.push('/settings/tracker');
+              },
             ),
             SettingsRow(
               icon: LucideIcons.scrollText,

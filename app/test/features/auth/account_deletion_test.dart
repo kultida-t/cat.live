@@ -218,11 +218,21 @@ void main() {
         await tester.tap(find.text('ดำเนินการต่อ'));
         await tester.pumpAndSettle();
 
-        // ขั้น 2: เลือกจัดการแมวที่มีผู้ดูแลร่วม — ปุ่มต่อยังกดไม่ได้จนเลือกครบ
+        // ขั้น 2: เลือกจัดการแมวที่มีผู้ดูแลร่วม — scroll กลับขึ้นบนก่อน
+        // เพราะ PageStorage จำตำแหน่งล่างสุดจากขั้น 1
+        await tester.scrollUntilVisible(
+          find.text('จัดการแมวของคุณก่อนลบบัญชี'),
+          -300,
+          scrollable: find.byType(Scrollable).first,
+        );
         expect(find.text('จัดการแมวของคุณก่อนลบบัญชี'), findsOneWidget);
+        await tester.ensureVisible(find.text('โอนสิทธิ์เจ้าของให้ แม่').first);
+        await tester.pumpAndSettle();
         await tester.tap(find.text('โอนสิทธิ์เจ้าของให้ แม่').first);
         await tester.pump();
         // ส้มจี๊ดเลือกลบไปพร้อมบัญชี
+        await tester.ensureVisible(find.text('ลบโปรไฟล์ส้มจี๊ดไปพร้อมบัญชี'));
+        await tester.pumpAndSettle();
         await tester.tap(find.text('ลบโปรไฟล์ส้มจี๊ดไปพร้อมบัญชี'));
         await tester.pump();
         await tester.scrollUntilVisible(
@@ -373,7 +383,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('บัญชีนี้กำลังรอลบ'), findsOneWidget);
-      await tester.tap(find.text('ลบบัญชีถาวรต่อไป'));
+      await tester.tap(find.text('ลบถาวรตามกำหนด'));
       await tester.pumpAndSettle();
 
       expect(find.text('Home'), findsOneWidget);

@@ -199,8 +199,10 @@ void main() {
     await tester.pump(const Duration(milliseconds: 200));
     await tester.pumpAndSettle();
 
+    // scroll หา subtitle ของแถว PDPA ซึ่ง unique
+    // (ชื่อ 'ความเป็นส่วนตัว & PDPA' ซ้ำกันทั้ง section header และ row)
     await tester.scrollUntilVisible(
-      find.text('ความเป็นส่วนตัว & PDPA').last,
+      find.textContaining('ขอสำเนาข้อมูล'),
       250,
       scrollable: find.byType(Scrollable).first,
     );
