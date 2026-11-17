@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
+import '../../../../core/config/app_locale.dart';
+import '../../../../core/config/pet_species_config.dart';
 import '../../../../core/error/failure.dart';
 import '../../../../core/format/compact_count.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -10,6 +12,8 @@ import '../../../../core/widgets/app_avatar.dart';
 import '../../../../core/widgets/app_image.dart';
 import '../../../../core/widgets/app_video.dart';
 import '../../../../core/widgets/error_view.dart';
+import '../../../auth/presentation/providers/auth_controller.dart';
+import '../../../auth/presentation/widgets/guest_auth_sheet.dart';
 import '../../domain/entities/post.dart';
 import '../providers/feed_providers.dart';
 
@@ -52,18 +56,29 @@ class PostLinkPage extends ConsumerWidget {
   }
 }
 
-class _Content extends StatelessWidget {
+class _Content extends ConsumerWidget {
   const _Content({required this.post});
 
   final Post post;
 
-  void _treat(BuildContext context) {
+  void _treat(BuildContext context, WidgetRef ref) {
+    // ผู้เยี่ยมชมต้องเข้าสู่ระบบก่อนเลี้ยงขนม — แสดงชีตชวนล็อกอินแทนการพาเข้าหน้า
+    if (ref.read(authControllerProvider).isGuest) {
+      final isEn = ref.read(appLocaleProvider) == 'en';
+      showGuestAuthSheet(
+        context,
+        species: ref.read(petSpeciesConfigProvider),
+        isEn: isEn,
+        actionName: isEn ? 'Send treats' : 'เลี้ยงขนม',
+      );
+      return;
+    }
     final to = Uri.encodeQueryComponent(post.author.id);
     context.push('/treats?to=$to');
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final first = post.media.first;
     return Center(
       child: ConstrainedBox(
@@ -258,7 +273,7 @@ class _Content extends StatelessWidget {
             const SizedBox(height: 8),
             if (!post.isOwn)
               GestureDetector(
-                onTap: () => _treat(context),
+                onTap: () => _treat(context, ref),
                 child: Container(
                   constraints: const BoxConstraints(minHeight: 48),
                   alignment: Alignment.center,

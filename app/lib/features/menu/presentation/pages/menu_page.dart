@@ -4,9 +4,12 @@ import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../../core/config/app_locale.dart';
+import '../../../../core/config/pet_species_config.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/error_view.dart';
 import '../../../../core/widgets/toast_pill.dart';
+import '../../../auth/presentation/providers/auth_controller.dart';
+import '../../../auth/presentation/widgets/guest_auth_sheet.dart';
 import '../../domain/entities/menu_data.dart';
 import '../providers/menu_controller.dart';
 import '../widgets/menu_l10n.dart';
@@ -35,6 +38,16 @@ class _MenuPageState extends ConsumerState<MenuPage> with ToastMixin {
       return;
     }
     if (service.action == MenuServiceAction.treats) {
+      // ผู้เยี่ยมชมต้องเข้าสู่ระบบก่อนเลี้ยงขนม — แสดงชีตชวนล็อกอินแทนการพาเข้าหน้า
+      if (ref.read(authControllerProvider).isGuest) {
+        showGuestAuthSheet(
+          context,
+          species: ref.read(petSpeciesConfigProvider),
+          isEn: isEn,
+          actionName: isEn ? 'Send treats' : 'เลี้ยงอาหารน้อง ๆ',
+        );
+        return;
+      }
       context.push('/treats');
       return;
     }

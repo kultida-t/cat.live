@@ -4,9 +4,13 @@ import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../../core/config/app_locale.dart';
+import '../../../../core/config/pet_species_config.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/app_avatar.dart';
 import '../../../../core/widgets/toast_pill.dart';
+import '../../../auth/presentation/providers/auth_controller.dart';
+import '../../../auth/presentation/widgets/guest_auth_sheet.dart';
+import '../../../auth/presentation/widgets/guest_locked_view.dart';
 import '../../domain/entities/messages_data.dart';
 import '../providers/messages_controller.dart';
 import '../widgets/messages_l10n.dart';
@@ -151,7 +155,50 @@ class _MessagesPageState extends ConsumerState<MessagesPage> {
   Widget build(BuildContext context) {
     final state = ref.watch(messagesControllerProvider);
     final controller = ref.read(messagesControllerProvider.notifier);
-    final l10n = MessagesL10n(ref.watch(appLocaleProvider) == 'en');
+    final isEn = ref.watch(appLocaleProvider) == 'en';
+    final isGuest = ref.watch(authControllerProvider).isGuest;
+    final l10n = MessagesL10n(isEn);
+
+    // ผู้เยี่ยมชมที่หลุดเข้ามาทาง deep link เห็นเฉพาะการ์ดชวนเข้าสู่ระบบ
+    if (isGuest) {
+      void showGuard(String actionTh, String actionEn) {
+        showGuestAuthSheet(
+          context,
+          species: ref.read(petSpeciesConfigProvider),
+          isEn: isEn,
+          actionName: isEn ? actionEn : actionTh,
+        );
+      }
+
+      return Scaffold(
+        backgroundColor: AppColors.page,
+        body: SafeArea(
+          child: Column(
+            children: [
+              _MessagesHeader(
+                l10n: l10n,
+                onBack: () => context.pop(),
+                onManage: () => showGuard('จัดการข้อความ', 'Manage messages'),
+                onNewMessage: () => showGuard('ข้อความใหม่', 'New message'),
+              ),
+              Expanded(
+                child: GuestLockedView(
+                  species: ref.watch(petSpeciesConfigProvider),
+                  isEn: isEn,
+                  title: isEn
+                      ? 'Sign in to use Messages'
+                      : 'เข้าสู่ระบบเพื่อใช้ข้อความแชท',
+                  subtitle: isEn
+                      ? 'Chat with friends, cat owners, and the community\nwith photos and voice messages.'
+                      : 'คุยกับเพื่อน เจ้าของน้องแมว และชุมชน\nพร้อมแชร์รูปและข้อความเสียงได้ทันที',
+                  onSignInTap: () => context.push('/login'),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
 
     return Scaffold(
       backgroundColor: AppColors.page,
