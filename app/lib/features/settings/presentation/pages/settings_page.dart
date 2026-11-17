@@ -1,16 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../../core/config/app_locale.dart';
 import '../../../../core/config/app_text_scale.dart';
+import '../../../../core/config/pet_species_config.dart';
+import '../../../../core/router/auth_routes.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/app_avatar.dart';
 import '../../../../core/widgets/error_view.dart';
 import '../../../../core/widgets/toast_pill.dart';
 import '../../../auth/domain/entities/auth_data.dart';
 import '../../../auth/presentation/providers/auth_controller.dart';
+import '../../../auth/presentation/widgets/guest_auth_sheet.dart';
 import '../../domain/entities/settings_data.dart';
 import '../providers/settings_controller.dart';
 import '../widgets/settings_l10n.dart';
@@ -142,7 +146,11 @@ class _SettingsPageState extends ConsumerState<SettingsPage> with ToastMixin {
           data: data,
           authState: authState,
           isEn: isEn,
-          onSignInTap: () => context.push('/login'),
+          onSignInTap: () => context.push(loginLocation(returnTo: '/settings')),
+          // การ์ดบัญชีพาเข้าหน้าจัดการบัญชี (ลบบัญชีอยู่ด้านใน)
+          onCardTap: authState.isAuthenticated
+              ? () => context.push('/settings/account')
+              : null,
         ),
         SettingsSectionHeader(title: SettingsL10n.sectionAccount(isEn)),
         SettingsCard(
@@ -272,7 +280,22 @@ class _SettingsPageState extends ConsumerState<SettingsPage> with ToastMixin {
                 size: 18,
                 color: AppColors.muted,
               ),
-              onTap: () => context.push('/settings/tracker'),
+              // อุปกรณ์ Tag ผูกกับบัญชีสมาชิก — guest เข้าไม่ได้ ชวนล็อกอินแทน
+              onTap: () {
+                if (authState.isGuest) {
+                  showGuestAuthSheet(
+                    context,
+                    species: ref.read(petSpeciesConfigProvider),
+                    isEn: isEn,
+                    actionName: isEn
+                        ? 'manage Tag devices'
+                        : 'จัดการอุปกรณ์แมว.live Tag',
+                    returnTo: '/settings/tracker',
+                  );
+                  return;
+                }
+                context.push('/settings/tracker');
+              },
             ),
             SettingsRow(
               icon: LucideIcons.scrollText,
@@ -303,7 +326,8 @@ class _SettingsPageState extends ConsumerState<SettingsPage> with ToastMixin {
           SizedBox(
             height: 50,
             child: FilledButton.icon(
-              onPressed: () => context.push('/login'),
+              onPressed: () =>
+                  context.push(loginLocation(returnTo: '/settings')),
               icon: const Icon(LucideIcons.logIn, size: 17),
               label: Text(
                 isEn ? 'Sign in / Register' : 'เข้าสู่ระบบ / สมัครสมาชิก',
@@ -330,7 +354,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> with ToastMixin {
                   await ref.read(authControllerProvider.notifier).signOut();
                   if (!context.mounted) return;
                   showToast(SettingsL10n.signOutDoneToast(isEn));
-                  context.push('/login');
+                  context.push(loginLocation(returnTo: '/settings'));
                 },
               ),
               icon: const Icon(LucideIcons.logOut, size: 17),
@@ -427,12 +451,16 @@ class _AccountSummaryCard extends StatelessWidget {
     required this.authState,
     required this.isEn,
     required this.onSignInTap,
+    required this.onCardTap,
   });
 
   final SettingsData data;
   final AuthState authState;
   final bool isEn;
   final VoidCallback onSignInTap;
+
+  /// แตะการ์ดเพื่อเข้าหน้าจัดการบัญชี (เฉพาะสมาชิก — guest เป็น null)
+  final VoidCallback? onCardTap;
 
   @override
   Widget build(BuildContext context) {
@@ -450,7 +478,7 @@ class _AccountSummaryCard extends StatelessWidget {
       _ => data.accountHandle,
     };
 
-    return Container(
+    final card = Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: AppColors.card,
@@ -501,10 +529,7 @@ class _AccountSummaryCard extends StatelessWidget {
                             ? 'Browsing without an account'
                             : 'กำลังใช้งานแบบไม่ระบุตัวตน')
                       : methodLabel,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    color: AppColors.muted,
-                  ),
+                  style: const TextStyle(fontSize: 13, color: AppColors.muted),
                 ),
               ],
             ),
@@ -537,7 +562,29 @@ class _AccountSummaryCard extends StatelessWidget {
                 ),
               ),
             ),
+          if (onCardTap != null) ...[
+            const SizedBox(width: 6),
+            const Icon(
+              LucideIcons.chevronRight,
+              size: 18,
+              color: AppColors.muted,
+            ),
+          ],
         ],
+      ),
+    );
+
+    if (onCardTap == null) return card;
+    return Semantics(
+      button: true,
+      label: isEn ? 'Manage account' : 'จัดการบัญชี',
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onCardTap,
+          borderRadius: BorderRadius.circular(18),
+          child: card,
+        ),
       ),
     );
   }

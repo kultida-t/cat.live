@@ -45,6 +45,7 @@ class _MenuPageState extends ConsumerState<MenuPage> with ToastMixin {
           species: ref.read(petSpeciesConfigProvider),
           isEn: isEn,
           actionName: isEn ? 'Send treats' : 'เลี้ยงอาหารน้อง ๆ',
+          returnTo: '/treats',
         );
         return;
       }
@@ -140,7 +141,9 @@ class _MenuPageState extends ConsumerState<MenuPage> with ToastMixin {
                         Padding(
                           padding: const EdgeInsets.only(left: 4, bottom: 8),
                           child: Text(
-                            isEn ? 'Settings & Support' : 'การตั้งค่าและช่วยเหลือ',
+                            isEn
+                                ? 'Settings & Support'
+                                : 'การตั้งค่าและช่วยเหลือ',
                             style: const TextStyle(
                               fontSize: 12.5,
                               fontWeight: FontWeight.w700,

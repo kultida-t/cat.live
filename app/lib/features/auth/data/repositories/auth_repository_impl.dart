@@ -1,20 +1,41 @@
 import '../../domain/entities/auth_data.dart';
+import '../../domain/entities/deletion_data.dart';
+import '../../domain/entities/pin_account_record.dart';
 import '../../domain/repositories/auth_repository.dart';
+import '../../domain/usecases/auth_rules.dart';
+import '../../domain/usecases/pin_rules.dart';
+import '../datasources/auth_pin_storage.dart';
 import '../datasources/auth_remote_data_source.dart';
 import '../datasources/auth_token_storage.dart';
+
+/// ผลการตรวจ PIN หนึ่งครั้ง — ล็อกแปลว่าครั้งนี้ผิดจนครบเกณฑ์หรืออยู่ในช่วงล็อกอยู่แล้ว
+enum _PinCheck { ok, wrong, locked }
 
 class AuthRepositoryImpl implements AuthRepository {
   AuthRepositoryImpl({
     required AuthRemoteDataSource remoteDataSource,
     required AuthTokenStorage tokenStorage,
+    required this._pinStorage,
+    DateTime Function()? nowProvider,
   }) : _remote = remoteDataSource,
-       _storage = tokenStorage;
+       _storage = tokenStorage,
+       _now = nowProvider ?? DateTime.now;
+
+  /// ค่าบัญชีเดโม (จุฑามาศ) ที่ seed PIN ให้ตั้งแต่เปิดแอปครั้งแรก
+  static const _demoUserId = 'user-lookkaew';
+  static const _demoPhone = '0812344567';
+  static const _demoPin = '123456';
 
   final AuthRemoteDataSource _remote;
   final AuthTokenStorage _storage;
+  final AuthPinStorage _pinStorage;
+  final DateTime Function() _now;
 
   @override
   Future<AuthSession> restoreSession() async {
+    // seed PIN เดโมทุกครั้งที่เปิดแอป (idempotent) — ให้เบอร์เดโมล็อกอินด้วย
+    // PIN ได้เสมอ แม้ session ก่อนหน้าจะเป็น guest หรือเพิ่งออกจากระบบ
+    await _seedDemoPin();
     final stored = await _storage.readSession();
     if (stored != null) return stored;
 
@@ -25,6 +46,7 @@ class AuthRepositoryImpl implements AuthRepository {
         id: 'user-lookkaew',
         displayName: 'จุฑามาศ ลูกแก้ว',
         method: AuthMethod.phoneOtp,
+        phone: _demoPhone,
         phoneMasked: '081-xxx-4567',
         birthYear: 1995,
       ),
@@ -32,6 +54,28 @@ class AuthRepositoryImpl implements AuthRepository {
     );
     await _storage.saveSession(defaultSession);
     return defaultSession;
+  }
+
+  /// seed PIN 123456 ผูกเบอร์เดโม — ทำให้ล็อกอินด้วย PIN ใช้งานได้ตั้งแต่ติดตั้ง
+  Future<void> _seedDemoPin() async {
+    if (await _pinStorage.findByUserId(_demoUserId) != null) return;
+    final salt = PinRules.generateSalt();
+    await _pinStorage.saveRecord(
+      PinAccountRecord(
+        userId: _demoUserId,
+        phone: _demoPhone,
+        salt: salt,
+        pinHash: PinRules.hashPin(
+          pin: _demoPin,
+          salt: salt,
+          userId: _demoUserId,
+        ),
+        displayName: 'จุฑามาศ ลูกแก้ว',
+        method: AuthMethod.phoneOtp,
+        phoneMasked: '081-xxx-4567',
+        birthYear: 1995,
+      ),
+    );
   }
 
   @override
@@ -46,26 +90,31 @@ class AuthRepositoryImpl implements AuthRepository {
       _remote.requestOtp(phoneNumber);
 
   @override
-  Future<({AuthSession session, OtpChallenge? updatedChallenge, String? errorCode})>
+  Future<
+    ({AuthSession session, OtpChallenge? updatedChallenge, String? errorCode})
+  >
   verifyOtp({
     required OtpChallenge challenge,
     required String code,
     required int birthYear,
     required bool guardianConsentGranted,
+    String? displayName,
   }) async {
     final res = await _remote.verifyOtp(
       challenge: challenge,
       code: code,
       birthYear: birthYear,
       guardianConsentGranted: guardianConsentGranted,
+      displayName: displayName,
     );
     if (res.session != null) {
-      await _storage.saveSession(res.session!);
-      return (
-        session: res.session!,
-        updatedChallenge: null,
-        errorCode: null,
+      // OTP ผ่านคือหลักฐานว่าเป็นเจ้าของเบอร์ → เป็นทางกู้ปลดล็อก PIN ที่ค้างล็อกอยู่
+      final record = await _pinStorage.findByPhone(
+        AuthRules.normalizeThaiPhone(challenge.phoneNumber),
       );
+      if (record != null) await _resetPinAttempts(record);
+      await _storage.saveSession(res.session!);
+      return (session: res.session!, updatedChallenge: null, errorCode: null);
     }
     final current = await restoreSession();
     return (
@@ -80,14 +129,148 @@ class AuthRepositoryImpl implements AuthRepository {
     required AuthMethod method,
     required int birthYear,
     required bool guardianConsentGranted,
+    String? displayName,
   }) async {
     final session = await _remote.signInWithProvider(
       method: method,
       birthYear: birthYear,
       guardianConsentGranted: guardianConsentGranted,
+      displayName: displayName,
     );
     await _storage.saveSession(session);
     return session;
+  }
+
+  @override
+  Future<({AuthSession? session, PinSignInFailure? failure})> signInWithPin({
+    required String phone,
+    required String pin,
+  }) async {
+    final normalized = AuthRules.normalizeThaiPhone(phone);
+    final record = await _pinStorage.findByPhone(normalized);
+    if (record == null) {
+      return (session: null, failure: PinSignInFailure.noPinForPhone);
+    }
+    final check = await _checkPin(record: record, pin: pin);
+    if (check != _PinCheck.ok) {
+      return (
+        session: null,
+        failure: check == _PinCheck.locked
+            ? PinSignInFailure.locked
+            : PinSignInFailure.wrongPin,
+      );
+    }
+    final session = await _remote.signInWithPin(
+      phone: normalized,
+      pin: pin.trim(),
+      localAccount: record,
+    );
+    await _storage.saveSession(session);
+    return (session: session, failure: null);
+  }
+
+  @override
+  Future<bool> hasPinForPhone(String phone) async {
+    final normalized = AuthRules.normalizeThaiPhone(phone);
+    return (await _pinStorage.findByPhone(normalized)) != null;
+  }
+
+  @override
+  Future<PinAttemptStatus?> pinAttemptStatus(String phone) async {
+    final record = await _pinStorage.findByPhone(
+      AuthRules.normalizeThaiPhone(phone),
+    );
+    if (record == null) return null;
+    final locked = _isPinLocked(record);
+    return PinAttemptStatus(
+      remainingAttempts: locked
+          ? 0
+          : AuthRules.pinMaxAttempts - record.failedPinAttempts,
+      lockedUntil: record.pinLockedUntil,
+    );
+  }
+
+  /// ตรวจ PIN พร้อมนับครั้งที่ผิด — ถ้าอยู่ในช่วงล็อกจะไม่ตรวจ PIN เลย
+  Future<_PinCheck> _checkPin({
+    required PinAccountRecord record,
+    required String pin,
+  }) async {
+    if (_isPinLocked(record)) return _PinCheck.locked;
+    if (PinRules.verifyPin(pin: pin, record: record)) {
+      await _resetPinAttempts(record);
+      return _PinCheck.ok;
+    }
+    final attempts = record.failedPinAttempts + 1;
+    final lockNow = attempts >= AuthRules.pinMaxAttempts;
+    await _pinStorage.saveRecord(
+      record.copyWith(
+        failedPinAttempts: lockNow ? 0 : attempts,
+        pinLockedUntil: lockNow ? _now().add(AuthRules.pinLockDuration) : null,
+        clearPinLockedUntil: !lockNow,
+      ),
+    );
+    return lockNow ? _PinCheck.locked : _PinCheck.wrong;
+  }
+
+  bool _isPinLocked(PinAccountRecord record) {
+    final until = record.pinLockedUntil;
+    return until != null && _now().isBefore(until);
+  }
+
+  Future<void> _resetPinAttempts(PinAccountRecord record) async {
+    if (record.failedPinAttempts == 0 && record.pinLockedUntil == null) return;
+    await _pinStorage.saveRecord(
+      record.copyWith(failedPinAttempts: 0, clearPinLockedUntil: true),
+    );
+  }
+
+  @override
+  Future<void> setPin({required AuthUser user, required String pin}) async {
+    final phone = user.phone;
+    if (phone == null || phone.isEmpty || !PinRules.isValidPin(pin)) {
+      throw ArgumentError(
+        'PIN setup requires a phone-bound account and a 6-digit PIN',
+      );
+    }
+    final salt = PinRules.generateSalt();
+    await _pinStorage.saveRecord(
+      PinAccountRecord(
+        userId: user.id,
+        phone: phone,
+        salt: salt,
+        pinHash: PinRules.hashPin(pin: pin.trim(), salt: salt, userId: user.id),
+        displayName: user.displayName,
+        method: user.method,
+        phoneMasked: user.phoneMasked,
+        email: user.email,
+        birthYear: user.birthYear,
+        guardianConsentGranted: user.guardianConsentGranted,
+      ),
+    );
+  }
+
+  @override
+  Future<bool> verifyCurrentPin({
+    required AuthUser user,
+    required String pin,
+  }) async {
+    final phone = user.phone;
+    if (phone == null) return false;
+    final record = await _pinStorage.findByPhone(phone);
+    if (record == null) return false;
+    return await _checkPin(record: record, pin: pin) == _PinCheck.ok;
+  }
+
+  @override
+  Future<bool> changePin({
+    required AuthUser user,
+    required String currentPin,
+    required String newPin,
+  }) async {
+    final verified = await verifyCurrentPin(user: user, pin: currentPin);
+    if (!verified || !PinRules.isValidPin(newPin)) return false;
+    await setPin(user: user, pin: newPin);
+    return true;
   }
 
   @override
@@ -98,5 +281,41 @@ class AuthRepositoryImpl implements AuthRepository {
     const guest = AuthSession.guest();
     await _storage.saveSession(guest);
     return guest;
+  }
+
+  @override
+  Future<List<CatDeletionRequirement>> loadDeletionRequirements() async {
+    final token = await _storage.readAccessToken();
+    return _remote.loadDeletionRequirements(token);
+  }
+
+  @override
+  Future<void> requestAccountDeletion({
+    required Map<String, String?> transferDecisions,
+  }) async {
+    final token = await _storage.readAccessToken();
+    final sessionBefore = await _storage.readSession();
+    await _remote.requestAccountDeletion(
+      accessToken: token,
+      transferDecisions: transferDecisions,
+    );
+    // ขอลบสำเร็จ → บังคับออกจากระบบทันที บัญชีเข้าสถานะรอลบ 30 วัน
+    // และล้าง PIN ที่ผูกกับบัญชีนั้นออกจากเครื่องนี้ด้วย
+    await _storage.clearSession();
+    await _storage.saveSession(const AuthSession.guest());
+    final userId = sessionBefore?.user?.id;
+    if (userId != null) {
+      await _pinStorage.deleteForUser(userId);
+    }
+  }
+
+  @override
+  Future<AuthSession?> restorePendingDeletion() async {
+    final token = await _storage.readAccessToken();
+    final restored = await _remote.restorePendingDeletion(token);
+    if (restored != null) {
+      await _storage.saveSession(restored);
+    }
+    return restored;
   }
 }

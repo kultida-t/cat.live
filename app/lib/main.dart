@@ -5,6 +5,10 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'app.dart';
+import 'core/network/token_provider.dart';
+import 'features/auth/data/datasources/secure_auth_pin_storage.dart';
+import 'features/auth/data/datasources/secure_auth_token_storage.dart';
+import 'features/auth/presentation/providers/auth_controller.dart';
 
 /// จุดเริ่มแอป — ดัก error ทั้งฝั่ง Flutter และฝั่ง async ไม่ให้แอปปิดเอง
 /// (ตอนมี crash reporting จริงให้ส่งรายงานที่นี่)
@@ -19,7 +23,18 @@ void main() {
     };
     ErrorWidget.builder = (details) => const _CrashFallback();
 
-    runApp(const ProviderScope(child: CatLiveApp()));
+    // ใช้ Secure Storage ตัวเดียวกันทั้งเก็บ session และอ่าน token ส่งเข้า API
+    final tokenStorage = SecureAuthTokenStorage();
+    runApp(
+      ProviderScope(
+        overrides: [
+          authTokenStorageProvider.overrideWithValue(tokenStorage),
+          appTokenProvider.overrideWithValue(tokenStorage),
+          authPinStorageProvider.overrideWithValue(SecureAuthPinStorage()),
+        ],
+        child: const CatLiveApp(),
+      ),
+    );
   }, (error, stack) => debugPrint('[Uncaught] $error\n$stack'));
 }
 

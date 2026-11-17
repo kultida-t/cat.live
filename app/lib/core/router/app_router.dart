@@ -1,5 +1,6 @@
 import 'package:go_router/go_router.dart';
 
+import '../../features/auth/presentation/pages/delete_account_page.dart';
 import '../../features/auth/presentation/pages/login_page.dart';
 import '../../features/cat_ai/presentation/pages/cat_ai_page.dart';
 import '../../features/cat_ai/presentation/pages/cat_face_check_page.dart';
@@ -23,6 +24,8 @@ import '../../features/notifications/presentation/pages/notification_post_detail
 import '../../features/notifications/presentation/pages/notifications_page.dart';
 import '../../features/notifications/presentation/pages/received_treats_page.dart';
 import '../../features/search/presentation/pages/search_page.dart';
+import '../../features/settings/presentation/pages/manage_account_page.dart';
+import '../../features/settings/presentation/pages/pin_manage_page.dart';
 import '../../features/settings/presentation/pages/settings_page.dart';
 import '../../features/shell/presentation/main_shell.dart';
 import '../../features/tag/presentation/pages/tag_page.dart';
@@ -38,7 +41,13 @@ GoRouter createAppRouter() {
         builder: (_, state) =>
             PostLinkPage(postId: state.pathParameters['id']!),
       ),
-      GoRoute(path: '/login', builder: (_, _) => const LoginPage()),
+      GoRoute(
+        path: '/login',
+        builder: (_, state) => LoginPage(
+          returnTo: state.uri.queryParameters['return'],
+          initialRegister: state.uri.queryParameters['mode'] == 'register',
+        ),
+      ),
       GoRoute(
         path: '/feature-flags',
         builder: (_, _) => const FeatureFlagsPage(),
@@ -48,6 +57,18 @@ GoRouter createAppRouter() {
         path: '/settings',
         builder: (_, state) =>
             SettingsPage(initialSection: state.uri.queryParameters['section']),
+      ),
+      GoRoute(
+        path: '/settings/account',
+        builder: (_, _) => const ManageAccountPage(),
+      ),
+      GoRoute(
+        path: '/settings/account/pin',
+        builder: (_, _) => const PinManagePage(),
+      ),
+      GoRoute(
+        path: '/settings/delete-account',
+        builder: (_, _) => const DeleteAccountPage(),
       ),
       GoRoute(
         path: '/settings/guidelines',

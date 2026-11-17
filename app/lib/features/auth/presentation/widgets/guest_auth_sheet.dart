@@ -3,14 +3,17 @@ import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../../core/config/pet_species_config.dart';
+import '../../../../core/router/auth_routes.dart';
 import '../../../../core/theme/app_colors.dart';
 
 /// ชีตชวนเข้าสู่ระบบเมื่อผู้ใช้ในโหมดผู้เยี่ยมชม (Guest) แตะฟีเจอร์ที่ต้องอ้างอิงตัวตน
+/// `returnTo` = ปลายทางหลังล็อกอินสำเร็จ (AUTH-02) — ถ้าไม่ส่งจะกลับหน้าที่เปิดชีตอยู่
 Future<void> showGuestAuthSheet(
   BuildContext context, {
   required PetSpeciesConfig species,
   required bool isEn,
   String? actionName,
+  String? returnTo,
 }) {
   final featureLabel = actionName ?? (isEn ? 'this feature' : 'ฟีเจอร์นี้');
   return showModalBottomSheet<void>(
@@ -97,7 +100,12 @@ Future<void> showGuestAuthSheet(
             FilledButton(
               onPressed: () {
                 Navigator.of(ctx).pop();
-                context.push('/login');
+                context.push(
+                  loginLocation(
+                    returnTo: returnTo ?? currentAppLocation(context),
+                    register: true,
+                  ),
+                );
               },
               style: FilledButton.styleFrom(
                 backgroundColor: AppColors.ownerTeal,

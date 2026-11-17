@@ -3,6 +3,7 @@ import 'package:catlive/core/config/app_text_scale.dart';
 import 'package:catlive/core/error/failure.dart';
 import 'package:catlive/features/settings/domain/entities/settings_data.dart';
 import 'package:catlive/features/settings/domain/repositories/settings_repository.dart';
+import 'package:catlive/features/settings/presentation/pages/manage_account_page.dart';
 import 'package:catlive/features/settings/presentation/pages/settings_page.dart';
 import 'package:catlive/features/settings/presentation/providers/settings_controller.dart';
 import 'package:catlive/features/settings/presentation/widgets/settings_skeleton.dart';
@@ -68,6 +69,14 @@ Widget _wrapSettings({
     routes: [
       GoRoute(path: '/settings', builder: (_, _) => const SettingsPage()),
       GoRoute(
+        path: '/settings/account',
+        builder: (_, _) => const ManageAccountPage(),
+      ),
+      GoRoute(
+        path: '/settings/delete-account',
+        builder: (_, _) => const Scaffold(body: Text('DeleteAccount')),
+      ),
+      GoRoute(
         path: '/settings/guidelines',
         builder: (_, _) => const Scaffold(body: Text('Guidelines')),
       ),
@@ -115,6 +124,21 @@ void main() {
     expect(find.text('ความเป็นส่วนตัว & PDPA'), findsNWidgets(2));
     expect(find.text('ศูนย์ช่วยเหลือ & ติดต่อทีม'), findsOneWidget);
     expect(find.text('ออกจากระบบ'), findsOneWidget);
+  });
+
+  testWidgets('กดการ์ดบัญชีเข้าหน้าจัดการบัญชี เจอเมนูลบบัญชี (AUTH-05)', (
+    tester,
+  ) async {
+    await tester.pumpWidget(_wrapSettings());
+    await tester.pump(const Duration(milliseconds: 200));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('จุฑามาศ ลูกแก้ว'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('บัญชี แมว.live ของคุณ'), findsOneWidget);
+    expect(find.text('ลบบัญชี'), findsOneWidget);
+    expect(find.text('ตั้งค่าและช่วยเหลือ'), findsNothing);
   });
 
   testWidgets('แสดง Empty และ Error state พร้อมปุ่มลองใหม่', (tester) async {
@@ -199,8 +223,10 @@ void main() {
     await tester.pump(const Duration(milliseconds: 200));
     await tester.pumpAndSettle();
 
+    // scroll หา subtitle ของแถว PDPA ซึ่ง unique
+    // (ชื่อ 'ความเป็นส่วนตัว & PDPA' ซ้ำกันทั้ง section header และ row)
     await tester.scrollUntilVisible(
-      find.text('ความเป็นส่วนตัว & PDPA').last,
+      find.textContaining('ขอสำเนาข้อมูล'),
       250,
       scrollable: find.byType(Scrollable).first,
     );

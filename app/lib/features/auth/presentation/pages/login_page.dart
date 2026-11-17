@@ -7,17 +7,25 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../../core/config/app_locale.dart';
 import '../../../../core/config/pet_species_config.dart';
+import '../../../../core/router/auth_routes.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/social_brand_icons.dart';
 import '../../../../core/widgets/toast_pill.dart';
 import '../../domain/entities/auth_data.dart';
+import '../../domain/repositories/auth_repository.dart';
 import '../../domain/usecases/auth_rules.dart';
 import '../providers/auth_controller.dart';
 import '../widgets/auth_l10n.dart';
+import '../widgets/pending_deletion_sheet.dart';
+import '../widgets/pin_lock_notice.dart';
 
 /// หน้าเข้าสู่ระบบ สมัครสมาชิก และ Guest Mode (/login — AUTH-01..04, PDPA-03)
+/// `returnTo` = ปลายทางหลังล็อกอินสำเร็จ (AUTH-02), `initialRegister` = เปิดแท็บสมัครเลย
 class LoginPage extends ConsumerStatefulWidget {
-  const LoginPage({super.key});
+  const LoginPage({super.key, this.returnTo, this.initialRegister = false});
+
+  final String? returnTo;
+  final bool initialRegister;
 
   @override
   ConsumerState<LoginPage> createState() => _LoginPageState();
@@ -28,34 +36,126 @@ class _LoginPageState extends ConsumerState<LoginPage> with ToastMixin {
   final _phoneController = TextEditingController();
   final _pinController = TextEditingController();
   final _otpController = TextEditingController();
-  bool _isRegisterMode = false;
+  final _newPinController = TextEditingController();
+  final _confirmPinController = TextEditingController();
+  late bool _isRegisterMode = widget.initialRegister;
   bool _useOtpInSignIn = false;
   int _selectedBirthYear = 1995;
   bool _guardianConsent = false;
   bool _pdpaAccepted = false;
   String? _validationError;
 
+  /// ขั้นตั้ง PIN หลังยืนยัน OTP ผ่าน — แสดงเมื่อบัญชีนี้ยังไม่มี PIN บนเครื่อง
+  bool _pinSetupPhase = false;
+  bool? _accountHasPin;
+  String? _pinSetupError;
+
+  /// สถานะการกรอก PIN ผิดของเบอร์ที่พิมพ์ — แสดงจำนวนครั้งที่เหลือและเวลาล็อก
+  PinAttemptStatus? _pinStatus;
+
+  /// ผู้ใช้กดเข้าสู่ระบบด้วย PIN ไปแล้วหรือยังกับเบอร์นี้ — กล่องล็อกจะขึ้นหลังกดเท่านั้น
+  bool _pinAttempted = false;
+  int _prevPhoneLen = 0;
+  int _prevPinLen = 0;
+  int _prevOtpLen = 0;
+  bool _prevBothPinsDone = false;
+  bool _obscurePin = true;
+  bool _obscureNewPin = true;
+  bool _obscureConfirmPin = true;
+
   @override
   void initState() {
     super.initState();
+    // ปิดคีย์แพ็ดเฉพาะตอน "พิมพ์จนครบจำนวนหลัก" เท่านั้น — เก็บความยาวล่าสุดไว้เทียบ
+    // ไม่งั้นตอนลบ/แก้ตัวเลขที่ยังอยู่ที่จำนวนครบคีย์แพ็ดจะหุบกลางทาง
     _phoneController.addListener(() {
-      if (_phoneController.text.length == 10) {
+      final len = _phoneController.text.length;
+      if (len == 10 && _prevPhoneLen < 10) {
         FocusManager.instance.primaryFocus?.unfocus();
+      }
+      _prevPhoneLen = len;
+      _pinAttempted = false;
+      if (len == 10) {
+        _refreshPinStatus();
+      } else {
+        _pinStatus = null;
       }
       setState(() {});
     });
     _pinController.addListener(() {
-      if (_pinController.text.length == 6) {
+      final len = _pinController.text.length;
+      if (len == 6 && _prevPinLen < 6) {
         FocusManager.instance.primaryFocus?.unfocus();
       }
+      _prevPinLen = len;
       setState(() {});
     });
     _otpController.addListener(() {
-      if (_otpController.text.length == 6) {
+      final len = _otpController.text.length;
+      if (len == 6 && _prevOtpLen < 6) {
         FocusManager.instance.primaryFocus?.unfocus();
       }
+      _prevOtpLen = len;
       setState(() {});
     });
+    void dismissWhenBothPinsDone() {
+      final bothDone =
+          _newPinController.text.length == 6 &&
+          _confirmPinController.text.length == 6;
+      if (bothDone && !_prevBothPinsDone) {
+        FocusManager.instance.primaryFocus?.unfocus();
+      }
+      _prevBothPinsDone = bothDone;
+      setState(() {});
+    }
+
+    _newPinController.addListener(dismissWhenBothPinsDone);
+    _confirmPinController.addListener(dismissWhenBothPinsDone);
+  }
+
+  /// ปลายทางหลังล็อกอิน/สมัครสำเร็จ — ค่าเริ่มต้นคือหน้าแรก (AUTH-02)
+  String get _afterAuthTarget => sanitizeAuthReturnTo(widget.returnTo) ?? '/';
+
+  void _goAfterAuth() {
+    if (!mounted) return;
+    // ถ้าเพิ่งออกจากระบบเอง ล็อกอินใหม่ให้เริ่มที่หน้าหลักเสมอ ไม่ย้อนปลายทาง
+    final toHome = ref
+        .read(authControllerProvider.notifier)
+        .consumeHomeAfterLoginFlag();
+    context.go(toHome ? '/' : _afterAuthTarget);
+  }
+
+  /// เรียกหลังล็อกอิน/สมัครสำเร็จ — ถ้าบัญชีค้างลบ (AUTH-05) ให้เปิดชีตเลือก
+  /// กู้คืน/ลบต่อก่อน ไม่เช่นนั้นจึงแจ้งเตือนแล้วพาไปปลายทางเดิม
+  Future<void> _finishAfterSignIn(bool isEn) async {
+    final authState = ref.read(authControllerProvider);
+    if (authState.isPendingDeletion) {
+      final scheduledAt = authState.session.deletionScheduledAt;
+      final deadline = scheduledAt?.add(const Duration(days: 30));
+      final daysRemaining = deadline == null
+          ? 30
+          : deadline.difference(DateTime.now()).inDays;
+      final restored = await showPendingDeletionSheet(
+        context,
+        daysRemaining: daysRemaining,
+      );
+      if (!mounted) return;
+      if (restored == true) {
+        showToast(isEn ? 'Account restored' : 'กู้คืนบัญชีเรียบร้อยแล้ว');
+        _goAfterAuth();
+      } else if (restored == false) {
+        showToast(
+          isEn
+              ? 'Account will be permanently deleted'
+              : 'บัญชีจะถูกลบถาวรตามกำหนด',
+        );
+        context.go('/');
+      }
+      // restored == null → ผู้ใช้ปิดชีตไป ค้างอยู่หน้าล็อกอินเดิม
+      return;
+    }
+    showToast(isEn ? 'Signed in successfully' : 'เข้าสู่ระบบสำเร็จแล้ว');
+    _goAfterAuth();
   }
 
   @override
@@ -64,6 +164,8 @@ class _LoginPageState extends ConsumerState<LoginPage> with ToastMixin {
     _phoneController.dispose();
     _pinController.dispose();
     _otpController.dispose();
+    _newPinController.dispose();
+    _confirmPinController.dispose();
     disposeToast();
     super.dispose();
   }
@@ -95,25 +197,42 @@ class _LoginPageState extends ConsumerState<LoginPage> with ToastMixin {
       AuthRules.isValidThaiPhone(_phoneController.text) &&
       _pinController.text.trim().length == 6;
 
+  /// โหลดสถานะการกรอก PIN ของเบอร์ที่พิมพ์ — ใช้แสดงจำนวนครั้งที่เหลือและเวลาล็อก
+  Future<void> _refreshPinStatus() async {
+    final phone = _phoneController.text.trim();
+    if (!AuthRules.isValidThaiPhone(phone)) return;
+    final status = await ref
+        .read(authControllerProvider.notifier)
+        .pinAttemptStatus(phone);
+    if (!mounted) return;
+    setState(() => _pinStatus = status);
+  }
+
   Future<void> _handleSignInWithPin(bool isEn) async {
     FocusManager.instance.primaryFocus?.unfocus();
     if (!_canSignInWithPin) return;
-    if (_pinController.text.trim() != AuthRules.mockValidOtp) {
-      setState(() => _validationError = AuthL10n.invalidPinError(isEn));
+    setState(() => _pinAttempted = true);
+    final failure = await ref
+        .read(authControllerProvider.notifier)
+        .signInWithPin(
+          phone: _phoneController.text.trim(),
+          pin: _pinController.text.trim(),
+        );
+    if (!mounted) return;
+    if (failure == null) {
+      setState(() => _validationError = null);
+      await _finishAfterSignIn(isEn);
       return;
     }
-    setState(() => _validationError = null);
-    final ok = await ref
-        .read(authControllerProvider.notifier)
-        .signInWithProvider(
-          method: AuthMethod.phoneOtp,
-          birthYear: _selectedBirthYear,
-          guardianConsentGranted: _guardianConsent,
-        );
-    if (ok && mounted) {
-      showToast(isEn ? 'Signed in successfully' : 'เข้าสู่ระบบสำเร็จแล้ว');
-      context.go('/');
-    }
+    setState(
+      () => _validationError = switch (failure) {
+        PinSignInFailure.noPinForPhone => AuthL10n.noPinForPhoneError(isEn),
+        PinSignInFailure.wrongPin => AuthL10n.invalidPinError(isEn),
+        // ตอนล็อกการ์ดล็อกจะบอกเอง จึงไม่ต้องแสดงข้อความแจ้งซ้ำ
+        PinSignInFailure.locked => null,
+      },
+    );
+    await _refreshPinStatus();
   }
 
   bool _validateCompliance(bool isEn) {
@@ -177,8 +296,7 @@ class _LoginPageState extends ConsumerState<LoginPage> with ToastMixin {
                       ),
                     ),
                     TextButton(
-                      onPressed: () =>
-                          Navigator.of(ctx).pop(years[tempIndex]),
+                      onPressed: () => Navigator.of(ctx).pop(years[tempIndex]),
                       child: Text(
                         AuthL10n.pickerDone(isEn),
                         style: const TextStyle(
@@ -348,7 +466,13 @@ class _LoginPageState extends ConsumerState<LoginPage> with ToastMixin {
     final ok = await ref
         .read(authControllerProvider.notifier)
         .requestOtp(phone);
-    if (ok && mounted) {
+    if (!ok || !mounted) return;
+    // จำไว้เลยว่าเบอร์นี้มี PIN บนเครื่องหรือยัง เพื่อตัดสินขั้นตั้ง PIN
+    // ทันทีหลังยืนยัน OTP ผ่านโดยไม่ต้องรอ query ซ้ำ
+    _accountHasPin = await ref
+        .read(authControllerProvider.notifier)
+        .hasPinForPhone(phone);
+    if (mounted) {
       showToast(
         isEn ? 'OTP sent (Mock: 123456)' : 'ส่งรหัส OTP แล้ว (ทดสอบ: 123456)',
       );
@@ -367,11 +491,45 @@ class _LoginPageState extends ConsumerState<LoginPage> with ToastMixin {
           code: code,
           birthYear: _selectedBirthYear,
           guardianConsentGranted: _guardianConsent,
+          displayName: _isRegisterMode ? _nameController.text.trim() : null,
         );
-    if (ok && mounted) {
-      showToast(isEn ? 'Signed in successfully' : 'เข้าสู่ระบบสำเร็จแล้ว');
-      context.go('/');
+    if (!ok || !mounted) return;
+    // บัญชีนี้ยังไม่มี PIN บนเครื่อง (สมัครใหม่ / เครื่องใหม่ / ลืม PIN)
+    // → เสนอขั้นตั้ง PIN ก่อนเข้าแอป ข้ามได้ด้วย "ไว้ทีหลัง"
+    if (!ref.read(authControllerProvider).isPendingDeletion &&
+        _accountHasPin != true) {
+      setState(() => _pinSetupPhase = true);
+      return;
     }
+    await _finishAfterSignIn(isEn);
+  }
+
+  bool get _canSavePinSetup =>
+      _newPinController.text.trim().length == 6 &&
+      _confirmPinController.text.trim().length == 6;
+
+  Future<void> _handleSavePinSetup(bool isEn) async {
+    FocusManager.instance.primaryFocus?.unfocus();
+    if (!_canSavePinSetup) return;
+    if (_newPinController.text.trim() != _confirmPinController.text.trim()) {
+      setState(() => _pinSetupError = AuthL10n.pinSetupMismatchError(isEn));
+      return;
+    }
+    final ok = await ref
+        .read(authControllerProvider.notifier)
+        .setPinForCurrentAccount(_newPinController.text.trim());
+    if (!mounted) return;
+    if (!ok) {
+      setState(() => _pinSetupError = AuthL10n.pinSaveFailedError(isEn));
+      return;
+    }
+    showToast(isEn ? 'PIN set successfully' : 'ตั้งรหัส PIN เรียบร้อยแล้ว');
+    _goAfterAuth();
+  }
+
+  Future<void> _skipPinSetup(bool isEn) async {
+    setState(() => _pinSetupPhase = false);
+    await _finishAfterSignIn(isEn);
   }
 
   Future<void> _handleSocialLogin(AuthMethod method, bool isEn) async {
@@ -382,17 +540,17 @@ class _LoginPageState extends ConsumerState<LoginPage> with ToastMixin {
           method: method,
           birthYear: _selectedBirthYear,
           guardianConsentGranted: _guardianConsent,
+          displayName: _isRegisterMode ? _nameController.text.trim() : null,
         );
     if (ok && mounted) {
-      showToast(isEn ? 'Signed in successfully' : 'เข้าสู่ระบบสำเร็จแล้ว');
-      context.go('/');
+      await _finishAfterSignIn(isEn);
     }
   }
 
   Future<void> _handleGuestMode(bool isEn) async {
     await ref.read(authControllerProvider.notifier).continueAsGuest();
     if (mounted) {
-      context.go('/');
+      _goAfterAuth();
     }
   }
 
@@ -403,148 +561,182 @@ class _LoginPageState extends ConsumerState<LoginPage> with ToastMixin {
     final species = ref.watch(petSpeciesConfigProvider);
     final challenge = authState.otpChallenge;
 
+    // ล็อกอินอยู่แล้วไม่ควรเห็นหน้านี้ (เช่น กด deep link /login มาตรง ๆ)
+    // รอให้อ่าน session จาก storage เสร็จก่อนค่อยตัดสินใจเด้งกลับปลายทาง
+    // ยกเว้น session ค้างลบ (AUTH-05) — ต้องอยู่หน้านี้เพื่อให้ชีตกู้คืนแสดงได้
+    if (authState.sessionResolved &&
+        authState.isAuthenticated &&
+        !authState.isPendingDeletion &&
+        !_pinSetupPhase) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) context.go(_afterAuthTarget);
+      });
+      return const Scaffold(
+        backgroundColor: AppColors.page,
+        body: SizedBox.shrink(),
+      );
+    }
+
     return GestureDetector(
       behavior: HitTestBehavior.translucent,
       onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
       child: Scaffold(
         backgroundColor: AppColors.page,
-        body: SafeArea(
-          child: Stack(
-            children: [
-              Column(
-                children: [
-                  if (challenge != null)
-                    _OtpTopBar(
-                      title: AuthL10n.otpTitle(isEn),
-                      backLabel: AuthL10n.backLabel(isEn),
-                      onBack: () => ref
-                          .read(authControllerProvider.notifier)
-                          .clearOtpChallenge(),
-                    ),
-                  Expanded(
-                    child: ListView(
-                      key: ValueKey(
-                        challenge == null ? 'login-list' : 'otp-list',
+        body: GestureDetector(
+          // แตะพื้นว่างนอกช่องกรอก → ปิดคีย์แพ็ด/เลิกโฟกัส
+          onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+          child: SafeArea(
+            child: Stack(
+              children: [
+                Column(
+                  children: [
+                    if (challenge != null)
+                      _OtpTopBar(
+                        title: AuthL10n.otpTitle(isEn),
+                        backLabel: AuthL10n.backLabel(isEn),
+                        onBack: () => ref
+                            .read(authControllerProvider.notifier)
+                            .clearOtpChallenge(),
+                      )
+                    else if (_pinSetupPhase)
+                      _OtpTopBar(
+                        title: AuthL10n.pinSetupTitle(isEn),
+                        backLabel: AuthL10n.backLabel(isEn),
+                        onBack: () => _skipPinSetup(isEn),
                       ),
-                      keyboardDismissBehavior:
-                          ScrollViewKeyboardDismissBehavior.onDrag,
-                    padding: EdgeInsets.fromLTRB(
-                      20,
-                      challenge == null ? 24 : 8,
-                      20,
-                      32,
-                    ),
-                    children: [
-                      Center(
-                        child: Image.asset(
-                          'assets/brand/maew-logo.png',
-                          width: 132,
-                          height: 38,
-                          semanticLabel: species.brandName(isEn),
+                    Expanded(
+                      child: ListView(
+                        key: ValueKey(
+                          challenge == null ? 'login-list' : 'otp-list',
                         ),
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        challenge == null
-                            ? AuthL10n.headline(species, isEn)
-                            : AuthL10n.otpTitle(isEn),
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.text,
+                        keyboardDismissBehavior:
+                            ScrollViewKeyboardDismissBehavior.onDrag,
+                        padding: EdgeInsets.fromLTRB(
+                          20,
+                          challenge == null ? 24 : 8,
+                          20,
+                          32,
                         ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        challenge == null
-                            ? AuthL10n.subheadline(species, isEn)
-                            : AuthL10n.otpSubtitle(
-                                AuthRules.maskThaiPhone(challenge.phoneNumber),
-                                challenge.refCode,
-                                isEn,
-                              ),
-                        textAlign: TextAlign.center,
-                        maxLines: challenge == null ? 1 : 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: 13,
-                          color: AppColors.muted,
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      if (challenge == null) ...[
-                        _AuthModeTabs(
-                          isRegisterMode: _isRegisterMode,
-                          signInLabel: AuthL10n.tabSignIn(isEn),
-                          registerLabel: AuthL10n.tabRegister(isEn),
-                          onChanged: (register) => setState(() {
-                            _isRegisterMode = register;
-                            _useOtpInSignIn = false;
-                            _validationError = null;
-                          }),
-                        ),
-                        const SizedBox(height: 14),
-                        _buildLoginMethodsCard(
-                          authState: authState,
-                          species: species,
-                          isEn: isEn,
-                        ),
-                      ] else
-                        _buildOtpVerifyCard(
-                          authState: authState,
-                          challenge: challenge,
-                          isEn: isEn,
-                        ),
-                      const SizedBox(height: 18),
-                      OutlinedButton.icon(
-                        onPressed: authState.isSubmitting
-                            ? null
-                            : () => _handleGuestMode(isEn),
-                        icon: const Icon(LucideIcons.compass, size: 17),
-                        label: Text(
-                          AuthL10n.guestBtn(isEn),
-                          style: const TextStyle(
-                            fontSize: 13.5,
-                            fontWeight: FontWeight.w700,
+                        children: [
+                          Center(
+                            child: Image.asset(
+                              'assets/brand/maew-logo.png',
+                              width: 132,
+                              height: 38,
+                              semanticLabel: species.brandName(isEn),
+                            ),
                           ),
-                        ),
-                        style: OutlinedButton.styleFrom(
-                          backgroundColor: AppColors.card,
-                          foregroundColor: AppColors.text,
-                          side: const BorderSide(color: AppColors.line2),
-                          shape: const StadiumBorder(),
-                          padding: const EdgeInsets.symmetric(vertical: 13),
-                        ),
+                          const SizedBox(height: 12),
+                          Text(
+                            challenge != null
+                                ? AuthL10n.otpTitle(isEn)
+                                : (_pinSetupPhase
+                                      ? AuthL10n.pinSetupTitle(isEn)
+                                      : AuthL10n.headline(species, isEn)),
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.text,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            challenge != null
+                                ? AuthL10n.otpSubtitle(
+                                    AuthRules.maskThaiPhone(
+                                      challenge.phoneNumber,
+                                    ),
+                                    challenge.refCode,
+                                    isEn,
+                                  )
+                                : (_pinSetupPhase
+                                      ? AuthL10n.pinSetupSubtitle(isEn)
+                                      : AuthL10n.subheadline(species, isEn)),
+                            textAlign: TextAlign.center,
+                            maxLines: challenge == null ? 1 : 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 13,
+                              color: AppColors.muted,
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+                          if (_pinSetupPhase)
+                            _buildPinSetupCard(authState: authState, isEn: isEn)
+                          else if (challenge == null) ...[
+                            _AuthModeTabs(
+                              isRegisterMode: _isRegisterMode,
+                              signInLabel: AuthL10n.tabSignIn(isEn),
+                              registerLabel: AuthL10n.tabRegister(isEn),
+                              onChanged: (register) => setState(() {
+                                _isRegisterMode = register;
+                                _useOtpInSignIn = false;
+                                _validationError = null;
+                              }),
+                            ),
+                            const SizedBox(height: 14),
+                            _buildLoginMethodsCard(
+                              authState: authState,
+                              species: species,
+                              isEn: isEn,
+                            ),
+                          ] else
+                            _buildOtpVerifyCard(
+                              authState: authState,
+                              challenge: challenge,
+                              isEn: isEn,
+                            ),
+                          const SizedBox(height: 18),
+                          OutlinedButton.icon(
+                            onPressed: authState.isSubmitting
+                                ? null
+                                : () => _handleGuestMode(isEn),
+                            icon: const Icon(LucideIcons.compass, size: 17),
+                            label: Text(
+                              AuthL10n.guestBtn(isEn),
+                              style: const TextStyle(
+                                fontSize: 13.5,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            style: OutlinedButton.styleFrom(
+                              backgroundColor: AppColors.card,
+                              foregroundColor: AppColors.text,
+                              side: const BorderSide(color: AppColors.line2),
+                              shape: const StadiumBorder(),
+                              padding: const EdgeInsets.symmetric(vertical: 13),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            AuthL10n.guestHint(isEn),
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: AppColors.muted,
+                              height: 1.4,
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 8),
-                      Text(
-                        AuthL10n.guestHint(isEn),
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: AppColors.muted,
-                          height: 1.4,
-                        ),
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
+                if (toastMessage != null)
+                  Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: 24,
+                    child: IgnorePointer(
+                      child: Center(child: ToastPill(message: toastMessage!)),
+                    ),
+                  ),
               ],
             ),
-            if (toastMessage != null)
-              Positioned(
-                left: 0,
-                right: 0,
-                bottom: 24,
-                child: IgnorePointer(
-                  child: Center(child: ToastPill(message: toastMessage!)),
-                ),
-              ),
-          ],
+          ),
         ),
       ),
-    ),
     );
   }
 
@@ -754,13 +946,24 @@ class _LoginPageState extends ConsumerState<LoginPage> with ToastMixin {
             TextField(
               controller: _pinController,
               keyboardType: TextInputType.number,
-              obscureText: true,
+              obscureText: _obscurePin,
               maxLength: 6,
               textInputAction: TextInputAction.done,
               decoration: InputDecoration(
                 hintText: '••••••',
                 counterText: '',
                 prefixIcon: const Icon(LucideIcons.lockKeyhole, size: 18),
+                suffixIcon: IconButton(
+                  tooltip: _obscurePin
+                      ? AuthL10n.showPinLabel(isEn)
+                      : AuthL10n.hidePinLabel(isEn),
+                  icon: Icon(
+                    _obscurePin ? LucideIcons.eye : LucideIcons.eyeOff,
+                    size: 18,
+                    color: AppColors.muted,
+                  ),
+                  onPressed: () => setState(() => _obscurePin = !_obscurePin),
+                ),
                 filled: true,
                 fillColor: AppColors.soft,
                 border: OutlineInputBorder(
@@ -791,6 +994,15 @@ class _LoginPageState extends ConsumerState<LoginPage> with ToastMixin {
                 ),
               ),
             ],
+            PinLockNotice(
+              status: _pinAttempted ? _pinStatus : null,
+              isEn: isEn,
+              onExpired: _refreshPinStatus,
+              onUseOtp: () => setState(() {
+                _useOtpInSignIn = true;
+                _validationError = null;
+              }),
+            ),
             const SizedBox(height: 12),
             FilledButton(
               onPressed: authState.isSubmitting || !_canSignInWithPin
@@ -1081,9 +1293,7 @@ class _LoginPageState extends ConsumerState<LoginPage> with ToastMixin {
               TextButton(
                 onPressed: () {
                   _otpController.clear();
-                  ref
-                      .read(authControllerProvider.notifier)
-                      .clearOtpChallenge();
+                  ref.read(authControllerProvider.notifier).clearOtpChallenge();
                 },
                 child: Text(
                   AuthL10n.changePhoneBtn(isEn),
@@ -1094,6 +1304,173 @@ class _LoginPageState extends ConsumerState<LoginPage> with ToastMixin {
                 ),
               ),
             ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// การ์ดขั้นตั้ง PIN — แสดงหลังยืนยัน OTP ผ่านเมื่อบัญชียังไม่มี PIN
+  /// บนเครื่องนี้ (สมัครใหม่ / เครื่องใหม่ / ลืม PIN) ข้ามได้ด้วย "ไว้ทีหลัง"
+  Widget _buildPinSetupCard({
+    required AuthState authState,
+    required bool isEn,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: AppColors.card,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.line),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            AuthL10n.pinSetupNewLabel(isEn),
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              color: AppColors.text,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Semantics(
+            label: AuthL10n.pinSetupNewLabel(isEn),
+            child: TextField(
+              controller: _newPinController,
+              keyboardType: TextInputType.number,
+              obscureText: _obscureNewPin,
+              maxLength: 6,
+              textInputAction: TextInputAction.next,
+              decoration: InputDecoration(
+                hintText: '••••••',
+                counterText: '',
+                prefixIcon: const Icon(LucideIcons.lockKeyhole, size: 18),
+                suffixIcon: IconButton(
+                  tooltip: _obscureNewPin
+                      ? AuthL10n.showPinLabel(isEn)
+                      : AuthL10n.hidePinLabel(isEn),
+                  icon: Icon(
+                    _obscureNewPin ? LucideIcons.eye : LucideIcons.eyeOff,
+                    size: 18,
+                    color: AppColors.muted,
+                  ),
+                  onPressed: () =>
+                      setState(() => _obscureNewPin = !_obscureNewPin),
+                ),
+                filled: true,
+                fillColor: AppColors.soft,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: BorderSide.none,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            AuthL10n.pinSetupConfirmLabel(isEn),
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              color: AppColors.text,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Semantics(
+            label: AuthL10n.pinSetupConfirmLabel(isEn),
+            child: TextField(
+              controller: _confirmPinController,
+              keyboardType: TextInputType.number,
+              obscureText: _obscureConfirmPin,
+              maxLength: 6,
+              textInputAction: TextInputAction.done,
+              decoration: InputDecoration(
+                hintText: '••••••',
+                counterText: '',
+                prefixIcon: const Icon(LucideIcons.lockKeyhole, size: 18),
+                suffixIcon: IconButton(
+                  tooltip: _obscureConfirmPin
+                      ? AuthL10n.showPinLabel(isEn)
+                      : AuthL10n.hidePinLabel(isEn),
+                  icon: Icon(
+                    _obscureConfirmPin ? LucideIcons.eye : LucideIcons.eyeOff,
+                    size: 18,
+                    color: AppColors.muted,
+                  ),
+                  onPressed: () =>
+                      setState(() => _obscureConfirmPin = !_obscureConfirmPin),
+                ),
+                filled: true,
+                fillColor: AppColors.soft,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: BorderSide.none,
+                ),
+              ),
+            ),
+          ),
+          if (_pinSetupError != null) ...[
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(
+                color: AppColors.logoutBg,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppColors.logoutBorder),
+              ),
+              child: Text(
+                _pinSetupError!,
+                style: const TextStyle(
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.logoutText,
+                ),
+              ),
+            ),
+          ],
+          const SizedBox(height: 14),
+          Semantics(
+            button: true,
+            label: AuthL10n.pinSetupSaveBtn(isEn),
+            child: FilledButton(
+              onPressed: authState.isSubmitting || !_canSavePinSetup
+                  ? null
+                  : () => _handleSavePinSetup(isEn),
+              style: FilledButton.styleFrom(
+                backgroundColor: AppColors.ownerTeal,
+                foregroundColor: Colors.white,
+                disabledBackgroundColor: AppColors.line2,
+                disabledForegroundColor: AppColors.muted,
+                shape: const StadiumBorder(),
+                padding: const EdgeInsets.symmetric(vertical: 14),
+              ),
+              child: Text(
+                AuthL10n.pinSetupSaveBtn(isEn),
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ),
+          Semantics(
+            button: true,
+            label: AuthL10n.pinSetupLaterBtn(isEn),
+            child: TextButton(
+              onPressed: authState.isSubmitting
+                  ? null
+                  : () => _skipPinSetup(isEn),
+              child: Text(
+                AuthL10n.pinSetupLaterBtn(isEn),
+                style: const TextStyle(
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.muted,
+                ),
+              ),
+            ),
           ),
         ],
       ),
@@ -1215,8 +1592,7 @@ class _PdpaConsentInlineRowState extends State<_PdpaConsentInlineRow> {
   @override
   void initState() {
     super.initState();
-    _readMoreRecognizer = TapGestureRecognizer()
-      ..onTap = widget.onReadMore;
+    _readMoreRecognizer = TapGestureRecognizer()..onTap = widget.onReadMore;
   }
 
   @override

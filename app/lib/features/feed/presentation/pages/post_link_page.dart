@@ -70,6 +70,7 @@ class _Content extends ConsumerWidget {
         species: ref.read(petSpeciesConfigProvider),
         isEn: isEn,
         actionName: isEn ? 'Send treats' : 'เลี้ยงขนม',
+        returnTo: '/treats?to=${Uri.encodeQueryComponent(post.author.id)}',
       );
       return;
     }

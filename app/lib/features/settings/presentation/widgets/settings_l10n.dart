@@ -15,8 +15,7 @@ abstract final class SettingsL10n {
   static String retry(bool isEn) => isEn ? 'Retry' : 'ลองใหม่';
 
   // Sections
-  static String sectionAccount(bool isEn) =>
-      isEn ? 'Account & Display' : 'บัญชีและการแสดงผล';
+  static String sectionAccount(bool isEn) => isEn ? 'Display' : 'การแสดงผล';
   static String sectionNotifications(bool isEn) =>
       isEn ? 'Notifications' : 'การแจ้งเตือน';
   static String sectionPrivacy(bool isEn) =>
@@ -28,8 +27,7 @@ abstract final class SettingsL10n {
   static String verifiedBadge(bool isEn) =>
       isEn ? 'Verified account' : 'บัญชีที่ยืนยันแล้ว';
   static String languageTitle(bool isEn) => isEn ? 'Language' : 'ภาษา';
-  static String textSizeTitle(bool isEn) =>
-      isEn ? 'Text size' : 'ขนาดตัวอักษร';
+  static String textSizeTitle(bool isEn) => isEn ? 'Text size' : 'ขนาดตัวอักษร';
   static String textSizeLabel(AppTextSizePreset preset, bool isEn) =>
       switch (preset) {
         AppTextSizePreset.small => isEn ? 'Small' : 'เล็ก',
@@ -42,8 +40,7 @@ abstract final class SettingsL10n {
   }
 
   // Notifications (NOTI-01 / NOTI-02)
-  static String pushTitle(bool isEn) =>
-      isEn ? 'Notifications' : 'การแจ้งเตือน';
+  static String pushTitle(bool isEn) => isEn ? 'Notifications' : 'การแจ้งเตือน';
   static String pushToast(bool enabled, bool isEn) {
     if (isEn) return enabled ? 'Notifications enabled' : 'Notifications muted';
     return enabled ? 'เปิดการแจ้งเตือนแล้ว' : 'ปิดการแจ้งเตือนแล้ว';
@@ -76,12 +73,14 @@ abstract final class SettingsL10n {
 
   static String notiCategoriesTitle(bool isEn) =>
       isEn ? 'Notification types' : 'จัดการประเภทการแจ้งเตือน';
-  static String notiCategoriesSubtitle(int enabledCount, int total, bool isEn) =>
-      isEn
-          ? 'Enabled $enabledCount of $total categories'
-          : 'เปิดอยู่ $enabledCount จาก $total ประเภท';
-  static String notiLockedBadge(bool isEn) =>
-      isEn ? 'Always on' : 'ปิดไม่ได้';
+  static String notiCategoriesSubtitle(
+    int enabledCount,
+    int total,
+    bool isEn,
+  ) => isEn
+      ? 'Enabled $enabledCount of $total categories'
+      : 'เปิดอยู่ $enabledCount จาก $total ประเภท';
+  static String notiLockedBadge(bool isEn) => isEn ? 'Always on' : 'ปิดไม่ได้';
   static String notiLockedToast(bool isEn) => isEn
       ? '"Cat found" alerts cannot be turned off for your cat’s safety'
       : 'ไม่สามารถปิดแจ้งเตือน "มีคนพบแมว" ได้ เพื่อความปลอดภัยของน้องแมว';
@@ -139,7 +138,9 @@ abstract final class SettingsL10n {
   };
 
   static String pdpaVersionLine(String version, String updated, bool isEn) =>
-      isEn ? 'Version $version · Updated $updated' : 'เวอร์ชัน $version · อัปเดต $updated';
+      isEn
+      ? 'Version $version · Updated $updated'
+      : 'เวอร์ชัน $version · อัปเดต $updated';
 
   static String privacyPolicyTitle(bool isEn) =>
       isEn ? 'Privacy Policy' : 'นโยบายความเป็นส่วนตัว';
@@ -173,8 +174,9 @@ abstract final class SettingsL10n {
       : 'อาหารแมวโฆษณาได้เฉพาะแบรนด์พาร์ทเนอร์';
   static String helpCenterTitle(bool isEn) =>
       isEn ? 'Help Center & Contact' : 'ศูนย์ช่วยเหลือ & ติดต่อทีม';
-  static String helpCenterSubtitle(bool isEn) =>
-      isEn ? 'FAQs · Report an issue · Contact support' : 'คำถามที่พบบ่อย · แจ้งปัญหา · ติดต่อทีมงาน';
+  static String helpCenterSubtitle(bool isEn) => isEn
+      ? 'FAQs · Report an issue · Contact support'
+      : 'คำถามที่พบบ่อย · แจ้งปัญหา · ติดต่อทีมงาน';
 
   static String signOut(bool isEn) => isEn ? 'Sign out' : 'ออกจากระบบ';
   static String signOutConfirmTitle(bool isEn) =>

@@ -1,15 +1,13 @@
 import '../../../../core/config/pet_species_config.dart';
+import '../../domain/usecases/auth_rules.dart';
 
 /// ข้อความ 2 ภาษา (ไทย/EN) สำหรับหน้า Login, OTP และ Guest Mode (AUTH-01..04)
 abstract final class AuthL10n {
-  static String pageTitle(bool isEn) =>
-      isEn ? 'Sign in' : 'เข้าสู่ระบบ';
+  static String pageTitle(bool isEn) => isEn ? 'Sign in' : 'เข้าสู่ระบบ';
 
-  static String tabSignIn(bool isEn) =>
-      isEn ? 'Sign in' : 'เข้าสู่ระบบ';
+  static String tabSignIn(bool isEn) => isEn ? 'Sign in' : 'เข้าสู่ระบบ';
 
-  static String tabRegister(bool isEn) =>
-      isEn ? 'Register' : 'สมัครสมาชิก';
+  static String tabRegister(bool isEn) => isEn ? 'Register' : 'สมัครสมาชิก';
 
   static String displayNameLabel(bool isEn) =>
       isEn ? 'Display name (optional)' : 'ชื่อที่แสดง (ไม่บังคับ)';
@@ -27,8 +25,9 @@ abstract final class AuthL10n {
       ? 'Care for ${species.petNoun(true).toLowerCase()} profiles, health & community.'
       : 'ดูแลโปรไฟล์ สมุดสุขภาพ และชุมชนคนรัก${species.petNoun(false)}';
 
-  static String birthYearLabel(bool isEn) =>
-      isEn ? 'Birth year (CE) for age verification' : 'ปีเกิด (ค.ศ.) เพื่อตรวจเกณฑ์อายุ PDPA';
+  static String birthYearLabel(bool isEn) => isEn
+      ? 'Birth year (CE) for age verification'
+      : 'ปีเกิด (ค.ศ.) เพื่อตรวจเกณฑ์อายุ PDPA';
 
   static String birthYearUnder13Error(bool isEn) => isEn
       ? 'Users under 13 years old cannot register (PDPA-03).'
@@ -75,25 +74,38 @@ abstract final class AuthL10n {
       ? 'Please enter a valid 10-digit Thai mobile number.'
       : 'กรุณากรอกเบอร์มือถือไทย 10 หลักให้ถูกต้อง (เช่น 0812345678)';
 
-  static String pinLabel(bool isEn) =>
-      isEn ? '6-digit PIN' : 'รหัส PIN 6 หลัก';
+  static String pinLabel(bool isEn) => isEn ? '6-digit PIN' : 'รหัส PIN 6 หลัก';
 
   static String signInWithPinBtn(bool isEn) =>
       isEn ? 'Sign in with PIN' : 'เข้าสู่ระบบด้วย PIN';
 
-  static String biometricBtn(bool isEn) =>
-      isEn ? 'Sign in with Face ID / Touch ID' : 'เข้าสู่ระบบด้วย Face ID / สแกนนิ้ว';
+  static String biometricBtn(bool isEn) => isEn
+      ? 'Sign in with Face ID / Touch ID'
+      : 'เข้าสู่ระบบด้วย Face ID / สแกนนิ้ว';
 
   static String switchDeviceOtpLink(bool isEn) => isEn
       ? 'New device or forgot PIN? Verify with OTP'
       : 'เปลี่ยนเครื่อง / ลืม PIN? ยืนยันด้วยรหัส OTP';
 
   static String invalidPinError(bool isEn) => isEn
-      ? 'Incorrect PIN (Demo PIN: 123456).'
-      : 'รหัส PIN ไม่ถูกต้อง (รหัสทดสอบ: 123456)';
+      ? 'Incorrect PIN. Please try again.'
+      : 'รหัส PIN ไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง';
 
-  static String requestOtpBtn(bool isEn) =>
-      isEn ? 'Request OTP' : 'ขอรหัส OTP';
+  static String pinAttemptsLeft(int remaining, bool isEn) => isEn
+      ? 'Attempts left: $remaining'
+      : 'เหลือโอกาสกรอก PIN อีก $remaining ครั้ง';
+
+  static String pinLockedTitle(bool isEn) =>
+      isEn ? 'This account is temporarily locked' : 'บัญชีนี้ถูกล็อกชั่วคราว';
+
+  static String pinLockedDetail(bool isEn) => isEn
+      ? 'Too many wrong PIN attempts (${AuthRules.pinMaxAttempts}/${AuthRules.pinMaxAttempts}). Try again in'
+      : 'กรอกรหัส PIN ผิดครบ ${AuthRules.pinMaxAttempts} ครั้ง ลองใหม่ได้อีก';
+
+  static String pinLockOtpBtn(bool isEn) =>
+      isEn ? 'Verify with OTP instead' : 'ยืนยันตัวตนด้วย OTP แทน';
+
+  static String requestOtpBtn(bool isEn) => isEn ? 'Request OTP' : 'ขอรหัส OTP';
 
   static String orDivider(bool isEn) =>
       isEn ? 'or continue with' : 'หรือเข้าสู่ระบบด้วย';
@@ -115,8 +127,7 @@ abstract final class AuthL10n {
       : 'ผู้เยี่ยมชมดูฟีด ใกล้ฉัน และช่วยเหลือได้ — เข้าสู่ระบบได้ทุกเมื่อเมื่อต้องการโพสต์หรือดูแลโปรไฟล์';
 
   // ขั้นตอน OTP
-  static String otpTitle(bool isEn) =>
-      isEn ? 'Verify OTP' : 'ยืนยันรหัส OTP';
+  static String otpTitle(bool isEn) => isEn ? 'Verify OTP' : 'ยืนยันรหัส OTP';
 
   static String otpSubtitle(String maskedPhone, String ref, bool isEn) => isEn
       ? 'Sent 6-digit code to $maskedPhone (Ref: $ref)'
@@ -126,14 +137,13 @@ abstract final class AuthL10n {
       ? 'Mock OTP code for testing: 123456'
       : 'รหัส OTP จำลองสำหรับทดสอบ: 123456';
 
-  static String fillMockOtp(bool isEn) =>
-      isEn ? 'Fill 123456' : 'กรอก 123456';
+  static String fillMockOtp(bool isEn) => isEn ? 'Fill 123456' : 'กรอก 123456';
 
   static String otpInputHint(bool isEn) =>
       isEn ? '6-digit OTP' : 'กรอกรหัส OTP 6 หลัก';
 
   static String verifyOtpBtn(bool isEn) =>
-      isEn ? 'Verify & Sign in' : 'ยืนยันและเข้าสู่ระบบ';
+      isEn ? 'Verify OTP' : 'ยืนยันรหัส OTP';
 
   static String resendOtpBtn(int cooldownSeconds, bool isEn) {
     if (cooldownSeconds > 0) {
@@ -147,6 +157,75 @@ abstract final class AuthL10n {
   static String changePhoneBtn(bool isEn) =>
       isEn ? 'Change phone number' : 'เปลี่ยนเบอร์โทรศัพท์';
 
+  // ขั้นตั้ง PIN หลังยืนยัน OTP (สมัครใหม่ / เครื่องใหม่ / ลืม PIN)
+  static String pinSetupTitle(bool isEn) =>
+      isEn ? 'Set up your PIN' : 'ตั้งรหัส PIN 6 หลัก';
+
+  static String pinSetupSubtitle(bool isEn) => isEn
+      ? 'Use this PIN to sign in faster on this device next time.'
+      : 'ใช้รหัสนี้เข้าสู่ระบบบนเครื่องนี้ได้เร็วขึ้นในครั้งถัดไป';
+
+  static String pinSetupNewLabel(bool isEn) =>
+      isEn ? 'New 6-digit PIN' : 'รหัส PIN 6 หลัก';
+
+  static String pinSetupConfirmLabel(bool isEn) =>
+      isEn ? 'Confirm PIN' : 'ยืนยันรหัส PIN อีกครั้ง';
+
+  static String pinSetupMismatchError(bool isEn) => isEn
+      ? 'PINs do not match. Please enter the same PIN in both fields.'
+      : 'รหัส PIN ไม่ตรงกัน กรุณากรอกให้เหมือนกันทั้งสองช่อง';
+
+  static String pinSetupSaveBtn(bool isEn) =>
+      isEn ? 'Save & continue' : 'บันทึกและเข้าใช้งาน';
+
+  static String pinSetupLaterBtn(bool isEn) => isEn ? 'Later' : 'ไว้ทีหลัง';
+
+  static String pinSaveFailedError(bool isEn) => isEn
+      ? 'Could not save your PIN. Please try again.'
+      : 'บันทึกรหัส PIN ไม่สำเร็จ กรุณาลองใหม่อีกครั้ง';
+
+  static String noPinForPhoneError(bool isEn) => isEn
+      ? 'No PIN set for this number on this device — verify with OTP instead.'
+      : 'เบอร์นี้ยังไม่ได้ตั้งรหัส PIN บนเครื่องนี้ ใช้ OTP ยืนยันตัวตนแทนได้เลย';
+
+  // หน้าจัดการ PIN ในบัญชี (ตั้งครั้งแรก / เปลี่ยน)
+  static String pinManageTitle(bool hasPin, bool isEn) => hasPin
+      ? (isEn ? 'Change PIN' : 'เปลี่ยนรหัส PIN')
+      : (isEn ? 'Set up PIN' : 'ตั้งรหัส PIN');
+
+  static String pinCurrentLabel(bool isEn) =>
+      isEn ? 'Current PIN' : 'รหัส PIN เดิม';
+
+  static String pinCurrentHint(bool isEn) => isEn
+      ? 'Enter your current 6-digit PIN first'
+      : 'กรอกรหัส PIN เดิมเพื่อยืนยันตัวตนก่อนเปลี่ยน';
+
+  static String pinWrongCurrentError(bool isEn) => isEn
+      ? 'Current PIN is incorrect. Please try again.'
+      : 'รหัส PIN เดิมไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง';
+
+  static String pinNextBtn(bool isEn) => isEn ? 'Next' : 'ถัดไป';
+
+  static String pinSaveBtn(bool isEn) => isEn ? 'Save PIN' : 'บันทึกรหัส PIN';
+
+  static String showPinLabel(bool isEn) => isEn ? 'Show PIN' : 'แสดงรหัส PIN';
+
+  static String hidePinLabel(bool isEn) => isEn ? 'Hide PIN' : 'ซ่อนรหัส PIN';
+
+  static String pinDoneTitle(bool hasPin, bool isEn) => hasPin
+      ? (isEn ? 'PIN changed' : 'เปลี่ยนรหัส PIN เรียบร้อยแล้ว')
+      : (isEn ? 'PIN set' : 'ตั้งรหัส PIN เรียบร้อยแล้ว');
+
+  static String pinDoneSubtitle(bool isEn) => isEn
+      ? 'Use this PIN to sign in on this device from now on.'
+      : 'ครั้งต่อไปใช้รหัส PIN นี้เข้าสู่ระบบบนเครื่องนี้ได้เลย';
+
+  static String doneBtn(bool isEn) => isEn ? 'Done' : 'เสร็จ';
+
+  static String pinNoPhoneHint(bool isEn) => isEn
+      ? 'PIN is available only for accounts linked to a phone number.'
+      : 'ใช้รหัส PIN ได้เฉพาะบัญชีที่ผูกเบอร์โทรศัพท์เท่านั้น';
+
   static String otpErrorText(
     String code,
     int remainingAttempts,
@@ -154,18 +233,22 @@ abstract final class AuthL10n {
     bool isEn,
   ) {
     return switch (code) {
-      'otp_expired' => isEn
-          ? 'OTP expired (5 minutes). Please request a new code.'
-          : 'รหัส OTP หมดอายุแล้ว (เกิน 5 นาที) กรุณาขอรหัสใหม่',
-      'otp_locked' => isEn
-          ? 'Too many failed attempts (5/5). Locked for ${(unlockSeconds / 60).ceil()} min.'
-          : 'กรอกรหัสผิดครบ 5 ครั้ง ระบบล็อกชั่วคราว ${(unlockSeconds / 60).ceil()} นาที',
-      'otp_invalid' => isEn
-          ? 'Incorrect OTP ($remainingAttempts attempts remaining).'
-          : 'รหัส OTP ไม่ถูกต้อง (เหลือสิทธิ์อีก $remainingAttempts ครั้ง)',
-      _ => isEn
-          ? 'Verification failed. Please try again.'
-          : 'ไม่สามารถยืนยันได้ กรุณาลองใหม่อีกครั้ง',
+      'otp_expired' =>
+        isEn
+            ? 'OTP expired (5 minutes). Please request a new code.'
+            : 'รหัส OTP หมดอายุแล้ว (เกิน 5 นาที) กรุณาขอรหัสใหม่',
+      'otp_locked' =>
+        isEn
+            ? 'Too many failed attempts (5/5). Locked for ${(unlockSeconds / 60).ceil()} min.'
+            : 'กรอกรหัสผิดครบ 5 ครั้ง ระบบล็อกชั่วคราว ${(unlockSeconds / 60).ceil()} นาที',
+      'otp_invalid' =>
+        isEn
+            ? 'Incorrect OTP ($remainingAttempts attempts remaining).'
+            : 'รหัส OTP ไม่ถูกต้อง (เหลือสิทธิ์อีก $remainingAttempts ครั้ง)',
+      _ =>
+        isEn
+            ? 'Verification failed. Please try again.'
+            : 'ไม่สามารถยืนยันได้ กรุณาลองใหม่อีกครั้ง',
     };
   }
 }

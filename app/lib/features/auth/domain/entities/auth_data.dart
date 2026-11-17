@@ -12,6 +12,7 @@ class AuthUser extends Equatable {
     required this.id,
     required this.displayName,
     required this.method,
+    this.phone,
     this.phoneMasked,
     this.email,
     this.birthYear,
@@ -21,6 +22,9 @@ class AuthUser extends Equatable {
   final String id;
   final String displayName;
   final AuthMethod method;
+
+  /// เบอร์โทรแบบตัวเลขล้วนของบัญชี (เก็บใน secure storage) — ใช้ผูก PIN กับบัญชี
+  final String? phone;
   final String? phoneMasked;
   final String? email;
   final int? birthYear;
@@ -31,6 +35,7 @@ class AuthUser extends Equatable {
     id,
     displayName,
     method,
+    phone,
     phoneMasked,
     email,
     birthYear,
@@ -115,6 +120,26 @@ class OtpChallenge extends Equatable {
   ];
 }
 
+/// สถานะการกรอก PIN ผิดของบัญชี — ใช้แสดงจำนวนครั้งที่เหลือและเวลาที่ต้องรอปลดล็อก
+class PinAttemptStatus extends Equatable {
+  const PinAttemptStatus({required this.remainingAttempts, this.lockedUntil});
+
+  final int remainingAttempts;
+  final DateTime? lockedUntil;
+
+  bool isLockedAt(DateTime now) =>
+      lockedUntil != null && now.isBefore(lockedUntil!);
+
+  int secondsUntilUnlock(DateTime now) {
+    if (lockedUntil == null) return 0;
+    final diff = lockedUntil!.difference(now).inSeconds;
+    return diff > 0 ? diff : 0;
+  }
+
+  @override
+  List<Object?> get props => [remainingAttempts, lockedUntil];
+}
+
 /// สถานะเซสชันรวม Token สำหรับเตรียมสลับต่อ API จริง
 class AuthSession extends Equatable {
   const AuthSession({
@@ -123,6 +148,7 @@ class AuthSession extends Equatable {
     this.accessToken,
     this.refreshToken,
     this.expiresAt,
+    this.deletionScheduledAt,
   });
 
   const AuthSession.guest()
@@ -130,7 +156,8 @@ class AuthSession extends Equatable {
       user = null,
       accessToken = null,
       refreshToken = null,
-      expiresAt = null;
+      expiresAt = null,
+      deletionScheduledAt = null;
 
   final AuthMode mode;
   final AuthUser? user;
@@ -138,9 +165,33 @@ class AuthSession extends Equatable {
   final String? refreshToken;
   final DateTime? expiresAt;
 
+  /// เวลาที่ขอลบบัญชี (AUTH-05) — ไม่เป็น null = บัญชีอยู่ในช่วงรอลบ 30 วัน กู้คืนได้
+  final DateTime? deletionScheduledAt;
+
   bool get isAuthenticated => mode == AuthMode.authenticated && user != null;
   bool get isGuest => !isAuthenticated;
+  bool get isPendingDeletion => deletionScheduledAt != null;
+
+  AuthSession copyWith({bool clearDeletionScheduledAt = false}) {
+    return AuthSession(
+      mode: mode,
+      user: user,
+      accessToken: accessToken,
+      refreshToken: refreshToken,
+      expiresAt: expiresAt,
+      deletionScheduledAt: clearDeletionScheduledAt
+          ? null
+          : deletionScheduledAt,
+    );
+  }
 
   @override
-  List<Object?> get props => [mode, user, accessToken, refreshToken, expiresAt];
+  List<Object?> get props => [
+    mode,
+    user,
+    accessToken,
+    refreshToken,
+    expiresAt,
+    deletionScheduledAt,
+  ];
 }
