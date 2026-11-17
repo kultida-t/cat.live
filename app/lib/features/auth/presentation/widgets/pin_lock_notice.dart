@@ -101,39 +101,76 @@ class _PinLockNoticeState extends State<PinLockNotice> {
     final mm = (seconds ~/ 60).toString().padLeft(2, '0');
     final ss = (seconds % 60).toString().padLeft(2, '0');
     return Padding(
-      padding: const EdgeInsets.only(top: 8),
+      padding: const EdgeInsets.only(top: 10),
       child: Container(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.fromLTRB(14, 14, 14, 8),
         decoration: BoxDecoration(
-          color: AppColors.logoutBg,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.logoutBorder),
+          color: AppColors.btn,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: AppColors.btnBorder),
         ),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Icon(
-                  LucideIcons.lockKeyhole,
-                  size: 16,
-                  color: AppColors.logoutText,
+                Container(
+                  width: 34,
+                  height: 34,
+                  decoration: const BoxDecoration(
+                    color: AppColors.ownerPillBg,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    LucideIcons.lockKeyhole,
+                    size: 16,
+                    color: AppColors.ownerTeal,
+                  ),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 10),
                 Expanded(
-                  child: Text(
-                    AuthL10n.pinLockedMessage('$mm:$ss', widget.isEn),
-                    style: const TextStyle(
-                      fontSize: 12.5,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.logoutText,
-                    ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        AuthL10n.pinLockedTitle(widget.isEn),
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w800,
+                          height: 1.4,
+                          color: AppColors.text,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text.rich(
+                        TextSpan(
+                          style: const TextStyle(
+                            fontSize: 12.5,
+                            height: 1.6,
+                            color: AppColors.muted,
+                          ),
+                          children: [
+                            TextSpan(
+                              text: AuthL10n.pinLockedDetail(widget.isEn),
+                            ),
+                            TextSpan(
+                              text: ' $mm:$ss',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w800,
+                                color: AppColors.ownerTeal,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
             ),
-            if (widget.onUseOtp != null)
+            if (widget.onUseOtp != null) ...[
+              const SizedBox(height: 4),
               Semantics(
                 button: true,
                 label: AuthL10n.pinLockOtpBtn(widget.isEn),
@@ -142,6 +179,7 @@ class _PinLockNoticeState extends State<PinLockNotice> {
                   style: TextButton.styleFrom(
                     minimumSize: const Size(44, 44),
                     foregroundColor: AppColors.ownerTeal,
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
                   ),
                   child: Text(
                     AuthL10n.pinLockOtpBtn(widget.isEn),
@@ -152,6 +190,7 @@ class _PinLockNoticeState extends State<PinLockNotice> {
                   ),
                 ),
               ),
+            ],
           ],
         ),
       ),

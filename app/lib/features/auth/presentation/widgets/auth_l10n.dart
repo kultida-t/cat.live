@@ -95,9 +95,12 @@ abstract final class AuthL10n {
       ? 'Attempts left: $remaining'
       : 'เหลือโอกาสกรอก PIN อีก $remaining ครั้ง';
 
-  static String pinLockedMessage(String remainingTime, bool isEn) => isEn
-      ? 'Too many wrong PIN attempts (${AuthRules.pinMaxAttempts}/${AuthRules.pinMaxAttempts}). Locked for now, try again in $remainingTime.'
-      : 'กรอกรหัส PIN ผิดครบ ${AuthRules.pinMaxAttempts} ครั้ง ระบบล็อกชั่วคราว ลองใหม่ได้อีก $remainingTime';
+  static String pinLockedTitle(bool isEn) =>
+      isEn ? 'This account is temporarily locked' : 'บัญชีนี้ถูกล็อกชั่วคราว';
+
+  static String pinLockedDetail(bool isEn) => isEn
+      ? 'Too many wrong PIN attempts (${AuthRules.pinMaxAttempts}/${AuthRules.pinMaxAttempts}). Try again in'
+      : 'กรอกรหัส PIN ผิดครบ ${AuthRules.pinMaxAttempts} ครั้ง ลองใหม่ได้อีก';
 
   static String pinLockOtpBtn(bool isEn) =>
       isEn ? 'Verify with OTP instead' : 'ยืนยันตัวตนด้วย OTP แทน';

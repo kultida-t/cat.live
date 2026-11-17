@@ -52,6 +52,9 @@ class _LoginPageState extends ConsumerState<LoginPage> with ToastMixin {
 
   /// สถานะการกรอก PIN ผิดของเบอร์ที่พิมพ์ — แสดงจำนวนครั้งที่เหลือและเวลาล็อก
   PinAttemptStatus? _pinStatus;
+
+  /// ผู้ใช้กดเข้าสู่ระบบด้วย PIN ไปแล้วหรือยังกับเบอร์นี้ — กล่องล็อกจะขึ้นหลังกดเท่านั้น
+  bool _pinAttempted = false;
   int _prevPhoneLen = 0;
   int _prevPinLen = 0;
   int _prevOtpLen = 0;
@@ -71,6 +74,7 @@ class _LoginPageState extends ConsumerState<LoginPage> with ToastMixin {
         FocusManager.instance.primaryFocus?.unfocus();
       }
       _prevPhoneLen = len;
+      _pinAttempted = false;
       if (len == 10) {
         _refreshPinStatus();
       } else {
@@ -189,12 +193,9 @@ class _LoginPageState extends ConsumerState<LoginPage> with ToastMixin {
   bool get _canRequestOtp =>
       _canProceedAuth && AuthRules.isValidThaiPhone(_phoneController.text);
 
-  bool get _isPinLocked => _pinStatus?.isLockedAt(DateTime.now()) ?? false;
-
   bool get _canSignInWithPin =>
       AuthRules.isValidThaiPhone(_phoneController.text) &&
-      _pinController.text.trim().length == 6 &&
-      !_isPinLocked;
+      _pinController.text.trim().length == 6;
 
   /// โหลดสถานะการกรอก PIN ของเบอร์ที่พิมพ์ — ใช้แสดงจำนวนครั้งที่เหลือและเวลาล็อก
   Future<void> _refreshPinStatus() async {
@@ -210,6 +211,7 @@ class _LoginPageState extends ConsumerState<LoginPage> with ToastMixin {
   Future<void> _handleSignInWithPin(bool isEn) async {
     FocusManager.instance.primaryFocus?.unfocus();
     if (!_canSignInWithPin) return;
+    setState(() => _pinAttempted = true);
     final failure = await ref
         .read(authControllerProvider.notifier)
         .signInWithPin(
@@ -993,7 +995,7 @@ class _LoginPageState extends ConsumerState<LoginPage> with ToastMixin {
               ),
             ],
             PinLockNotice(
-              status: _pinStatus,
+              status: _pinAttempted ? _pinStatus : null,
               isEn: isEn,
               onExpired: _refreshPinStatus,
               onUseOtp: () => setState(() {
