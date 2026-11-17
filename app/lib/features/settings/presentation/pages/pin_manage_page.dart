@@ -384,20 +384,13 @@ class _PinDoneView extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              width: 72,
-              height: 72,
-              decoration: const BoxDecoration(
-                color: AppColors.ownerPillBg,
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                LucideIcons.check,
-                size: 34,
-                color: AppColors.ownerTeal,
-              ),
+            const _CatIconBadge(
+              badge: LucideIcons.checkCheck,
+              bg: AppColors.ownerPillBg,
+              color: AppColors.ownerTeal,
+              size: 84,
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 16),
             Text(
               AuthL10n.pinDoneTitle(hasPin, isEn),
               style: const TextStyle(
@@ -435,6 +428,65 @@ class _PinDoneView extends StatelessWidget {
                     style: const TextStyle(fontWeight: FontWeight.w700),
                   ),
                 ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// ตราแมว + ป้ายเล็กมุมล่างขวา — สไตล์เดียวกับจอสำเร็จของหน้าลบบัญชี
+class _CatIconBadge extends StatelessWidget {
+  const _CatIconBadge({
+    required this.badge,
+    required this.bg,
+    required this.color,
+    this.size = 76,
+  });
+
+  final IconData badge;
+  final Color bg;
+  final Color color;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    final badgeSize = size * 0.36;
+    return Center(
+      child: SizedBox(
+        width: size + 8,
+        height: size + 8,
+        child: Stack(
+          children: [
+            Center(
+              child: Container(
+                width: size,
+                height: size,
+                decoration: BoxDecoration(
+                  color: bg,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  LucideIcons.cat,
+                  size: size * 0.46,
+                  color: color,
+                ),
+              ),
+            ),
+            Positioned(
+              right: 0,
+              bottom: 0,
+              child: Container(
+                width: badgeSize,
+                height: badgeSize,
+                decoration: BoxDecoration(
+                  color: AppColors.card,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: AppColors.line, width: 1.5),
+                ),
+                child: Icon(badge, size: badgeSize * 0.55, color: color),
               ),
             ),
           ],

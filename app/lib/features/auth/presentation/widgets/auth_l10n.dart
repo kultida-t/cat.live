@@ -87,8 +87,8 @@ abstract final class AuthL10n {
       : 'เปลี่ยนเครื่อง / ลืม PIN? ยืนยันด้วยรหัส OTP';
 
   static String invalidPinError(bool isEn) => isEn
-      ? 'Incorrect PIN (Demo PIN: 123456).'
-      : 'รหัส PIN ไม่ถูกต้อง (รหัสทดสอบ: 123456)';
+      ? 'Incorrect PIN. Please try again.'
+      : 'รหัส PIN ไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง';
 
   static String requestOtpBtn(bool isEn) => isEn ? 'Request OTP' : 'ขอรหัส OTP';
 

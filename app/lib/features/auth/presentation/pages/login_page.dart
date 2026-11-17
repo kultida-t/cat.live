@@ -48,42 +48,53 @@ class _LoginPageState extends ConsumerState<LoginPage> with ToastMixin {
   bool _pinSetupPhase = false;
   bool? _accountHasPin;
   String? _pinSetupError;
+  int _prevPhoneLen = 0;
+  int _prevPinLen = 0;
+  int _prevOtpLen = 0;
+  bool _prevBothPinsDone = false;
 
   @override
   void initState() {
     super.initState();
+    // ปิดคีย์แพ็ดเฉพาะตอน "พิมพ์จนครบจำนวนหลัก" เท่านั้น — เก็บความยาวล่าสุดไว้เทียบ
+    // ไม่งั้นตอนลบ/แก้ตัวเลขที่ยังอยู่ที่จำนวนครบคีย์แพ็ดจะหุบกลางทาง
     _phoneController.addListener(() {
-      if (_phoneController.text.length == 10) {
+      final len = _phoneController.text.length;
+      if (len == 10 && _prevPhoneLen < 10) {
         FocusManager.instance.primaryFocus?.unfocus();
       }
+      _prevPhoneLen = len;
       setState(() {});
     });
     _pinController.addListener(() {
-      if (_pinController.text.length == 6) {
+      final len = _pinController.text.length;
+      if (len == 6 && _prevPinLen < 6) {
         FocusManager.instance.primaryFocus?.unfocus();
       }
+      _prevPinLen = len;
       setState(() {});
     });
     _otpController.addListener(() {
-      if (_otpController.text.length == 6) {
+      final len = _otpController.text.length;
+      if (len == 6 && _prevOtpLen < 6) {
         FocusManager.instance.primaryFocus?.unfocus();
       }
+      _prevOtpLen = len;
       setState(() {});
     });
-    _newPinController.addListener(() {
-      if (_newPinController.text.length == 6 &&
-          _confirmPinController.text.length == 6) {
+    void dismissWhenBothPinsDone() {
+      final bothDone =
+          _newPinController.text.length == 6 &&
+          _confirmPinController.text.length == 6;
+      if (bothDone && !_prevBothPinsDone) {
         FocusManager.instance.primaryFocus?.unfocus();
       }
+      _prevBothPinsDone = bothDone;
       setState(() {});
-    });
-    _confirmPinController.addListener(() {
-      if (_newPinController.text.length == 6 &&
-          _confirmPinController.text.length == 6) {
-        FocusManager.instance.primaryFocus?.unfocus();
-      }
-      setState(() {});
-    });
+    }
+
+    _newPinController.addListener(dismissWhenBothPinsDone);
+    _confirmPinController.addListener(dismissWhenBothPinsDone);
   }
 
   /// ปลายทางหลังล็อกอิน/สมัครสำเร็จ — ค่าเริ่มต้นคือหน้าแรก (AUTH-02)
