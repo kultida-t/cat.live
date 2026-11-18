@@ -405,6 +405,12 @@ describe('Auth API (e2e)', () => {
         .expect(200);
       expect(me.body.displayName).toBe('ทาสแมว');
       expect(me.body.birthYear).toBe(1995);
+
+      const audits = await prisma.auditLog.findMany({
+        where: { action: 'me.profile_updated' },
+      });
+      expect(audits).toHaveLength(1);
+      expect(audits[0].actorId).toBe(me.body.id);
     });
 
     it('ปฏิเสธเมื่อไม่มี token, ส่ง body ว่าง หรือชื่อว่าง', async () => {

@@ -1,6 +1,7 @@
 import { HttpStatus, Inject, Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { AuditService } from '../common/audit.js';
 import { CLOCK, type Clock } from '../common/clock.js';
 import { SMS_SENDER, type SmsSender } from '../sms/sms.js';
 import {
@@ -55,6 +56,7 @@ export class AuthService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwt: JwtService,
+    private readonly audit: AuditService,
     @Inject(CLOCK) private readonly now: Clock,
     @Inject(SMS_SENDER) private readonly sms: SmsSender,
   ) {}
@@ -91,6 +93,9 @@ export class AuthService {
       },
     });
     await this.sms.sendOtp(phone, code, refCode);
+    await this.audit.record('auth.otp.requested', {
+      meta: { phoneMasked: maskThaiPhone(phone) },
+    });
 
     return {
       refCode,
@@ -132,7 +137,12 @@ export class AuthService {
         where: { id: challenge.id },
         data: { attemptsUsed, lockedUntil },
       });
-      if (lockedUntil) throw this.lockedError('otp_locked', lockedUntil, now);
+      if (lockedUntil) {
+        await this.audit.record('auth.otp.locked', {
+          meta: { phoneMasked: maskThaiPhone(challenge.phone) },
+        });
+        throw this.lockedError('otp_locked', lockedUntil, now);
+      }
       throw authError(HttpStatus.UNAUTHORIZED, 'otp_invalid', {
         remainingAttempts: OTP_MAX_ATTEMPTS - attemptsUsed,
       });
@@ -154,6 +164,10 @@ export class AuthService {
     await this.prisma.pinCredential.updateMany({
       where: { userId },
       data: { failedAttempts: 0, lockedUntil: null },
+    });
+    await this.audit.record('auth.login', {
+      actorId: userId,
+      meta: { method: 'phoneOtp', phoneMasked: maskThaiPhone(challenge.phone) },
     });
     return this.issueTokens(userId);
   }
@@ -224,6 +238,10 @@ export class AuthService {
         remainingAttempts: PIN_MAX_ATTEMPTS - after.failedAttempts,
       });
     }
+    await this.audit.record('auth.login', {
+      actorId: owner.userId,
+      meta: { method: 'pin', phoneMasked: maskThaiPhone(phone) },
+    });
     return this.issueTokens(owner.userId);
   }
 
@@ -257,6 +275,7 @@ export class AuthService {
     if (!owner)
       throw authError(HttpStatus.UNPROCESSABLE_ENTITY, 'pin_requires_phone');
     await this.writePin(userId, pin);
+    await this.audit.record('auth.pin.set', { actorId: userId });
   }
 
   async changePin(
@@ -281,6 +300,7 @@ export class AuthService {
       });
     }
     await this.writePin(userId, newPin);
+    await this.audit.record('auth.pin.changed', { actorId: userId });
   }
 
   /** ตรวจ PIN พร้อมนับครั้งที่ผิด — ระหว่างล็อกไม่ตรวจเลย */
@@ -313,6 +333,7 @@ export class AuthService {
           : null,
       },
     });
+    if (lockNow) await this.audit.record('auth.pin.locked', { actorId: userId });
     return lockNow ? 'locked' : 'wrong';
   }
 
@@ -340,6 +361,9 @@ export class AuthService {
         where: { userId: row.userId, revokedAt: null },
         data: { revokedAt: now },
       });
+      await this.audit.record('auth.session.reuse_detected', {
+        actorId: row.userId,
+      });
       throw authError(HttpStatus.UNAUTHORIZED, 'refresh_invalid');
     }
     if (row.expiresAt <= now)
@@ -353,10 +377,16 @@ export class AuthService {
   }
 
   async logout(refreshToken: string): Promise<void> {
+    const row = await this.prisma.refreshToken.findUnique({
+      where: { tokenHash: sha256(refreshToken) },
+      select: { userId: true },
+    });
     await this.prisma.refreshToken.updateMany({
       where: { tokenHash: sha256(refreshToken), revokedAt: null },
       data: { revokedAt: this.now() },
     });
+    if (row)
+      await this.audit.record('auth.logout', { actorId: row.userId });
   }
 
   async me(userId: string) {
@@ -390,6 +420,11 @@ export class AuthService {
           : {}),
         ...(data.birthYear !== undefined ? { birthYear: data.birthYear } : {}),
       },
+    });
+    // log เฉพาะชื่อฟิลด์ที่เปลี่ยน ไม่ใส่ค่าจริง (PII)
+    await this.audit.record('me.profile_updated', {
+      actorId: userId,
+      meta: { fields: Object.keys(data) },
     });
     return this.me(userId);
   }

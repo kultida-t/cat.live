@@ -9,5 +9,7 @@ export function configureApp(app: INestApplication): INestApplication {
   // ยกเว้น /health ที่ LB เรียกตรง ๆ โดยไม่ผ่าน prefix
   app.setGlobalPrefix('api/v1', { exclude: ['health'] });
   app.useGlobalPipes(new StandardSchemaValidationPipe());
+  // อยู่หลัง LB — เชื่อ X-Forwarded-For 1 hop เพื่อให้ rate limit แยกตาม IP ผู้ใช้จริง
+  app.getHttpAdapter().getInstance().set('trust proxy', 1);
   return app;
 }

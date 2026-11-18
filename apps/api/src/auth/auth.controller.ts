@@ -8,6 +8,7 @@ import {
   Req,
   UseGuards,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service.js';
 import {
   otpRequestSchema,
@@ -29,18 +30,22 @@ import { JwtAuthGuard, type AuthenticatedRequest } from './jwt-auth.guard.js';
 export class AuthController {
   constructor(private readonly auth: AuthService) {}
 
+  // ขอ OTP มีค่าส่ง SMS — จำกัดต่อ IP แยกจาก cooldown ต่อเบอร์ที่อยู่ใน service
   @Post('otp/request')
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   requestOtp(@Body({ schema: otpRequestSchema }) body: OtpRequestDto) {
     return this.auth.requestOtp(body);
   }
 
   @Post('otp/verify')
+  @Throttle({ default: { limit: 30, ttl: 60_000 } })
   verifyOtp(@Body({ schema: otpVerifySchema }) body: OtpVerifyDto) {
     return this.auth.verifyOtp(body);
   }
 
   @Post('pin/login')
   @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 15, ttl: 60_000 } })
   pinLogin(@Body({ schema: pinLoginSchema }) body: PinLoginDto) {
     return this.auth.pinLogin(body);
   }
@@ -83,6 +88,7 @@ export class AuthController {
 
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 60, ttl: 60_000 } })
   refresh(@Body({ schema: refreshSchema }) body: RefreshDto) {
     return this.auth.refresh(body.refreshToken);
   }

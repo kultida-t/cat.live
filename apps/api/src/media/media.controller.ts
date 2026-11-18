@@ -11,6 +11,7 @@ import {
   Req,
   UseGuards,
 } from '@nestjs/common';
+import { SkipThrottle } from '@nestjs/throttler';
 import { z } from 'zod';
 import { JwtAuthGuard, type AuthenticatedRequest } from '../auth/jwt-auth.guard.js';
 import { AVATAR_EXTENSIONS, MAX_AVATAR_BYTES, MediaService, type CallbackBody } from './media.service.js';
@@ -71,8 +72,10 @@ export class MediaController {
   }
 }
 
-/** รับผลประมวลผลจาก CloudImageLab — ไม่ใช้ JWT เพราะเป็น server ส่งเข้ามา ใช้ secret ใน query string แทน */
+/** รับผลประมวลผลจาก CloudImageLab — ไม่ใช้ JWT เพราะเป็น server ส่งเข้ามา ใช้ secret ใน query string แทน
+ *  ข้าม rate limit — server เรียกกลับอาจมาเป็นกระบวน สิทธิ์คุมด้วย secret อยู่แล้ว */
 @Controller('webhooks')
+@SkipThrottle()
 export class WebhookController {
   constructor(private readonly media: MediaService) {}
 

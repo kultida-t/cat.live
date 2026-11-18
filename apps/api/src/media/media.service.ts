@@ -9,6 +9,7 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { randomUUID, timingSafeEqual } from 'node:crypto';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { AuditService } from '../common/audit.js';
 import { CloudImageLabClient } from './cloudimagelab.client.js';
 import { OBJECT_PRESIGNER, type ObjectPresigner } from './s3-presigner.js';
 
@@ -34,6 +35,7 @@ export class MediaService {
     private readonly prisma: PrismaService,
     private readonly cil: CloudImageLabClient,
     private readonly config: ConfigService,
+    private readonly audit: AuditService,
     @Inject(OBJECT_PRESIGNER) private readonly presigner: ObjectPresigner,
   ) {}
 
@@ -94,7 +96,13 @@ export class MediaService {
 
   /** รับผลจาก CloudImageLab — ตรวจ key ก่อนทุกครั้ง และทำซ้ำได้โดยไม่เปลี่ยนผลเดิม */
   async handleCallback(secret: string | undefined, body: CallbackBody): Promise<void> {
-    if (!this.isValidCallbackSecret(secret)) throw new UnauthorizedException();
+    if (!this.isValidCallbackSecret(secret)) {
+      await this.audit.record('media.callback_rejected', {
+        entityType: 'media_upload',
+        meta: { reason: 'invalid_secret' },
+      });
+      throw new UnauthorizedException();
+    }
     const upload = await this.prisma.mediaUpload.findUnique({ where: { fileId: body.fileId } });
     if (!upload) throw new NotFoundException('ไม่พบงานประมวลผลรูปนี้');
     if (upload.status !== 'processing') return;
