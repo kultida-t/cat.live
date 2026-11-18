@@ -1,5 +1,8 @@
+import 'dart:io';
+
 import 'package:dio/dio.dart';
 
+import '../../../../core/error/failure.dart';
 import '../../../../core/network/dio_failure_mapper.dart';
 import '../../domain/entities/my_cat_data.dart';
 import '../models/my_cat_models.dart';
@@ -7,9 +10,12 @@ import 'my_cat_remote_data_source.dart';
 
 /// แหล่งข้อมูลหน้าแมวและฉันจาก Backend API จริง (พร้อมใช้งานเมื่อเปิด API)
 class DioMyCatDataSource implements MyCatRemoteDataSource {
-  DioMyCatDataSource(this._dio);
+  /// [_uploadDio] ใช้ส่งไฟล์ขึ้น S3 ด้วย presigned URL เท่านั้น — ห้ามแนบ token ของแอป (ไม่งั้นลายเซ็นผิด)
+  DioMyCatDataSource(this._dio, {Dio? uploadDio})
+    : _uploadDio = uploadDio ?? Dio();
 
   final Dio _dio;
+  final Dio _uploadDio;
 
   Future<T> _guard<T>(Future<T> Function() run) async {
     try {
@@ -55,6 +61,9 @@ class DioMyCatDataSource implements MyCatRemoteDataSource {
     final birth = c['birthDate'] == null
         ? null
         : DateTime.parse(c['birthDate'] as String);
+    final photos =
+        (c['photoUrls'] as List?)?.whereType<String>().toList() ??
+        const <String>[];
     return {
       'id': c['id'],
       'public_id': c['publicId'],
@@ -64,6 +73,11 @@ class DioMyCatDataSource implements MyCatRemoteDataSource {
       'neutered': c['neutered'] ?? false,
       'age_label': birth == null ? '' : _ageLabel(birth, DateTime.now()),
       'adopted_year': birth?.year ?? DateTime.now().year,
+      'weight_kg': c['weightKg'] ?? 0.0,
+      'avatar_url': photos.isNotEmpty ? photos.first : '',
+      'photos': [
+        for (final url in photos) {'id': url, 'image_url': url},
+      ],
     };
   }
 
@@ -75,6 +89,46 @@ class DioMyCatDataSource implements MyCatRemoteDataSource {
     return months >= 12 ? '${months ~/ 12} ปี' : '$months เดือน';
   }
 
+  /// แปลงค่ารูปในฟอร์มเป็น URL จริง: `file:` อัปโหลดขึ้น S3 ก่อน, URL อยู่แล้วใช้เลย, asset/ว่าง = ไม่มีรูป
+  Future<String?> _resolvePhotoUrl(String source) async {
+    if (source.isEmpty) return null;
+    if (source.startsWith('file:')) return _uploadLocalPhoto(source);
+    if (source.startsWith('http')) return source;
+    return null;
+  }
+
+  /// อัปโหลดไฟล์รูปในเครื่อง (ลบข้อมูลแฝงแล้วจากฝั่งฟอร์ม) ขึ้น S3 ผ่าน presigned URL
+  Future<String> _uploadLocalPhoto(String fileUri) async {
+    final bytes = await File(fileUri.substring(5)).readAsBytes();
+    final slot = await _dio.post<Map<String, dynamic>>(
+      '/media/cat-photos/upload-url',
+      data: {'contentType': 'image/png', 'fileSize': bytes.length},
+    );
+    try {
+      await _uploadDio.put<void>(
+        slot.data!['uploadUrl'] as String,
+        data: bytes,
+        options: Options(
+          headers: Map<String, dynamic>.from(slot.data!['headers'] as Map),
+        ),
+      );
+    } on DioException {
+      throw const UnknownFailure('อัปโหลดรูปไม่สำเร็จ ลองใหม่อีกครั้ง');
+    }
+    return slot.data!['imageUrl'] as String;
+  }
+
+  /// body สำหรับสร้าง/แก้แมว — ส่งเฉพาะฟิลด์ที่ backend รับ (snake_case ตามสัญญา)
+  Map<String, dynamic> _catMutationJson(CatProfile c, String? photoUrl) => {
+    'name': c.name,
+    'breed': c.breed,
+    'sex': c.gender == CatGender.male ? 'male' : 'female',
+    'neutered': c.neutered,
+    'age_label': c.ageLabel,
+    'weight_kg': c.weightKg,
+    'photo_url': ?photoUrl,
+  };
+
   @override
   Future<void> toggleCareTask({
     required String catId,
@@ -82,37 +136,44 @@ class DioMyCatDataSource implements MyCatRemoteDataSource {
     required bool isDone,
   }) => _guard(
     () => _dio.patch<void>(
-      '/v1/cats/$catId/care-tasks/$taskId',
+      '/cats/$catId/care-tasks/$taskId',
       data: {'is_done': isDone},
     ),
   );
 
   @override
   Future<CatProfileModel> updateCatProfile(CatProfile cat) => _guard(() async {
+    final photoUrl = await _resolvePhotoUrl(cat.avatarSource);
     final res = await _dio.put<Map<String, dynamic>>(
-      '/v1/cats/${cat.id}',
-      data: CatProfileModel.toJson(cat),
+      '/cats/${cat.id}',
+      data: _catMutationJson(cat, photoUrl),
     );
-    return CatProfileModel.fromJson(res.data!);
+    return CatProfileModel.fromJson(
+      _catJson(Map<String, dynamic>.from(res.data!)),
+    );
   });
 
   @override
   Future<CatProfileModel> addCatProfile(CatProfile newCat) => _guard(() async {
+    final photoUrl = await _resolvePhotoUrl(newCat.avatarSource);
     final res = await _dio.post<Map<String, dynamic>>(
-      '/v1/cats',
-      data: CatProfileModel.toJson(newCat),
+      '/cats',
+      data: _catMutationJson(newCat, photoUrl),
     );
-    return CatProfileModel.fromJson(res.data!);
+    return CatProfileModel.fromJson(
+      _catJson(Map<String, dynamic>.from(res.data!)),
+    );
   });
 
   @override
   Future<OwnerProfileModel> updateOwnerProfile(OwnerProfile owner) =>
       _guard(() async {
-        final res = await _dio.put<Map<String, dynamic>>(
-          '/v1/me/profile',
-          data: OwnerProfileModel.toJson(owner),
+        // backend ตอนนี้รับเฉพาะ displayName — ฟิลด์อื่นของโปรไฟล์ยังเก็บฝั่งแอปไว้ก่อน
+        await _dio.put<void>(
+          '/me/profile',
+          data: {'displayName': owner.displayName},
         );
-        return OwnerProfileModel.fromJson(res.data!);
+        return OwnerProfileModel(entity: owner);
       });
 
   @override
@@ -121,9 +182,10 @@ class DioMyCatDataSource implements MyCatRemoteDataSource {
     required String imageSource,
     required String caption,
   }) => _guard(() async {
+    final url = await _resolvePhotoUrl(imageSource) ?? imageSource;
     final res = await _dio.post<Map<String, dynamic>>(
-      '/v1/cats/$catId/photos',
-      data: {'image_url': imageSource, 'caption': caption},
+      '/cats/$catId/photos',
+      data: {'image_url': url, 'caption': caption},
     );
     final data = res.data!;
     return CatPhotoItem(
