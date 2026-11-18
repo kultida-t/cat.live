@@ -1,0 +1,14 @@
+[
+  {
+    "name": "api",
+    "dockerfile": "apps/api/Dockerfile",
+    "context": "apps/api",
+    "image_variable": "API_IMAGE"
+  },
+  {
+    "name": "migrator",
+    "dockerfile": "apps/api/Dockerfile.migrator",
+    "context": "apps/api",
+    "image_variable": "MIGRATOR_IMAGE"
+  }
+]

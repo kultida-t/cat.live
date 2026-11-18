@@ -1,0 +1,27 @@
+# Production override — placement ตาม default 9 ข้อ (environment=prod)
+# Resources อ่านจาก GitLab variables scope production; ค่า default เป็น starter ของ playbook
+# ที่มี warning เสมอ — ควรวัดจริงบน staging แล้วตั้ง API_* 4 ค่าก่อนใช้งาน production
+services:
+  api:
+    environment:
+      # แอปจะไม่ยอม boot ค่านี้จนกว่าจะมีผู้ให้บริการ SMS จริง (safeguard ที่ตั้งใจไว้ใน src/sms/sms.ts)
+      NODE_ENV: production
+    deploy:
+      placement:
+        constraints:
+        - node.labels.platform.environment == prod
+        - node.labels.platform.workload == general
+        - node.labels.platform.scalable == true
+        - node.labels.platform.zone == primary
+        - node.labels.platform.pool == general
+        - node.labels.platform.role.app == true
+        - node.labels.platform.exposure.private == true
+        - node.labels.platform.exposure.public == true
+        - node.labels.platform.allow.none == true
+      resources:
+        reservations:
+          cpus: ${API_CPU_RESERVATION:-0.10}
+          memory: ${API_MEMORY_RESERVATION:-256M}
+        limits:
+          cpus: ${API_CPU_LIMIT:-1.00}
+          memory: ${API_MEMORY_LIMIT:-512M}

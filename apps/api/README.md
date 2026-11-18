@@ -71,3 +71,55 @@ npm run test:e2e   # ใช้ฐาน catlive_test เท่านั้น (�
 - `src/common/clock.ts` — เวลาที่ inject ได้ (เทสเลื่อนเวลาได้)
 - `prisma/schema.prisma` — ตาราง `users`, `user_private` (เบอร์, ลับ), `pin_credentials`, `otp_challenges`, `refresh_tokens`, `audit_logs`
 - `src/generated/prisma/` — ถูกสร้างจาก `prisma generate` (ไม่คอมมิต)
+
+## Deploy ขึ้น Docker Swarm (GitLab CI)
+
+สร้างตาม [swarm-ci-playbook](https://git.mrfox.store/infra/swarm-ci-playbook) commit `d913348970a26323ccca66280d47822afcaf9832`
+
+ไฟล์ที่เกี่ยวข้อง (root ของ repo):
+
+- `.gitlab-ci.yml` — pipeline `validate → build_images → release_<env>` (with-migrator)
+- `ci/swarm/` — helper ของ playbook (ห้ามแก้) + `images.json` ของโปรเจกต์นี้
+- `deploy/docker-stack.yml` + `deploy/staging.yml` + `deploy/production.yml`
+- `apps/api/Dockerfile` — image `catlive/api` (NestJS, port 3000, `GET /health`)
+- `apps/api/Dockerfile.migrator` + `apps/api/docker/migrate.sh` — image `catlive/migrator` รัน `prisma migrate deploy` แบบ standalone `docker run` บน deploy host ก่อน deploy
+
+Trigger: push ไป branch `staging` → build+deploy staging, push ไป branch `production` → build+deploy production (แนะนำตั้ง protected branches) ref อื่นเลือกเองด้วย `DEPLOY_ENVIRONMENT=staging|production` ส่วน push ปกติรันแค่ validate
+
+### GitLab variables ที่ต้องตั้ง (Project → Settings → CI/CD → Variables)
+
+ไม่ใส่ค่าจริงใน repo — ตัวส่วนกลาง `MrFox_Agent_User` / `MrFox_Agent_Token` มีอยู่แล้วระดับ instance ไม่ต้องสร้างซ้ำ
+
+| GitLab key | แอปอ่านเป็น | ทั่วไป/secret | Type | Scope | Required/default | ใช้ช่วงใด |
+|---|---|---|---|---|---|---|
+| `STACK_NAME` | ชื่อ stack บน Swarm เช่น `catlive-stg` / `catlive-prod` | ทั่วไป | Variable | `staging` / `production` | Required | Release |
+| `APP_POSTGRES_CONNECTION` | `DATABASE_URL` ของ service `api` (user สิทธิ์ต่ำ `catlive_app`) | Secret | Variable | `staging` / `production` | Required | Runtime |
+| `APP_MIGRATOR_POSTGRES_CONNECTION` | `ConnectionStrings__Postgres` → `DATABASE_URL` ใน migrator (DDL credential แยก) | Secret | Variable | `staging` / `production` | Required | Migration |
+| `JWT_SECRET` | `JWT_SECRET` | Secret | Variable | `staging` / `production` | Required | Runtime |
+| `CLOUDIMAGELAB_BASE_URL` | ชื่อเดียวกัน (stg=`https://stg-cloudimagelab-api.mrfox.store`, prod=`https://cloudimagelab-api.univerza.co`) | ทั่วไป | Variable | `staging` / `production` | Required | Runtime |
+| `CLOUDIMAGELAB_API_KEY` | ชื่อเดียวกัน (key `cil_` ของแต่ละ env) | Secret | Variable | `staging` / `production` | Required | Runtime |
+| `CLOUDIMAGELAB_CALLBACK_BASE_URL` | ชื่อเดียวกัน — public URL ของ API นี้ เช่น `https://<api-domain>` | ทั่วไป | Variable | `staging` / `production` | Required | Runtime |
+| `CLOUDIMAGELAB_CALLBACK_TYPE` | ชื่อเดียวกัน | ทั่วไป | Variable | `staging` / `production` | Optional; `avatar` | Runtime |
+| `CLOUDIMAGELAB_CALLBACK_SECRET` | ชื่อเดียวกัน (ค่าสุ่มของเรา แยกจาก API key) | Secret | Variable | `staging` / `production` | Required | Runtime |
+| `CLOUDIMAGELAB_AVATAR_PRESET` | ชื่อเดียวกัน | ทั่วไป | Variable | `staging` / `production` | Optional; `thumb_sq` | Runtime |
+| `AVATAR_SOURCE_BUCKET` | ชื่อเดียวกัน (`mf-share`) | ทั่วไป | Variable | `staging` / `production` | Required | Runtime |
+| `AWS_REGION` | ชื่อเดียวกัน | ทั่วไป | Variable | `staging` / `production` | Optional; `ap-southeast-7` | Runtime |
+| `AWS_ACCESS_KEY_ID` | ชื่อเดียวกัน (IAM `share-s3-b-mf-share`) | Secret | Variable | `staging` / `production` | Required | Runtime |
+| `AWS_SECRET_ACCESS_KEY` | ชื่อเดียวกัน | Secret | Variable | `staging` / `production` | Required | Runtime |
+| `MEDIA_KEY_PREFIX` | ชื่อเดียวกัน (โฟลเดอร์ใน bucket) | ทั่วไป | Variable | `staging` / `production` | Optional; `catlive` | Runtime |
+| `READINESS_URL` | ไม่เข้า container — release helper เรียก HTTP จาก runner เช่น `https://<api-domain>/health` | ทั่วไป | Variable | `staging` / `production` | Optional; ไม่ตั้ง = ข้าม HTTP check | Release |
+| `EXPECTED_SWARM_ID` | ไม่เข้า container — เช็ก target cluster | ทั่วไป | Variable | `staging` / `production` | Recommended | Release |
+| `API_CPU_RESERVATION` `API_CPU_LIMIT` `API_MEMORY_RESERVATION` `API_MEMORY_LIMIT` | resources ของ service `api` | ทั่วไป | Variable | `production` | Optional; starter `0.10/1.00`, `256M/512M` | Release |
+| `MIGRATION_TIMEOUT` | timeout ของขั้นตอน migrate (วินาที, จำนวนเต็มบวก) | ทั่วไป | Variable | `staging` / `production` | Required เมื่อใช้ migrator | Migration |
+| `MIGRATOR_CPUS` `MIGRATOR_MEMORY` | limit ของ migrator container | ทั่วไป | Variable | `staging` / `production` | Recommended (ไม่ตั้งจะ warning) | Migration |
+
+หมายเหตุ secret: ตั้ง Type `Variable` (ไม่ใช่ File), Masked เมื่อรูปแบบรองรับ, ปิด expansion ถ้าค่ามี `$`, production แนะนำ Protected ถ้า DATABASE_URL มี `sslmode=verify-full` ให้ใส่ `sslrootcert=/app/certs/rds-ap-southeast-7-bundle.pem` (bundle ฝังใน image แล้ว)
+
+### สิ่งที่ต้องยืนยันกับ admin/infra ก่อน deploy ครั้งแรก
+
+- network overlay `ingress_api` มีจริงบนทั้งสอง Swarm + LB route จาก domain API (เช่น `api.แมว.live`) → service `api` port 3000 และ Health Check URL `GET /health`
+- registry namespace `catlive` บน `reg.mrfox.store` ได้รับอนุญาต
+- RDS endpoint เข้าถึงได้จาก deploy host (migrator รัน `docker run` ไม่ผ่าน overlay)
+- runner tags `build`, `deploy_stg`, `deploy_prod` online และ deploy runner เข้าถึง `READINESS_URL` ได้
+- NFS: ไม่ใช้ (รูปอัปโหลดไป S3 ไม่เก็บไฟล์ถาวรใน container)
+- **production จะไม่ boot จนกว่าจะมีผู้ให้บริการ SMS จริง** — `smsSenderProvider` ปฏิเสธ `NODE_ENV=production` โดยตั้งใจ (`src/sms/sms.ts`); staging ใช้ `NODE_ENV=staging` + ConsoleSmsSender (OTP อยู่ใน service log)

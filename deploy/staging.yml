@@ -1,0 +1,27 @@
+# Staging override — placement ตาม default 9 ข้อของ playbook (environment=stg)
+# Resources: profile "Standard API" (NestJS ปานกลาง) เป็นค่าเริ่มทดสอบ ยังไม่ใช่ผลวัดจริง
+services:
+  api:
+    environment:
+      # ยังไม่มีผู้ให้บริการ SMS จริง — แอปปฏิเสธรันถ้า NODE_ENV=production (ดู src/sms/sms.ts)
+      # staging ใช้ ConsoleSmsSender: รหัส OTP อยู่ใน log ของ service
+      NODE_ENV: staging
+    deploy:
+      placement:
+        constraints:
+        - node.labels.platform.environment == stg
+        - node.labels.platform.workload == general
+        - node.labels.platform.scalable == true
+        - node.labels.platform.zone == primary
+        - node.labels.platform.pool == general
+        - node.labels.platform.role.app == true
+        - node.labels.platform.exposure.private == true
+        - node.labels.platform.exposure.public == true
+        - node.labels.platform.allow.none == true
+      resources:
+        reservations:
+          cpus: '0.10'
+          memory: 256M
+        limits:
+          cpus: '1.00'
+          memory: 512M

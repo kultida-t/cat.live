@@ -1,0 +1,57 @@
+# Stack กลางของ cat.live API — override ต่อ environment ใน deploy/staging.yml และ deploy/production.yml
+# API อยู่หลัง load balancer ผ่าน overlay network `ingress_api` ที่ infra เตรียม (ต้องยืนยันกับ admin)
+# แอปมี GET /health สำหรับ LB health check และ CI READINESS_URL — ไฟล์นี้ไม่ได้ตั้งค่า LB
+#
+# ทางเลือกถ้าไม่มี shared ingress: เปิด published port ช่วง API 8000-8999 ตามเลขที่ admin จัดสรร
+# เช่น เพิ่มใน service api -> ports: [{ target: 3000, published: ${API_PUBLISHED_PORT:?}, protocol: tcp, mode: ingress }]
+# และแจ้ง admin ให้ LB target/health-check port ตรงกัน — อย่าเปิดพร้อมกับ ingress route โดยไม่ประสาน
+#
+# environment: ส่งเฉพาะ key ที่แอปอ่านจริง (ดู apps/api/.env.example) — GitLab job vars
+# ไม่ได้เข้า container อัตโนมัติ ชื่อฝั่งขวาคือ GitLab CI/CD variable ที่ต้องตั้งแยก scope staging/production
+services:
+  api:
+    image: ${API_IMAGE:?API_IMAGE is required}
+    logging:
+      driver: json-file
+      options:
+        max-size: 50m
+        max-file: '5'
+    environment:
+      PORT: '3000'
+      DATABASE_URL: ${APP_POSTGRES_CONNECTION:?APP_POSTGRES_CONNECTION is required}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
+      MEDIA_KEY_PREFIX: ${MEDIA_KEY_PREFIX:-catlive}
+      CLOUDIMAGELAB_BASE_URL: ${CLOUDIMAGELAB_BASE_URL:?CLOUDIMAGELAB_BASE_URL is required}
+      CLOUDIMAGELAB_API_KEY: ${CLOUDIMAGELAB_API_KEY:?CLOUDIMAGELAB_API_KEY is required}
+      CLOUDIMAGELAB_CALLBACK_BASE_URL: ${CLOUDIMAGELAB_CALLBACK_BASE_URL:?CLOUDIMAGELAB_CALLBACK_BASE_URL is required}
+      CLOUDIMAGELAB_CALLBACK_TYPE: ${CLOUDIMAGELAB_CALLBACK_TYPE:-avatar}
+      CLOUDIMAGELAB_CALLBACK_SECRET: ${CLOUDIMAGELAB_CALLBACK_SECRET:?CLOUDIMAGELAB_CALLBACK_SECRET is required}
+      CLOUDIMAGELAB_AVATAR_PRESET: ${CLOUDIMAGELAB_AVATAR_PRESET:-thumb_sq}
+      AVATAR_SOURCE_BUCKET: ${AVATAR_SOURCE_BUCKET:?AVATAR_SOURCE_BUCKET is required}
+      AWS_REGION: ${AWS_REGION:-ap-southeast-7}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:?AWS_ACCESS_KEY_ID is required}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:?AWS_SECRET_ACCESS_KEY is required}
+    networks:
+    - ingress_api
+    deploy:
+      replicas: 1
+      labels:
+        io.mrfox.ci.pipeline-id: ${CI_PIPELINE_ID:-untracked}
+        io.mrfox.ci.project-id: ${CI_PROJECT_ID:-untracked}
+      restart_policy:
+        condition: on-failure
+        delay: 15s
+        max_attempts: 5
+      update_config:
+        parallelism: 1
+        order: stop-first
+        failure_action: rollback
+        monitor: 30s
+      rollback_config:
+        parallelism: 1
+        order: stop-first
+        failure_action: pause
+        monitor: 30s
+networks:
+  ingress_api:
+    external: true

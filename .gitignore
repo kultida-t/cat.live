@@ -28,3 +28,7 @@ __pycache__/
 # Local MCP config (contains API keys — never commit)
 .devin/mcp_config.local.json
 
+# Swarm CI: Python venv ของ bootstrap และ manifest ที่ build job สร้าง (artifact ไม่ commit)
+.ci-venv/
+release.json
+

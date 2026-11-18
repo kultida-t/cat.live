@@ -1,0 +1,15 @@
+# syntax=docker/dockerfile:1
+# Image สำหรับรัน `prisma migrate deploy` — release.py รันแบบ standalone `docker run`
+# บน deploy host ก่อน deploy stack (DB ต้องเข้าถึงได้จาก host นั้นผ่าน connection string)
+FROM node:22-alpine
+ENV NODE_ENV=production
+WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm ci --legacy-peer-deps
+COPY prisma ./prisma
+COPY prisma.config.ts ./
+COPY certs ./certs
+COPY docker/migrate.sh ./docker/migrate.sh
+RUN chmod +x docker/migrate.sh && addgroup -S app && adduser -S app -G app
+USER app
+CMD ["./docker/migrate.sh"]

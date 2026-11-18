@@ -1,0 +1,93 @@
+# GitLab CI สำหรับ deploy API ขึ้น Docker Swarm — สร้างตาม swarm-ci-playbook
+# อ้างอิง playbook commit: d913348970a26323ccca66280d47822afcaf9832
+# ทุก event รัน validate; push ไป branch staging/production = build + deploy อัตโนมัติ
+# เลือก deploy จาก ref อื่นได้ด้วย DEPLOY_ENVIRONMENT=staging|production
+# Release job ถือ lock เดียวครอบ migration -> deploy -> verify (resource_group)
+# READINESS_URL เป็น optional แยก scope staging/production — ยังไม่ตั้งจนกว่าจะมี domain จริง
+workflow:
+  rules:
+  - when: always
+stages:
+- validate
+- build
+- deploy
+variables:
+  DEPLOY_ENVIRONMENT: ''
+  DOCKER_REGISTRY: reg.mrfox.store
+  REGISTRY_NAMESPACE: catlive
+  DOCKER_BUILDKIT: '1'
+  BUILDKIT_PROGRESS: plain
+default:
+  tags:
+  - build
+  before_script:
+  - bash ci/swarm/bootstrap.sh
+validate_stack:
+  stage: validate
+  rules:
+  - when: on_success
+  script:
+  # ค่าด้านหน้าคำสั่งเป็น fake เฉพาะ validation (job นี้ไม่มี environment
+  # จึงไม่ได้รับตัวแปรที่ scope staging/production) — ห้ามนำไปใช้เป็น default ของ release
+  - JWT_SECRET=mock-jwt CLOUDIMAGELAB_BASE_URL=https://example.invalid CLOUDIMAGELAB_API_KEY=mock-cil-key
+    CLOUDIMAGELAB_CALLBACK_BASE_URL=https://example.invalid CLOUDIMAGELAB_CALLBACK_SECRET=mock-callback-secret
+    AVATAR_SOURCE_BUCKET=mock-bucket AWS_ACCESS_KEY_ID=mock-aws-key AWS_SECRET_ACCESS_KEY=mock-aws-secret
+    .ci-venv/bin/python ci/swarm/validate.py --environment staging --stack-file deploy/docker-stack.yml
+    --stack-file deploy/staging.yml --mock
+  - JWT_SECRET=mock-jwt CLOUDIMAGELAB_BASE_URL=https://example.invalid CLOUDIMAGELAB_API_KEY=mock-cil-key
+    CLOUDIMAGELAB_CALLBACK_BASE_URL=https://example.invalid CLOUDIMAGELAB_CALLBACK_SECRET=mock-callback-secret
+    AVATAR_SOURCE_BUCKET=mock-bucket AWS_ACCESS_KEY_ID=mock-aws-key AWS_SECRET_ACCESS_KEY=mock-aws-secret
+    .ci-venv/bin/python ci/swarm/validate.py --environment production --stack-file
+    deploy/docker-stack.yml --stack-file deploy/production.yml --mock
+build_images:
+  stage: build
+  timeout: 120 minutes
+  needs:
+  - validate_stack
+  rules:
+  - if: $DEPLOY_ENVIRONMENT == "staging" || $DEPLOY_ENVIRONMENT == "production"
+  - if: $DEPLOY_ENVIRONMENT == "" && $CI_PIPELINE_SOURCE == "push" && ($CI_COMMIT_BRANCH == "staging" || $CI_COMMIT_BRANCH == "production")
+  script:
+  - .ci-venv/bin/python ci/swarm/build.py
+  artifacts:
+    paths:
+    - release.json
+    expire_in: 30 days
+release_staging:
+  stage: deploy
+  tags:
+  - deploy_stg
+  timeout: 30 minutes
+  needs:
+  - job: build_images
+    artifacts: true
+  rules:
+  - if: $DEPLOY_ENVIRONMENT == "staging"
+  - if: $DEPLOY_ENVIRONMENT == "" && $CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "staging"
+  environment:
+    name: staging
+    deployment_tier: staging
+  resource_group: swarm-$CI_PROJECT_ID-staging
+  interruptible: false
+  script:
+  - .ci-venv/bin/python ci/swarm/release.py --manifest release.json --stack-file deploy/docker-stack.yml
+    --stack-file deploy/staging.yml --migrate
+release_production:
+  stage: deploy
+  tags:
+  - deploy_prod
+  timeout: 30 minutes
+  needs:
+  - job: build_images
+    artifacts: true
+  rules:
+  - if: $DEPLOY_ENVIRONMENT == "production"
+  - if: $DEPLOY_ENVIRONMENT == "" && $CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "production"
+  environment:
+    name: production
+    deployment_tier: production
+  resource_group: swarm-$CI_PROJECT_ID-production
+  interruptible: false
+  script:
+  - .ci-venv/bin/python ci/swarm/release.py --manifest release.json --stack-file deploy/docker-stack.yml
+    --stack-file deploy/production.yml --migrate

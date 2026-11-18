@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "enforcement": "guidance-only; deviations warn and continue, invalid configuration or runtime failures still stop",
+  "placement": {
+    "staging": [
+      "node.labels.platform.environment == stg",
+      "node.labels.platform.workload == general",
+      "node.labels.platform.scalable == true",
+      "node.labels.platform.zone == primary",
+      "node.labels.platform.pool == general",
+      "node.labels.platform.role.app == true",
+      "node.labels.platform.exposure.private == true",
+      "node.labels.platform.exposure.public == true",
+      "node.labels.platform.allow.none == true"
+    ],
+    "production": [
+      "node.labels.platform.environment == prod",
+      "node.labels.platform.workload == general",
+      "node.labels.platform.scalable == true",
+      "node.labels.platform.zone == primary",
+      "node.labels.platform.pool == general",
+      "node.labels.platform.role.app == true",
+      "node.labels.platform.exposure.private == true",
+      "node.labels.platform.exposure.public == true",
+      "node.labels.platform.allow.none == true"
+    ]
+  },
+  "profiles_scope": "measurement candidates; production starter fallbacks are not capacity or sizing approval",
+  "profiles": {
+    "light": {
+      "cpu_reservation": "0.10",
+      "cpu_limit": "0.50",
+      "memory_reservation": "128M",
+      "memory_limit": "256M"
+    },
+    "standard": {
+      "cpu_reservation": "0.10",
+      "cpu_limit": "1.00",
+      "memory_reservation": "256M",
+      "memory_limit": "512M"
+    },
+    "medium": {
+      "cpu_reservation": "0.10",
+      "cpu_limit": "1.00",
+      "memory_reservation": "512M",
+      "memory_limit": "768M"
+    },
+    "heavy": {
+      "cpu_reservation": "0.25",
+      "cpu_limit": "1.50",
+      "memory_reservation": "640M",
+      "memory_limit": "1024M"
+    }
+  }
+}
