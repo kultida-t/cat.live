@@ -30,5 +30,6 @@ __pycache__/
 
 # Swarm CI: Python venv ของ bootstrap และ manifest ที่ build job สร้าง (artifact ไม่ commit)
 .ci-venv/
+.ci-python/
 release.json
 
