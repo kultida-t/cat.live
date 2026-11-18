@@ -107,7 +107,8 @@ Trigger: push ไป branch `staging` → build+deploy staging, push ไป bran
 | `AWS_ACCESS_KEY_ID` | ชื่อเดียวกัน (IAM `share-s3-b-mf-share`) | Secret | Variable | `staging` / `production` | Required | Runtime |
 | `AWS_SECRET_ACCESS_KEY` | ชื่อเดียวกัน | Secret | Variable | `staging` / `production` | Required | Runtime |
 | `MEDIA_KEY_PREFIX` | ชื่อเดียวกัน (โฟลเดอร์ใน bucket) | ทั่วไป | Variable | `staging` / `production` | Optional; `catlive` | Runtime |
-| `READINESS_URL` | ไม่เข้า container — release helper เรียก HTTP จาก runner เช่น `https://<api-domain>/health` | ทั่วไป | Variable | `staging` / `production` | Optional; ไม่ตั้ง = ข้าม HTTP check | Release |
+| `API_PUBLISHED_PORT` | ไม่เข้า container — external port (ingress mode) → container 3000; ต้องตรง Application Register | ทั่วไป | Variable (มี default `'8300'` ใน `.gitlab-ci.yml`) | `staging` / `production` | ตั้งเฉพาะถ้าเลขจริงต่างจาก default | Release |
+| `READINESS_URL` | ไม่เข้า container — release helper เรียก HTTP จาก runner เช่น `http://stg-<code>.mrfox.store/health` | ทั่วไป | Variable | `staging` / `production` | Optional; ไม่ตั้ง = ข้าม HTTP check | Release |
 | `EXPECTED_SWARM_ID` | ไม่เข้า container — เช็ก target cluster | ทั่วไป | Variable | `staging` / `production` | Recommended | Release |
 | `API_CPU_RESERVATION` `API_CPU_LIMIT` `API_MEMORY_RESERVATION` `API_MEMORY_LIMIT` | resources ของ service `api` | ทั่วไป | Variable | `production` | Optional; starter `0.10/1.00`, `256M/512M` | Release |
 | `MIGRATION_TIMEOUT` | timeout ของขั้นตอน migrate (วินาที, จำนวนเต็มบวก) | ทั่วไป | Variable | `staging` / `production` | Required เมื่อใช้ migrator | Migration |
@@ -117,7 +118,7 @@ Trigger: push ไป branch `staging` → build+deploy staging, push ไป bran
 
 ### สิ่งที่ต้องยืนยันกับ admin/infra ก่อน deploy ครั้งแรก
 
-- network overlay `ingress_api` มีจริงบนทั้งสอง Swarm + LB route จาก domain API (เช่น `api.แมว.live`) → service `api` port 3000 และ Health Check URL `GET /health`
+- external port ที่ลงทะเบียนใน **MrFox Application Register** (ชีตที่ admin จัดการ) ตรงกับ `API_PUBLISHED_PORT` ใน `.gitlab-ci.yml` (ตอนนี้ `8300` ช่วง API 8000-8999) + staging URL `stg-<code>.mrfox.store` ชี้มาที่ port นี้ และ Health Check URL `GET /health` — ถ้า admin ใช้ shared ingress overlay แทน ให้แจ้งเพื่อปรับ `deploy/docker-stack.yml`
 - registry namespace `catlive` บน `reg.mrfox.store` ได้รับอนุญาต
 - RDS endpoint เข้าถึงได้จาก deploy host (migrator รัน `docker run` ไม่ผ่าน overlay)
 - runner tags `build`, `deploy_stg`, `deploy_prod` online และ deploy runner เข้าถึง `READINESS_URL` ได้

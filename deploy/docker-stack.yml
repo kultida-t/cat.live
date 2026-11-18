@@ -1,16 +1,20 @@
 # Stack กลางของ cat.live API — override ต่อ environment ใน deploy/staging.yml และ deploy/production.yml
-# API อยู่หลัง load balancer ผ่าน overlay network `ingress_api` ที่ infra เตรียม (ต้องยืนยันกับ admin)
-# แอปมี GET /health สำหรับ LB health check และ CI READINESS_URL — ไฟล์นี้ไม่ได้ตั้งค่า LB
+# เข้าถึงผ่าน published port ตาม convention ของ infra (ดูชีต MrFox - Application Register):
+# <staging-url> → node ใดก็ได้:${API_PUBLISHED_PORT} → container:3000 ผ่าน swarm routing mesh
+# แอปมี GET /health สำหรับ health check และ CI READINESS_URL — ไฟล์นี้ไม่ได้ตั้งค่า LB/DNS
 #
-# ทางเลือกถ้าไม่มี shared ingress: เปิด published port ช่วง API 8000-8999 ตามเลขที่ admin จัดสรร
-# เช่น เพิ่มใน service api -> ports: [{ target: 3000, published: ${API_PUBLISHED_PORT:?}, protocol: tcp, mode: ingress }]
-# และแจ้ง admin ให้ LB target/health-check port ตรงกัน — อย่าเปิดพร้อมกับ ingress route โดยไม่ประสาน
+# ทางเลือกถ้า admin บอกว่ามี shared ingress overlay: เอา block ports ออกแล้วผูก external network แทน
 #
 # environment: ส่งเฉพาะ key ที่แอปอ่านจริง (ดู apps/api/.env.example) — GitLab job vars
 # ไม่ได้เข้า container อัตโนมัติ ชื่อฝั่งขวาคือ GitLab CI/CD variable ที่ต้องตั้งแยก scope staging/production
 services:
   api:
     image: ${API_IMAGE:?API_IMAGE is required}
+    ports:
+    - target: 3000
+      published: ${API_PUBLISHED_PORT:?API_PUBLISHED_PORT is required — external port ที่ลงทะเบียนไว้ใน Application Register (ช่วง API 8000-8999)}
+      protocol: tcp
+      mode: ingress
     logging:
       driver: json-file
       options:
@@ -31,8 +35,6 @@ services:
       AWS_REGION: ${AWS_REGION:-ap-southeast-7}
       AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:?AWS_ACCESS_KEY_ID is required}
       AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:?AWS_SECRET_ACCESS_KEY is required}
-    networks:
-    - ingress_api
     deploy:
       replicas: 1
       labels:
@@ -52,6 +54,3 @@ services:
         order: stop-first
         failure_action: pause
         monitor: 30s
-networks:
-  ingress_api:
-    external: true

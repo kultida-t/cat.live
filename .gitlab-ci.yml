@@ -17,6 +17,8 @@ variables:
   REGISTRY_NAMESPACE: catlive
   DOCKER_BUILDKIT: '1'
   BUILDKIT_PROGRESS: plain
+  # external port ที่ publish (mode ingress) ตาม MrFox Application Register — ถ้า admin จัดสรรเลขอื่นให้แก้ค่านี้ หรือตั้งเป็น CI variable แยก scope env ได้
+  API_PUBLISHED_PORT: '8300'
   # runner เป็น Amazon Linux 2 (Python 3.7) — ชี้ไป standalone Python ที่ติดตั้งใน workspace โดย ci/bootstrap-python.sh
   SWARM_CI_PYTHON: ${CI_PROJECT_DIR}/.ci-python/bin/python3
 default:
