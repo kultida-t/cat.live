@@ -14,7 +14,7 @@ const PRESET = 'avatar_400';
 const CALLBACK_BASE_URL = 'https://callback.test';
 const CALLBACK_TYPE = 'avatar';
 const CALLBACK_SECRET = 'test-callback-secret';
-const CALLBACK_URL = `${CALLBACK_BASE_URL}/api/webhooks/cloudimagelab?type=${CALLBACK_TYPE}&secret=${CALLBACK_SECRET}`;
+const CALLBACK_URL = `${CALLBACK_BASE_URL}/api/v1/webhooks/cloudimagelab?type=${CALLBACK_TYPE}&secret=${CALLBACK_SECRET}`;
 
 describe('Media API — รูปโปรไฟล์ (e2e)', () => {
   let app: INestApplication;
@@ -92,12 +92,12 @@ describe('Media API — รูปโปรไฟล์ (e2e)', () => {
 
   /** ขั้นที่ 1 — ขอ presigned URL */
   function requestUpload(token: string, body: Record<string, unknown> = { contentType: 'image/png', fileSize: 2048 }) {
-    return http().post('/media/avatar/upload-url').set('Authorization', `Bearer ${token}`).send(body);
+    return http().post('/api/v1/media/avatar/upload-url').set('Authorization', `Bearer ${token}`).send(body);
   }
 
   /** ขั้นที่ 3 — แจ้งว่าอัปโหลดเสร็จ */
   function completeUpload(token: string, uploadId: string) {
-    return http().post(`/media/avatar/${uploadId}/complete`).set('Authorization', `Bearer ${token}`);
+    return http().post(`/api/v1/media/avatar/${uploadId}/complete`).set('Authorization', `Bearer ${token}`);
   }
 
   /** ทำครบทั้งสองขั้น ได้ fileId ของ CloudImageLab กลับมา */
@@ -107,7 +107,7 @@ describe('Media API — รูปโปรไฟล์ (e2e)', () => {
   }
 
   function callback(fileId: string, url: string, secret: string | null = CALLBACK_SECRET) {
-    const req = http().post('/api/webhooks/cloudimagelab');
+    const req = http().post('/api/v1/webhooks/cloudimagelab');
     if (secret !== null) req.query({ type: CALLBACK_TYPE, secret });
     else req.query({ type: CALLBACK_TYPE });
     return req.send({
@@ -169,8 +169,8 @@ describe('Media API — รูปโปรไฟล์ (e2e)', () => {
   });
 
   it('ไม่มี token → 401', async () => {
-    await http().post('/media/avatar/upload-url').send({ contentType: 'image/png', fileSize: 10 }).expect(401);
-    await http().post('/media/avatar/00000000-0000-4000-8000-000000000000/complete').expect(401);
+    await http().post('/api/v1/media/avatar/upload-url').send({ contentType: 'image/png', fileSize: 10 }).expect(401);
+    await http().post('/api/v1/media/avatar/00000000-0000-4000-8000-000000000000/complete').expect(401);
   });
 
   it('แจ้งเสร็จของรายการคนอื่น หรือ id ที่ไม่ถูกรูปแบบ → 404 / 400 และไม่สั่งประมวลผล', async () => {
@@ -197,9 +197,9 @@ describe('Media API — รูปโปรไฟล์ (e2e)', () => {
     await uploadAvatar(me.token);
     await callback('cil-file-1', 'https://cdn.test/a.webp').expect(200);
 
-    const list = await http().get('/media/avatars').set('Authorization', `Bearer ${me.token}`).expect(200);
+    const list = await http().get('/api/v1/media/avatars').set('Authorization', `Bearer ${me.token}`).expect(200);
     expect(list.body).toEqual([{ id: expect.any(String), url: 'https://cdn.test/a.webp', isCurrent: true }]);
-    const profile = await http().get('/auth/me').set('Authorization', `Bearer ${me.token}`).expect(200);
+    const profile = await http().get('/api/v1/auth/me').set('Authorization', `Bearer ${me.token}`).expect(200);
     expect(profile.body.avatarUrl).toBe('https://cdn.test/a.webp');
   });
 
@@ -217,14 +217,14 @@ describe('Media API — รูปโปรไฟล์ (e2e)', () => {
     await callback('cil-file-1', 'https://cdn.test/a.webp').expect(200);
     await uploadAvatar(me.token);
     await http()
-      .post('/api/webhooks/cloudimagelab')
+      .post('/api/v1/webhooks/cloudimagelab')
       .query({ type: CALLBACK_TYPE, secret: CALLBACK_SECRET })
       .send({ fileId: 'cil-file-2', status: 'Failed', variants: [], error: 'unsupported image' })
       .expect(200);
 
     const upload = await prisma.mediaUpload.findUniqueOrThrow({ where: { fileId: 'cil-file-2' } });
     expect(upload).toMatchObject({ status: 'failed', error: 'unsupported image' });
-    const profile = await http().get('/auth/me').set('Authorization', `Bearer ${me.token}`).expect(200);
+    const profile = await http().get('/api/v1/auth/me').set('Authorization', `Bearer ${me.token}`).expect(200);
     expect(profile.body.avatarUrl).toBe('https://cdn.test/a.webp');
   });
 
@@ -236,17 +236,17 @@ describe('Media API — รูปโปรไฟล์ (e2e)', () => {
     await uploadAvatar(me.token);
     await callback('cil-file-2', 'https://cdn.test/second.webp').expect(200);
 
-    const list = await http().get('/media/avatars').set('Authorization', `Bearer ${me.token}`).expect(200);
+    const list = await http().get('/api/v1/media/avatars').set('Authorization', `Bearer ${me.token}`).expect(200);
     const first = list.body.find((a: { url: string }) => a.url.endsWith('first.webp'));
     await http()
-      .post(`/media/avatars/${first.id}/select`)
+      .post(`/api/v1/media/avatars/${first.id}/select`)
       .set('Authorization', `Bearer ${me.token}`)
       .expect(204);
-    const profile = await http().get('/auth/me').set('Authorization', `Bearer ${me.token}`).expect(200);
+    const profile = await http().get('/api/v1/auth/me').set('Authorization', `Bearer ${me.token}`).expect(200);
     expect(profile.body.avatarUrl).toBe('https://cdn.test/first.webp');
 
     await http()
-      .post(`/media/avatars/${first.id}/select`)
+      .post(`/api/v1/media/avatars/${first.id}/select`)
       .set('Authorization', `Bearer ${other.token}`)
       .expect(404);
   });

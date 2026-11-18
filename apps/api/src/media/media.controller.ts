@@ -72,7 +72,7 @@ export class MediaController {
 }
 
 /** รับผลประมวลผลจาก CloudImageLab — ไม่ใช้ JWT เพราะเป็น server ส่งเข้ามา ใช้ secret ใน query string แทน */
-@Controller('api/webhooks')
+@Controller('webhooks')
 export class WebhookController {
   constructor(private readonly media: MediaService) {}
 

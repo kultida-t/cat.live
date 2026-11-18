@@ -176,7 +176,7 @@ export class MediaService {
       throw new ServiceUnavailableException('ระบบประมวลผลรูปยังไม่ได้ตั้งค่า');
     }
     const query = new URLSearchParams({ type, secret });
-    const callbackUrl = `${baseUrl.replace(/\/+$/, '')}/api/webhooks/cloudimagelab?${query}`;
+    const callbackUrl = `${baseUrl.replace(/\/+$/, '')}/api/v1/webhooks/cloudimagelab?${query}`;
     return { presetName, callbackUrl };
   }
 

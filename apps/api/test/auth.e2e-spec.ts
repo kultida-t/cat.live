@@ -59,12 +59,12 @@ describe('Auth API (e2e)', () => {
     // รอให้พ้นช่วงคูลดาวน์การขอรหัสซ้ำ (60 วินาที) เหมือนผู้ใช้จริง
     advance(60 * 1000);
     const requested = await http()
-      .post('/auth/otp/request')
+      .post('/api/v1/auth/otp/request')
       .send({ phone: PHONE })
       .expect(201);
     const sent = sentOtps.at(-1)!;
     const res = await http()
-      .post('/auth/otp/verify')
+      .post('/api/v1/auth/otp/verify')
       .send({
         refCode: requested.body.refCode,
         code: sent.code,
@@ -78,7 +78,7 @@ describe('Auth API (e2e)', () => {
 
   async function setupPin(accessToken: string, pin = '123456') {
     await http()
-      .post('/auth/pin')
+      .post('/api/v1/auth/pin')
       .set('Authorization', `Bearer ${accessToken}`)
       .send({ pin })
       .expect(204);
@@ -97,7 +97,7 @@ describe('Auth API (e2e)', () => {
 
     it('รหัส OTP ผิด 5 ครั้ง → ล็อก 15 นาที และรหัสที่ถูกก็ใช้ไม่ได้ระหว่างล็อก', async () => {
       const requested = await http()
-        .post('/auth/otp/request')
+        .post('/api/v1/auth/otp/request')
         .send({ phone: PHONE })
         .expect(201);
       const body = (code: string) => ({
@@ -111,7 +111,7 @@ describe('Auth API (e2e)', () => {
 
       for (let i = 1; i <= 4; i++) {
         const res = await http()
-          .post('/auth/otp/verify')
+          .post('/api/v1/auth/otp/verify')
           .send(body(wrong))
           .expect(401);
         expect(res.body).toMatchObject({
@@ -120,7 +120,7 @@ describe('Auth API (e2e)', () => {
         });
       }
       const fifth = await http()
-        .post('/auth/otp/verify')
+        .post('/api/v1/auth/otp/verify')
         .send(body(wrong))
         .expect(423);
       expect(fifth.body).toMatchObject({
@@ -129,7 +129,7 @@ describe('Auth API (e2e)', () => {
       });
 
       const whileLocked = await http()
-        .post('/auth/otp/verify')
+        .post('/api/v1/auth/otp/verify')
         .send(body(correct))
         .expect(423);
       expect(whileLocked.body.code).toBe('otp_locked');
@@ -137,12 +137,12 @@ describe('Auth API (e2e)', () => {
 
     it('รหัสหมดอายุหลัง 5 นาที → otp_expired', async () => {
       const requested = await http()
-        .post('/auth/otp/request')
+        .post('/api/v1/auth/otp/request')
         .send({ phone: PHONE })
         .expect(201);
       advance(5 * 60 * 1000);
       const res = await http()
-        .post('/auth/otp/verify')
+        .post('/api/v1/auth/otp/verify')
         .send({
           refCode: requested.body.refCode,
           code: sentOtps[0].code,
@@ -154,9 +154,9 @@ describe('Auth API (e2e)', () => {
     });
 
     it('ขอรหัสซ้ำได้หลังรอ 60 วินาทีเท่านั้น', async () => {
-      await http().post('/auth/otp/request').send({ phone: PHONE }).expect(201);
+      await http().post('/api/v1/auth/otp/request').send({ phone: PHONE }).expect(201);
       const early = await http()
-        .post('/auth/otp/request')
+        .post('/api/v1/auth/otp/request')
         .send({ phone: PHONE })
         .expect(429);
       expect(early.body).toMatchObject({
@@ -165,7 +165,7 @@ describe('Auth API (e2e)', () => {
       });
 
       advance(60 * 1000);
-      await http().post('/auth/otp/request').send({ phone: PHONE }).expect(201);
+      await http().post('/api/v1/auth/otp/request').send({ phone: PHONE }).expect(201);
     });
 
     it('ผู้ใช้อายุต่ำกว่า 13 ปีสมัครไม่ได้ และอายุ 13–19 ต้องมีผู้ปกครองยินยอม', async () => {
@@ -182,13 +182,13 @@ describe('Auth API (e2e)', () => {
 
   describe('PIN', () => {
     it('ตั้ง PIN ต้องมี token และล็อกอินด้วย PIN ได้', async () => {
-      await http().post('/auth/pin').send({ pin: '123456' }).expect(401);
+      await http().post('/api/v1/auth/pin').send({ pin: '123456' }).expect(401);
 
       const { body } = await loginWithOtp();
       await setupPin(body.accessToken);
 
       const res = await http()
-        .post('/auth/pin/login')
+        .post('/api/v1/auth/pin/login')
         .send({ phone: PHONE, pin: '123456' })
         .expect(200);
       expect(res.body.user.phoneMasked).toBe('089-xxx-8888');
@@ -196,7 +196,7 @@ describe('Auth API (e2e)', () => {
 
     it('เบอร์ที่ยังไม่ตั้ง PIN → no_pin_for_phone', async () => {
       const res = await http()
-        .post('/auth/pin/login')
+        .post('/api/v1/auth/pin/login')
         .send({ phone: PHONE, pin: '123456' })
         .expect(404);
       expect(res.body.code).toBe('no_pin_for_phone');
@@ -208,7 +208,7 @@ describe('Auth API (e2e)', () => {
 
       for (let i = 1; i <= 4; i++) {
         const res = await http()
-          .post('/auth/pin/login')
+          .post('/api/v1/auth/pin/login')
           .send({ phone: PHONE, pin: '000000' })
           .expect(401);
         expect(res.body).toMatchObject({
@@ -217,7 +217,7 @@ describe('Auth API (e2e)', () => {
         });
       }
       const fifth = await http()
-        .post('/auth/pin/login')
+        .post('/api/v1/auth/pin/login')
         .send({ phone: PHONE, pin: '000000' })
         .expect(423);
       expect(fifth.body).toMatchObject({
@@ -226,13 +226,13 @@ describe('Auth API (e2e)', () => {
       });
 
       await http()
-        .post('/auth/pin/login')
+        .post('/api/v1/auth/pin/login')
         .send({ phone: PHONE, pin: '123456' })
         .expect(423);
 
       advance(15 * 60 * 1000);
       await http()
-        .post('/auth/pin/login')
+        .post('/api/v1/auth/pin/login')
         .send({ phone: PHONE, pin: '123456' })
         .expect(200);
     });
@@ -243,7 +243,7 @@ describe('Auth API (e2e)', () => {
       expect(
         (
           await http()
-            .get('/auth/pin/status')
+            .get('/api/v1/auth/pin/status')
             .set('Authorization', auth)
             .expect(200)
         ).body,
@@ -252,7 +252,7 @@ describe('Auth API (e2e)', () => {
       expect(
         (
           await http()
-            .get('/auth/pin/status')
+            .get('/api/v1/auth/pin/status')
             .set('Authorization', auth)
             .expect(200)
         ).body,
@@ -265,12 +265,12 @@ describe('Auth API (e2e)', () => {
       await setupPin(body.accessToken);
 
       await http()
-        .post('/auth/pin/verify')
+        .post('/api/v1/auth/pin/verify')
         .set('Authorization', auth)
         .send({ pin: '123456' })
         .expect(204);
       const wrong = await http()
-        .post('/auth/pin/verify')
+        .post('/api/v1/auth/pin/verify')
         .set('Authorization', auth)
         .send({ pin: '000000' })
         .expect(401);
@@ -279,27 +279,27 @@ describe('Auth API (e2e)', () => {
         remainingAttempts: 4,
       });
       await http()
-        .post('/auth/pin/verify')
+        .post('/api/v1/auth/pin/verify')
         .set('Authorization', auth)
         .send({ pin: '000000' })
         .expect(401);
       await http()
-        .post('/auth/pin/verify')
+        .post('/api/v1/auth/pin/verify')
         .set('Authorization', auth)
         .send({ pin: '000000' })
         .expect(401);
       await http()
-        .post('/auth/pin/verify')
+        .post('/api/v1/auth/pin/verify')
         .set('Authorization', auth)
         .send({ pin: '000000' })
         .expect(401);
       await http()
-        .post('/auth/pin/verify')
+        .post('/api/v1/auth/pin/verify')
         .set('Authorization', auth)
         .send({ pin: '000000' })
         .expect(423);
       await http()
-        .post('/auth/pin/verify')
+        .post('/api/v1/auth/pin/verify')
         .set('Authorization', auth)
         .send({ pin: '123456' })
         .expect(423);
@@ -312,13 +312,13 @@ describe('Auth API (e2e)', () => {
 
       for (let i = 0; i < 5; i++) {
         await http()
-          .post('/auth/pin/change')
+          .post('/api/v1/auth/pin/change')
           .set('Authorization', auth)
           .send({ currentPin: '000000', newPin: '654321' })
           .expect(i < 4 ? 401 : 423);
       }
       await http()
-        .post('/auth/pin/change')
+        .post('/api/v1/auth/pin/change')
         .set('Authorization', auth)
         .send({ currentPin: '123456', newPin: '654321' })
         .expect(423);
@@ -329,17 +329,17 @@ describe('Auth API (e2e)', () => {
       await setupPin(body.accessToken);
       for (let i = 0; i < 5; i++) {
         await http()
-          .post('/auth/pin/login')
+          .post('/api/v1/auth/pin/login')
           .send({ phone: PHONE, pin: '000000' });
       }
       await http()
-        .post('/auth/pin/login')
+        .post('/api/v1/auth/pin/login')
         .send({ phone: PHONE, pin: '123456' })
         .expect(423);
 
       await loginWithOtp();
       await http()
-        .post('/auth/pin/login')
+        .post('/api/v1/auth/pin/login')
         .send({ phone: PHONE, pin: '123456' })
         .expect(200);
     });
@@ -350,40 +350,80 @@ describe('Auth API (e2e)', () => {
       const first = (await loginWithOtp()).body;
       const rotated = (
         await http()
-          .post('/auth/refresh')
+          .post('/api/v1/auth/refresh')
           .send({ refreshToken: first.refreshToken })
           .expect(200)
       ).body;
       expect(rotated.refreshToken).not.toBe(first.refreshToken);
 
       await http()
-        .post('/auth/refresh')
+        .post('/api/v1/auth/refresh')
         .send({ refreshToken: first.refreshToken })
         .expect(401);
       await http()
-        .post('/auth/refresh')
+        .post('/api/v1/auth/refresh')
         .send({ refreshToken: rotated.refreshToken })
         .expect(401);
     });
 
-    it('logout ยกเลิก refresh token และ /auth/me ต้องมี access token', async () => {
+    it('logout ยกเลิก refresh token และ /api/v1/auth/me ต้องมี access token', async () => {
       const { body } = await loginWithOtp();
 
-      await http().get('/auth/me').expect(401);
+      await http().get('/api/v1/auth/me').expect(401);
       const me = await http()
-        .get('/auth/me')
+        .get('/api/v1/auth/me')
         .set('Authorization', `Bearer ${body.accessToken}`)
         .expect(200);
       expect(me.body.displayName).toBe('ผู้ใช้แมว.live');
 
       await http()
-        .post('/auth/logout')
+        .post('/api/v1/auth/logout')
         .send({ refreshToken: body.refreshToken })
         .expect(204);
       await http()
-        .post('/auth/refresh')
+        .post('/api/v1/auth/refresh')
         .send({ refreshToken: body.refreshToken })
         .expect(401);
+    });
+  });
+
+  describe('Profile', () => {
+    it('PUT /me/profile อัปเดต displayName/birthYear แล้วอ่านกลับได้จาก /auth/me', async () => {
+      const { body } = await loginWithOtp();
+
+      const updated = await http()
+        .put('/api/v1/me/profile')
+        .set('Authorization', `Bearer ${body.accessToken}`)
+        .send({ displayName: 'ทาสแมว', birthYear: 1995 })
+        .expect(200);
+      expect(updated.body.displayName).toBe('ทาสแมว');
+      expect(updated.body.birthYear).toBe(1995);
+
+      const me = await http()
+        .get('/api/v1/auth/me')
+        .set('Authorization', `Bearer ${body.accessToken}`)
+        .expect(200);
+      expect(me.body.displayName).toBe('ทาสแมว');
+      expect(me.body.birthYear).toBe(1995);
+    });
+
+    it('ปฏิเสธเมื่อไม่มี token, ส่ง body ว่าง หรือชื่อว่าง', async () => {
+      const { body } = await loginWithOtp();
+
+      await http()
+        .put('/api/v1/me/profile')
+        .send({ displayName: 'ทาสแมว' })
+        .expect(401);
+      await http()
+        .put('/api/v1/me/profile')
+        .set('Authorization', `Bearer ${body.accessToken}`)
+        .send({})
+        .expect(400);
+      await http()
+        .put('/api/v1/me/profile')
+        .set('Authorization', `Bearer ${body.accessToken}`)
+        .send({ displayName: '   ' })
+        .expect(400);
     });
   });
 });

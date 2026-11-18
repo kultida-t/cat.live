@@ -22,6 +22,7 @@ import type {
   OtpVerifyDto,
   PinChangeDto,
   PinLoginDto,
+  UpdateProfileDto,
 } from './auth.schemas.js';
 import {
   hashSecret,
@@ -372,6 +373,25 @@ export class AuthService {
       birthYear: user.birthYear,
       avatarUrl: user.avatarUrl,
     };
+  }
+
+  async updateProfile(userId: string, data: UpdateProfileDto) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { deletedAt: true },
+    });
+    if (!user || user.deletedAt)
+      throw authError(HttpStatus.UNAUTHORIZED, 'session_invalid');
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        ...(data.displayName !== undefined
+          ? { displayName: data.displayName }
+          : {}),
+        ...(data.birthYear !== undefined ? { birthYear: data.birthYear } : {}),
+      },
+    });
+    return this.me(userId);
   }
 
   private async issueTokens(userId: string): Promise<AuthTokens> {

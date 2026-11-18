@@ -10,8 +10,8 @@
 1. แอปขอ `POST /media/avatar/upload-url` (ต้องล็อกอิน) ส่ง `contentType` และ `fileSize` — backend ตอบ `uploadUrl` (อายุ 5 นาที), `uploadId`, `headers`
 2. แอปลบข้อมูลแฝง (GPS) ในรูปในเครื่อง แล้ว `PUT` ไฟล์ไปที่ `uploadUrl` ตรง ๆ โดยส่ง `Content-Type` ตรงกับที่ขอ และ **ห้ามแนบ Authorization** (จะทำให้ลายเซ็นผิด) ไฟล์ไปอยู่ที่ `catlive/avatars/<userId>/<uuid>.<ext>` ใน bucket
 3. แอปแจ้ง `POST /media/avatar/:uploadId/complete` — backend เรียก CloudImageLab `POST /api/files/process` พร้อม `s3Key`, `outputPath`, `presetNames`, `callbackUrl` (header `X-Api-Key`)
-4. CloudImageLab ประมวลผลเบื้องหลัง แล้ว **ส่งผลกลับ** มาที่ `POST /api/webhooks/cloudimagelab?type=...&secret=...` ของเรา (ค่า `type` และ `secret` อยู่ใน callback URL ที่เราส่งให้ตอนขอประมวลผล)
-5. backend ตรวจ key บันทึกรูปที่ได้เป็นรูปปัจจุบันและเก็บประวัติ แอปอ่านรูปจาก `/auth/me` และ `/media/avatars`
+4. CloudImageLab ประมวลผลเบื้องหลัง แล้ว **ส่งผลกลับ** มาที่ `POST /api/v1/webhooks/cloudimagelab?type=...&secret=...` ของเรา (ค่า `type` และ `secret` อยู่ใน callback URL ที่เราส่งให้ตอนขอประมวลผล)
+5. backend ตรวจ key บันทึกรูปที่ได้เป็นรูปปัจจุบันและเก็บประวัติ แอปอ่านรูปจาก `/api/v1/auth/me` และ `/api/v1/media/avatars`
 
 ผลประมวลผลต้องใช้ `url` จาก callback เสมอ ห้ามประกอบ path เอง รูปอ่านผ่าน CloudFront `https://d2kz9pl8iwzvcz.cloudfront.net/` (ไม่ต้องระบุ bucket ใน URL)
 
@@ -19,11 +19,11 @@
 
 | Endpoint | หน้าที่ |
 |---|---|
-| `POST /media/avatar/upload-url` | ขอ presigned URL (JPEG/PNG/WebP, ไม่เกิน 10 MB) ตอบ 201 |
-| `POST /media/avatar/:id/complete` | แจ้งอัปโหลดเสร็จ สั่งประมวลผล ตอบ 202 (เรียกซ้ำได้) |
-| `GET /media/avatars` | รูปที่เคยใช้ เรียงใหม่ไปเก่า |
-| `POST /media/avatars/:id/select` | เลือกรูปเก่ากลับมาเป็นรูปปัจจุบัน |
-| `POST /api/webhooks/cloudimagelab` | รับผลจาก CloudImageLab (ตรวจ query `secret`) |
+| `POST /api/v1/media/avatar/upload-url` | ขอ presigned URL (JPEG/PNG/WebP, ไม่เกิน 10 MB) ตอบ 201 |
+| `POST /api/v1/media/avatar/:id/complete` | แจ้งอัปโหลดเสร็จ สั่งประมวลผล ตอบ 202 (เรียกซ้ำได้) |
+| `GET /api/v1/media/avatars` | รูปที่เคยใช้ เรียงใหม่ไปเก่า |
+| `POST /api/v1/media/avatars/:id/select` | เลือกรูปเก่ากลับมาเป็นรูปปัจจุบัน |
+| `POST /api/v1/webhooks/cloudimagelab` | รับผลจาก CloudImageLab (ตรวจ query `secret`) |
 
 ## ตัวแปรที่ต้องตั้ง
 

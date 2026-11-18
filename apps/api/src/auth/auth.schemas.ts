@@ -28,9 +28,19 @@ export const pinChangeSchema = z.object({
 
 export const refreshSchema = z.object({ refreshToken: z.string().min(1) });
 
+export const updateProfileSchema = z
+  .object({
+    displayName: z.string().trim().min(1).max(60).optional(),
+    birthYear: z.number().int().min(1900).max(2100).nullable().optional(),
+  })
+  .refine((data) => data.displayName !== undefined || data.birthYear !== undefined, {
+    message: 'ต้องระบุอย่างน้อยหนึ่งฟิลด์',
+  });
+
 export type OtpRequestDto = z.infer<typeof otpRequestSchema>;
 export type OtpVerifyDto = z.infer<typeof otpVerifySchema>;
 export type PinLoginDto = z.infer<typeof pinLoginSchema>;
 export type PinSetDto = z.infer<typeof pinSetSchema>;
 export type PinChangeDto = z.infer<typeof pinChangeSchema>;
 export type RefreshDto = z.infer<typeof refreshSchema>;
+export type UpdateProfileDto = z.infer<typeof updateProfileSchema>;

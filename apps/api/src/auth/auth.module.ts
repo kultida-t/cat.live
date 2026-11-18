@@ -6,6 +6,7 @@ import { smsSenderProvider } from '../sms/sms.js';
 import { AuthController } from './auth.controller.js';
 import { AuthService } from './auth.service.js';
 import { JwtAuthGuard } from './jwt-auth.guard.js';
+import { MeController } from './me.controller.js';
 
 @Module({
   imports: [
@@ -17,7 +18,7 @@ import { JwtAuthGuard } from './jwt-auth.guard.js';
       }),
     }),
   ],
-  controllers: [AuthController],
+  controllers: [AuthController, MeController],
   providers: [AuthService, JwtAuthGuard, clockProvider, smsSenderProvider],
   exports: [AuthService, JwtAuthGuard, JwtModule],
 })
