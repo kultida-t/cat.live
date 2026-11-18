@@ -47,6 +47,15 @@ export class MediaController {
     return this.media.createAvatarUpload(req.user.id, body);
   }
 
+  /** ขอ presigned URL เพื่ออัปโหลดรูปแมวตรงไปที่ S3 — คืน imageUrl สำหรับส่งต่อให้ POST /cats/:id/photos */
+  @Post('cat-photos/upload-url')
+  createCatPhotoUpload(
+    @Req() req: AuthenticatedRequest,
+    @Body({ schema: avatarUploadSchema }) body: AvatarUploadDto,
+  ) {
+    return this.media.createCatPhotoUpload(req.user.id, body);
+  }
+
   /** ขั้นที่ 3: อัปโหลดเสร็จแล้ว ให้ระบบสั่งประมวลผล */
   @Post('avatar/:id/complete')
   @HttpCode(HttpStatus.ACCEPTED)

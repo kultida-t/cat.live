@@ -61,6 +61,34 @@ export class MediaService {
     };
   }
 
+  /** ออก presigned URL สำหรับรูปแมว — ไฟล์ดิบใต้ `<prefix>/cats/<userId>/` แอปเอา imageUrl ไปส่งต่อให้ POST /cats/:id/photos
+   *  (รูปแมวยังไม่ผ่าน CloudImageLab ในเฟสนี้ — อ่านตรงจาก CloudFront หน้า bucket) */
+  async createCatPhotoUpload(userId: string, input: { contentType: string; fileSize: number }) {
+    const ext = AVATAR_EXTENSIONS[input.contentType];
+    if (!ext) throw new UnsupportedMediaTypeException('รองรับเฉพาะไฟล์ JPEG, PNG และ WebP');
+    const s3Key = `${this.keyPrefix()}/cats/${userId}/${randomUUID()}.${ext}`;
+    const uploadUrl = await this.presigner.presignPut({
+      key: s3Key,
+      contentType: input.contentType,
+      contentLength: input.fileSize,
+      expiresInSeconds: UPLOAD_URL_TTL_SECONDS,
+    });
+    return {
+      uploadUrl,
+      expiresInSeconds: UPLOAD_URL_TTL_SECONDS,
+      headers: { 'Content-Type': input.contentType },
+      imageUrl: `${this.publicMediaBase()}/${s3Key}`,
+    };
+  }
+
+  /** base URL สาธารณะของไฟล์ใน bucket (CloudFront) — ค่าเริ่มต้นตาม infra ปัจจุบัน ปรับผ่าน PUBLIC_MEDIA_BASE_URL */
+  private publicMediaBase(): string {
+    return (
+      this.config.get<string>('PUBLIC_MEDIA_BASE_URL') ??
+      'https://d2kz9pl8iwzvcz.cloudfront.net'
+    ).replace(/\/$/, '');
+  }
+
   /** แอปอัปโหลดเสร็จแล้ว — สั่ง CloudImageLab ประมวลผล (Flow B) ผลจะกลับมาทาง callback เรียกซ้ำได้โดยไม่สั่งซ้ำ */
   async completeAvatarUpload(userId: string, uploadId: string) {
     const upload = await this.prisma.mediaUpload.findFirst({ where: { id: uploadId, userId } });
