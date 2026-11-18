@@ -12,7 +12,7 @@ services:
     image: ${API_IMAGE:?API_IMAGE is required}
     ports:
     - target: 3000
-      published: ${API_PUBLISHED_PORT:?API_PUBLISHED_PORT is required — external port ที่ลงทะเบียนไว้ใน Application Register (ช่วง API 8000-8999)}
+      published: ${API_PUBLISHED_PORT:?API_PUBLISHED_PORT is required}
       protocol: tcp
       mode: ingress
     logging:
