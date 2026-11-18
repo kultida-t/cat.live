@@ -22,6 +22,26 @@ default:
   - build
   before_script:
   - bash ci/swarm/bootstrap.sh
+# TEMPORARY: สำรวจ build runner ว่ามี Python 3.10+/docker ไหม (เอาออกเมื่อวินิจฉัยเสร็จ)
+runner_probe:
+  stage: validate
+  before_script: []
+  rules:
+  - if: $CI_COMMIT_BRANCH == "feat/avatar-cloudimagelab"
+  script:
+  - head -3 /etc/os-release || true
+  - echo '--- PATH interpreters ---'
+  - 'for c in python3 python3.8 python3.9 python3.10 python3.11 python3.12 python3.13;
+    do p=$(command -v "$c" 2>/dev/null) && echo "$c -> $p = $($p --version 2>&1)" || true;
+    done'
+  - echo '--- common install dirs ---'
+  - 'ls -1 /usr/bin/python* /usr/local/bin/python* /opt/*/bin/python* 2>/dev/null || true'
+  - echo '--- toolchains ---'
+  - 'for t in docker podman conda pyenv brew uv; do command -v "$t" 2>/dev/null || echo
+    "missing $t"; done'
+  - 'docker --version 2>/dev/null || echo "no docker cli"'
+  - 'docker info --format "daemon={{.ServerVersion}}" 2>/dev/null || echo "docker daemon
+    not reachable"'
 validate_stack:
   stage: validate
   rules:
